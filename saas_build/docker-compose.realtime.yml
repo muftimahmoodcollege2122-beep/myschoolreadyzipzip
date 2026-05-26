@@ -1,0 +1,19 @@
+# Extend base docker-compose.yml for Phase 11 realtime features.
+# Run: docker-compose -f docker-compose.yml -f docker-compose.realtime.yml up
+
+version: '3.9'
+
+services:
+  api:
+    environment:
+      REDIS_ADAPTER_HOST: redis
+      REDIS_ADAPTER_PORT: 6379
+      # Socket.io scales horizontally via Redis pub/sub adapter
+      # All API instances share events through Redis channels
+      WS_CORS_ORIGIN: ${FRONTEND_URL:-http://localhost:3000}
+    ports:
+      - '5000:5000'
+
+  # Redis is already in base docker-compose.yml
+  # Socket.io @socket.io/redis-adapter uses Redis pub/sub
+  # to sync WebSocket events across multiple API instances
