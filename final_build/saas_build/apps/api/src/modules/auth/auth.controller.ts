@@ -3,7 +3,7 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto, RefreshTokenDto, LogoutDto } from './dto/login.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { TenantId } from '../../common/decorators/tenant-id.decorator';
+import { TenantId, Public } from '../../common/decorators/tenant-id.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Request } from 'express';
 
@@ -12,14 +12,20 @@ export class AuthController {
   constructor(private readonly svc: AuthService) {}
 
   @Post('login') @HttpCode(HttpStatus.OK)
+  @Public()
   @ApiOperation({ summary: 'Login with email + password' })
-  login(@Body() dto: LoginDto, @TenantId() tid: string, @Req() req: Request) {
-    return this.svc.login(dto, tid, req.ip ?? '0.0.0.0', req.headers['user-agent'] ?? '');
+  login(@Body() dto: LoginDto, @Req() req: Request) {
+    const ip = req.ip ?? '0.0.0.0';
+    const ua = req.headers['user-agent'] ?? '';
+    const slug = dto.tenantSlug || (req as any).tenantContext?.tenantId || 'demo';
+    return this.svc.loginBySlug(dto, slug, ip, ua);
   }
 
   @Post('refresh') @HttpCode(HttpStatus.OK)
+  @Public()
   @ApiOperation({ summary: 'Refresh access token' })
-  refresh(@Body() dto: RefreshTokenDto, @TenantId() tid: string) {
+  refresh(@Body() dto: RefreshTokenDto, @Req() req: Request) {
+    const tid = (req as any).tenantContext?.tenantId ?? req.headers['x-tenant-id'] as string ?? '';
     return this.svc.refresh(dto, tid);
   }
 

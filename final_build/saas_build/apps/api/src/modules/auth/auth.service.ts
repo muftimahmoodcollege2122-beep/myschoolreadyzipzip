@@ -41,6 +41,17 @@ export class AuthService {
     private readonly audit: AuditService,
   ) {}
 
+  async loginBySlug(dto: LoginDto, tenantSlug: string, ipAddress: string, userAgent: string): Promise<TokenPair & { tenantSlug: string; user: any }> {
+    const tenant = await this.prisma.tenant.findUnique({ where: { slug: tenantSlug } });
+    if (!tenant) throw new UnauthorizedException(`Tenant '${tenantSlug}' not found`);
+    const tokens = await this.login(dto, tenant.id, ipAddress, userAgent);
+    const user = await this.prisma.user.findUnique({
+      where: { tenantId_email: { tenantId: tenant.id, email: dto.email } },
+      include: { profile: true },
+    });
+    return { ...tokens, tenantSlug: tenant.slug, user: { id: user!.id, email: user!.email, role: user!.role, tenantId: tenant.id, firstName: user!.profile?.firstName, lastName: user!.profile?.lastName } };
+  }
+
   async login(dto: LoginDto, tenantId: string, ipAddress: string, userAgent: string): Promise<TokenPair> {
     const user = await this.prisma.user.findUnique({
       where: { tenantId_email: { tenantId, email: dto.email } },

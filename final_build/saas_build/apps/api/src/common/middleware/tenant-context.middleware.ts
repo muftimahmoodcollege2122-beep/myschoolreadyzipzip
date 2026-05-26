@@ -37,12 +37,13 @@ export class TenantContextMiddleware implements NestMiddleware {
 
   async use(req: Request, res: Response, next: NextFunction): Promise<void> {
     // Health checks bypass tenant resolution
-    if (req.path === '/health' || req.path === '/health/live' || req.path === '/health/ready') {
+    if (req.path === '/health' || req.path === '/health/live' || req.path === '/health/ready' ||
+        req.path.endsWith('/health') || req.path.endsWith('/health/live') || req.path.endsWith('/health/ready')) {
       return next();
     }
 
-    // Public routes (onboarding, stripe webhooks)
-    if (req.path.startsWith('/api/v1/public/') || req.path.startsWith('/api/v1/webhooks/')) {
+    // Public routes (onboarding, stripe webhooks, auth)
+    if (req.path.startsWith('/api/v1/public/') || req.path.startsWith('/api/v1/webhooks/') || req.path.startsWith('/api/v1/auth/')) {
       return next();
     }
 

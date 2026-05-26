@@ -4,7 +4,7 @@ import { AuditService } from '../../common/audit/audit.service';
 import { CreateInvoiceDto, RecordPaymentDto } from './dto/create-invoice.dto';
 import { FeeStatus } from '@prisma/client';
 import { randomUUID } from 'crypto';
-import * as dayjs from 'dayjs';
+import dayjs from 'dayjs';
 
 @Injectable()
 export class FeesService {
@@ -49,7 +49,7 @@ export class FeesService {
     if (dto.amount > outstanding) throw new BadRequestException(`Payment ${dto.amount} exceeds outstanding ${outstanding}`);
 
     await this.prisma.$transaction(async tx => {
-      await tx.feePayment.create({ data: { invoiceId: dto.invoiceId, tenantId, amount: dto.amount, method: dto.method as any, transactionRef: dto.transactionRef ?? null, processedBy: processedById } });
+      await tx.payment.create({ data: { invoiceId: dto.invoiceId, tenantId, amount: dto.amount, method: dto.method as any, transactionRef: dto.transactionRef ?? null, processedBy: processedById } });
       const newPaid = Number(invoice.amountPaid ?? 0) + dto.amount;
       const newOutstanding = Number(invoice.amount) + Number(invoice.fine ?? 0) - Number(invoice.discount ?? 0) - newPaid;
       const newStatus = newOutstanding <= 0 ? FeeStatus.PAID : 'PARTIAL' as any;

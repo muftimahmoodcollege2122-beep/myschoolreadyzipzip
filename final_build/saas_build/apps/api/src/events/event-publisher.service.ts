@@ -35,16 +35,15 @@ export class EventPublisher implements OnModuleInit, OnModuleDestroy {
           }
         : undefined,
       retry: {
-        initialRetryTime: 300,
-        retries: 8,
+        initialRetryTime: 100,
+        retries: 1,
       },
     });
 
     this.producer = this.kafka.producer({
       createPartitioner: Partitioners.LegacyPartitioner,
-      idempotent: true, // exactly-once producer semantics
+      idempotent: false,
       maxInFlightRequests: 5,
-      transactionTimeout: 30000,
     });
   }
 

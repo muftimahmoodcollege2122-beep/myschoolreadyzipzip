@@ -1,8 +1,11 @@
 import { Module, MiddlewareConsumer, RequestMethod } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { BullModule } from '@nestjs/bull';
 import { PrismaService } from './database/prisma.service';
+import { CacheService } from './common/cache/cache.service';
 import { TenantContextMiddleware } from './common/middleware/tenant-context.middleware';
 
 import { AuthModule } from './modules/auth/auth.module';
@@ -72,7 +75,10 @@ import awsConfig from './config/aws.config';
     ThemesModule,
   ],
   providers: [
+    PrismaService,
+    CacheService,
     ScheduledJobs,
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
   ],
 })
 export class AppModule {

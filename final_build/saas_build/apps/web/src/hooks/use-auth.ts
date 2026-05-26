@@ -8,8 +8,9 @@ export function useAuth() {
   const router = useRouter();
 
   const login = async (email: string, password: string, slug?: string) => {
-    if (slug) setTenantSlug(slug);
-    const res = await apiClient.post<{ accessToken: string; refreshToken: string; user: any }>('/auth/login', { email, password });
+    const tenantSlugToUse = slug || 'demo';
+    const res = await apiClient.post<{ accessToken: string; refreshToken: string; user: any; tenantSlug: string }>('/auth/login', { email, password, tenantSlug: tenantSlugToUse });
+    if (res.tenantSlug) setTenantSlug(res.tenantSlug);
     setAuth(res.user, res.accessToken, res.refreshToken);
     router.push('/dashboard');
     return res;

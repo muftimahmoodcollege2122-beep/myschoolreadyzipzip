@@ -44,8 +44,8 @@ export class SearchService {
         LIMIT ${limit}
       `,
       this.prisma.exam.findMany({
-        where: { tenantId, title: { contains: q, mode: 'insensitive' } },
-        include: { section: { include: { class: true } } },
+        where: { tenantId, name: { contains: q, mode: 'insensitive' } },
+        include: { subject: true },
         take: 5,
       }),
     ]);
@@ -175,8 +175,8 @@ export class SearchService {
         FROM tenants WHERE created_at >= NOW() - INTERVAL '12 months'
         GROUP BY DATE_TRUNC('month', created_at) ORDER BY month ASC
       `,
-      this.prisma.tenant.groupBy({ by: ['plan'], _count: { plan: true } }),
-      this.prisma.tenant.count({ where: { lastActiveAt: { gte: new Date(Date.now() - 86400000) } } }),
+      this.prisma.tenant.groupBy({ by: ['tier'], _count: { tier: true } }),
+      this.prisma.tenant.count({ where: { status: 'ACTIVE' as any } }),
       this.prisma.$queryRaw`
         SELECT t.id, t.name, t.plan,
           COUNT(DISTINCT s.id) as student_count,

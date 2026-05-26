@@ -46,16 +46,8 @@ export class RealtimeService {
     private readonly prisma: PrismaService,
   ) {}
 
-  /**
-   * Called when teacher marks a student absent.
-   * Immediately notifies:
-   *   - The parent of the absent student (personal room)
-   *   - School admins (role room)
-   *   - Section room (other teachers monitoring)
-   */
   async onAttendanceMarked(tenantId: string, events: AttendanceEvent[]) {
     for (const evt of events) {
-      // Emit to section room (live attendance sheet updates)
       this.gateway.emitToSection(tenantId, evt.sectionId, 'attendance:marked', {
         studentId: evt.studentId,
         rollNumber: evt.rollNumber,
@@ -64,16 +56,15 @@ export class RealtimeService {
         markedAt: new Date().toISOString(),
       });
 
-      // If absent — find parent and send live alert
       if (evt.status === 'ABSENT') {
         try {
-          const parents = await this.prisma.studentGuardian.findMany({
+          const parents = await this.prisma.studentParent.findMany({
             where: { studentId: evt.studentId },
-            include: { guardian: true },
+            include: { parent: { include: { user: true } } },
           });
 
           for (const p of parents) {
-            this.gateway.emitToUser(p.guardianId, 'alert:child_absent', {
+            this.gateway.emitToUser(p.parentId, 'alert:child_absent', {
               studentId: evt.studentId,
               studentName: evt.studentName,
               rollNumber: evt.rollNumber,
@@ -85,7 +76,6 @@ export class RealtimeService {
             });
           }
 
-          // Notify admins too
           this.gateway.emitToRole(tenantId, 'SCHOOL_ADMIN', 'attendance:absent_alert', {
             studentId: evt.studentId,
             studentName: evt.studentName,
@@ -99,25 +89,19 @@ export class RealtimeService {
     }
   }
 
-  /**
-   * Called when a fee payment is recorded.
-   * Notifies student + parents + admins live.
-   */
   async onFeePaymentRecorded(tenantId: string, event: FeePaymentEvent) {
-    // Notify the student
     this.gateway.emitToUser(event.studentId, 'fee:payment_confirmed', {
       ...event,
       message: `Payment of Rs. ${event.amount.toLocaleString()} confirmed`,
       timestamp: new Date().toISOString(),
     });
 
-    // Notify parents
     try {
-      const parents = await this.prisma.studentGuardian.findMany({
+      const parents = await this.prisma.studentParent.findMany({
         where: { studentId: event.studentId },
       });
       for (const p of parents) {
-        this.gateway.emitToUser(p.guardianId, 'fee:payment_confirmed', {
+        this.gateway.emitToUser(p.parentId, 'fee:payment_confirmed', {
           ...event,
           message: `Fee payment of Rs. ${event.amount.toLocaleString()} received`,
           timestamp: new Date().toISOString(),
@@ -127,7 +111,6 @@ export class RealtimeService {
       this.logger.error(`Failed to emit fee payment event: ${(err as Error).message}`);
     }
 
-    // Update admin dashboard stats live
     this.gateway.emitToRole(tenantId, 'SCHOOL_ADMIN', 'dashboard:stats_update', {
       type: 'fee_collected',
       amount: event.amount,
@@ -135,12 +118,7 @@ export class RealtimeService {
     });
   }
 
-  /**
-   * Called when exam results are published.
-   * Broadcasts to all students and parents in the section.
-   */
   async onExamResultsPublished(tenantId: string, event: ExamResultEvent) {
-    // Broadcast to entire section
     this.gateway.emitToSection(tenantId, event.sectionId, 'exam:results_published', {
       examId: event.examId,
       examTitle: event.examTitle,
@@ -148,7 +126,6 @@ export class RealtimeService {
       timestamp: new Date().toISOString(),
     });
 
-    // Broadcast to full tenant (students check their results)
     this.gateway.emitToTenant(tenantId, 'exam:results_available', {
       examId: event.examId,
       examTitle: event.examTitle,
@@ -156,9 +133,6 @@ export class RealtimeService {
     });
   }
 
-  /**
-   * Push a notification to a specific user's bell in real-time.
-   */
   async onNotificationCreated(userId: string, tenantId: string, notification: {
     id: string;
     title: string;
@@ -166,22 +140,17 @@ export class RealtimeService {
     type: string;
     data?: any;
   }) {
-    // Send notification to user's room
     this.gateway.emitToUser(userId, 'notification:new', {
       ...notification,
       timestamp: new Date().toISOString(),
     });
 
-    // Update unread count
     const unread = await this.prisma.notification.count({
       where: { userId, tenantId, readAt: null },
     });
     this.gateway.emitToUser(userId, 'notifications:unread_count', { count: unread });
   }
 
-  /**
-   * Push live dashboard stats update to admin screens.
-   */
   broadcastDashboardUpdate(tenantId: string, stats: DashboardStatsEvent) {
     this.gateway.emitToRole(tenantId, 'SCHOOL_ADMIN', 'dashboard:live_stats', {
       ...stats,
@@ -189,9 +158,6 @@ export class RealtimeService {
     });
   }
 
-  /**
-   * Broadcast a school-wide announcement in real-time.
-   */
   broadcastAnnouncement(tenantId: string, announcement: {
     id: string;
     title: string;
@@ -209,7 +175,6 @@ export class RealtimeService {
     this.logger.log(`Broadcast announcement "${announcement.title}" to tenant ${tenantId}`);
   }
 
-  /** Online count for a tenant */
   getOnlineCount(tenantId: string): number {
     return this.gateway.getOnlineCount(tenantId);
   }

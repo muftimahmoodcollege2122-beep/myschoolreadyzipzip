@@ -1,7 +1,9 @@
 import { Controller, Get } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CacheService } from '../cache/cache.service';
+import { Public } from '../decorators/tenant-id.decorator';
 
+@Public()
 @Controller('health')
 export class HealthController {
   constructor(private prisma: PrismaService, private cache: CacheService) {}

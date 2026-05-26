@@ -99,7 +99,7 @@ export class ThemesService {
       buttonStyle:   customTheme.buttonStyle   || preset.buttonStyle   || 'solid',
       schoolName:    tenant.name,
       tagline:       customTheme.tagline       || settings.tagline     || `Quality Education Since ${customTheme.established || '2000'}`,
-      city:          customTheme.city          || safeSchool.city      || '',
+      city:          customTheme.city          || (safeSchool.address as any)?.city || '',
       phone:         customTheme.phone         || safeSchool.phone     || '',
       email:         customTheme.email         || safeSchool.email     || (tenant as any).email || '',
       address:       customTheme.address       || (safeSchool.address as any)?.full || '',
