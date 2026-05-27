@@ -7,7 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 let socket: Socket | null = null;
 
 export function useRealtime() {
-  const { token } = useAuthStore();
+  const { accessToken: token } = useAuthStore();
   const qc = useQueryClient();
   const connected = useRef(false);
 

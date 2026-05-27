@@ -46,3 +46,18 @@ description: Key facts about the MySchool App setup in this Replit environment
 - `studentParent` not `studentGuardian`; `feeInvoice` not `payment`
 
 **Why:** Many modules were missing `PrismaService` in their providers (code generation bug). The global `JwtAuthGuard` pattern requires modules using the guard in controllers to have `AuthService` available — solved by making `AuthModule` global rather than adding it to every module.
+
+## Login → Redirect Back to Login Bug (Fixed)
+
+**Root cause chain:**
+1. First dashboard request fired before localStorage had tokens → no `X-Tenant-ID` → 401 "Tenant identifier required"
+2. The 401 interceptor tried to refresh using raw `axios.post` (bypasses the custom request interceptor) → no `X-Tenant-ID` header on the refresh call
+3. API `refresh` method checked `session.user.tenantId !== tenantId` where tenantId was `''` → ForbiddenException → caught by axios → `window.location.href = '/login'`
+4. `use-realtime.ts` referenced `token` instead of `accessToken` (the store property name)
+
+**Fixes applied:**
+- `api-client.ts`: refresh call now reads `tenantSlug` from localStorage and includes `X-Tenant-ID` header
+- `auth.service.ts` refresh: tenant check now skipped when `tenantId` is empty; uses `session.user.tenantId` as fallback in `generateTokenPair`
+- `auth.store.ts`: switched from `sessionStorage` to `localStorage` (avoids SSR hydration gaps)
+- Dashboard `layout.tsx`: added `AuthGuard` component — shows spinner until auth state confirmed, redirects to `/login` if unauthenticated
+- `use-realtime.ts`: fixed `token` → `accessToken`

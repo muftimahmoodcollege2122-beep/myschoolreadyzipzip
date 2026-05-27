@@ -115,12 +115,14 @@ export class AuthService {
     if (!session || session.revokedAt || session.expiresAt < new Date())
       throw new UnauthorizedException('Session expired or revoked');
 
-    if (session.user.tenantId !== tenantId)
+    // Only enforce tenant check when a tenantId is explicitly provided
+    if (tenantId && session.user.tenantId !== tenantId)
       throw new ForbiddenException('Token tenant mismatch');
 
     await this.prisma.userSession.update({ where: { id: session.id }, data: { revokedAt: new Date() } });
 
-    const tokens = await this.generateTokenPair(session.userId, tenantId, session.user.role, session.user.email);
+    const resolvedTenantId = tenantId || session.user.tenantId;
+    const tokens = await this.generateTokenPair(session.userId, resolvedTenantId, session.user.role, session.user.email);
     const newSessionHash = this.hashToken(tokens.refreshToken);
     await this.prisma.userSession.create({
       data: { userId: session.userId, tokenHash: newSessionHash, ipAddress: session.ipAddress, userAgent: session.userAgent, expiresAt: new Date(Date.now() + this.REFRESH_TOKEN_TTL * 1000) },

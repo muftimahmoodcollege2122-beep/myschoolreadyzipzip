@@ -13,7 +13,7 @@ const instance: AxiosInstance = axios.create({
 instance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (typeof window === 'undefined') return config;
   try {
-    const stored = sessionStorage.getItem('auth-storage');
+    const stored = localStorage.getItem('auth-storage');
     if (stored) {
       const state = JSON.parse(stored);
       const { accessToken, tenantSlug } = state?.state ?? {};
@@ -38,12 +38,14 @@ instance.interceptors.response.use(r => r, async (err: AxiosError) => {
     if (isRefreshing) return new Promise((res, rej) => failedQueue.push({ resolve: res, reject: rej })).then(t => { orig.headers.Authorization = `Bearer ${t}`; return instance(orig); });
     orig._retry = true; isRefreshing = true;
     try {
-      const stored = sessionStorage.getItem('auth-storage');
-      const { refreshToken } = JSON.parse(stored || '{}')?.state ?? {};
+      const stored = localStorage.getItem('auth-storage');
+      const { refreshToken, tenantSlug } = JSON.parse(stored || '{}')?.state ?? {};
       if (!refreshToken) { window.location.href = '/login'; return Promise.reject(err); }
-      const { data } = await axios.post(`${BASE_URL}/api/v1/auth/refresh`, { refreshToken });
-      const state = JSON.parse(sessionStorage.getItem('auth-storage') || '{}');
-      if (state.state) { state.state.accessToken = data.accessToken; state.state.refreshToken = data.refreshToken; sessionStorage.setItem('auth-storage', JSON.stringify(state)); }
+      const { data } = await axios.post(`${BASE_URL}/api/v1/auth/refresh`, { refreshToken }, {
+        headers: { ...(tenantSlug ? { 'X-Tenant-ID': tenantSlug } : {}) },
+      });
+      const state = JSON.parse(localStorage.getItem('auth-storage') || '{}');
+      if (state.state) { state.state.accessToken = data.accessToken; state.state.refreshToken = data.refreshToken; localStorage.setItem('auth-storage', JSON.stringify(state)); }
       processQueue(null, data.accessToken);
       orig.headers.Authorization = `Bearer ${data.accessToken}`;
       return instance(orig);

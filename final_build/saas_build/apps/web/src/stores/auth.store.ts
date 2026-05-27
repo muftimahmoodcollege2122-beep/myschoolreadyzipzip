@@ -35,7 +35,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
-      storage: createJSONStorage(() => typeof window !== 'undefined' ? sessionStorage : localStorage),
+      storage: createJSONStorage(() => typeof window !== 'undefined' ? localStorage : localStorage),
       partialize: s => ({ user: s.user, accessToken: s.accessToken, refreshToken: s.refreshToken, tenantSlug: s.tenantSlug, isAuthenticated: s.isAuthenticated }),
     },
   ),
