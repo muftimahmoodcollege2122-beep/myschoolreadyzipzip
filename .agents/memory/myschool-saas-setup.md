@@ -1,63 +1,47 @@
 ---
 name: MySchool SaaS Setup
-description: Key facts about the MySchool App setup in this Replit environment
+description: Full setup notes, bug history, and architecture for the MySchool NestJS+Next.js app running in Replit
 ---
 
-## Architecture
-- **API**: NestJS at `final_build/saas_build/apps/api` — runs on port 3001 via `node -r ts-node/register/transpile-only -r tsconfig-paths/register src/main.ts`
-- **Web**: Next.js 14 at `final_build/saas_build/apps/web` — runs on port 5000 via `npx next dev -p 5000`
-- **Startup**: `start.sh` — Redis → API (background) → Next.js (foreground, port 5000)
-- **Database**: Replit PostgreSQL via DATABASE_URL; Redis on port 6379
+## Stack
+- NestJS API: port 3001, started via `ts-node/register/transpile-only` + `tsconfig-paths/register`
+- Next.js frontend: port 5000
+- PostgreSQL (Replit DATABASE_URL), Redis (localhost:6379)
+- Kafka is wired but ECONNREFUSED — non-fatal, app runs without it
 
-## Key Fixes Applied
-- Run API with `--no-workspaces` npm installs (monorepo workspace conflict)
-- Added `PrismaService` to providers of: attendance, fees, auth, billing, tenants, reports, grades modules, and AppModule
-- Made `AuthModule` `@Global()` so `AuthService` is available for `JwtAuthGuard` in all modules
-- Added `JwtAuthGuard` as `APP_GUARD` in `AppModule` (global guard)
-- Added `CacheService` to `AppModule` providers (for `TenantContextMiddleware`)
-- Kafka: set `retries: 1`, `idempotent: false` in EventPublisher — Kafka is not available but app starts anyway
-- AWS SDK: installed `@aws-sdk/client-s3` and `@aws-sdk/s3-request-presigner` in the API
+## Start script
+`start.sh` → Redis daemon → API (background, logs: /tmp/api.log) → Next.js on port 5000
 
-## Auth Flow
-- `TenantContextMiddleware` bypasses `/api/v1/auth/*` routes
-- Login endpoint accepts `tenantSlug` in body (defaults to `'demo'`)
-- `AuthService.loginBySlug()` looks up tenant by slug, then returns tokens + `tenantSlug` + `user`
-- Frontend stores `tenantSlug` in session storage, sends as `X-Tenant-ID` header
-- Login/refresh routes decorated with `@Public()` to skip global `JwtAuthGuard`
+## Auth flow (fully fixed)
+- Login: POST /api/v1/auth/login with `{email, password, tenantSlug:"demo"}`
+- Frontend stores tokens in `localStorage` key `auth-storage` (Zustand persist format)
+- api-client.ts reads `localStorage` (was sessionStorage — caused redirect loop)
+- AuthGuard: `src/components/layout/auth-guard.tsx` — waits for Zustand hydration, then checks isAuthenticated
+- JwtAuthGuard: logs actual error on validation failure (not swallowed)
 
-## Demo Credentials
-- Tenant slug: `demo`
-- Email: `admin@demo.edu`
-- Password: `Admin@123456`
-- Tenant ID: `e980e87c-9b10-4bc0-a6ad-15c03b3f59a2`
+## Demo credentials
+- Admin:   admin@demo.edu / Admin@123456   (tenantSlug: demo)
+- Teacher: sarah.j@demo.edu / Teacher@123456
+- Student: emma.smith@student.demo.edu / Student@123456
 
-## JWT Config
-- `.env` at `final_build/saas_build/apps/api/.env`
-- `JWT_ACCESS_SECRET=dev-access-secret-change-in-production-min-32-chars`
-- `JWT_REFRESH_SECRET=dev-refresh-secret-change-in-production-min-32-chars`
+## Tenant
+- ID: e980e87c-9b10-4bc0-a6ad-15c03b3f59a2, slug: demo
+- School: Demo Academy (auto-resolved from tenantId when schoolId='default')
 
-## Health Endpoints
-- Need `@Public()` decorator — global JwtAuthGuard blocks them otherwise
-- Health controller at `final_build/saas_build/apps/api/src/common/health/`
+## School ID resolution (key fix)
+- Dashboard, students, teachers services all had `where: {schoolId}` with literal 'default' from frontend
+- Fixed: added `resolveSchoolId(tenantId, schoolId?)` in all 3 services
+  - If schoolId is valid UUID → use it; else → look up first active school for tenant
 
-## Schema Notes
-- Tenant has `tier` (not `plan`), no `email`, no `lastActiveAt`
-- Exam has `name`/`scheduledAt`/`passingMarks`/`subjectId`/`isPublished`
-- `studentParent` not `studentGuardian`; `feeInvoice` not `payment`
+## Seeded data (seed-demo.js)
+Run: `cd final_build/saas_build/apps/api && node seed-demo.js`
+- 25 students, 5 teachers, 10 sections (Grade 6-10, A+B each)
+- 250 attendance records (14 school days)
+- 75 fee invoices (3 months × 25 students, mix of PAID/PARTIAL/PENDING)
+- 40 grade records, 4 subjects
 
-**Why:** Many modules were missing `PrismaService` in their providers (code generation bug). The global `JwtAuthGuard` pattern requires modules using the guard in controllers to have `AuthService` available — solved by making `AuthModule` global rather than adding it to every module.
+## npm install quirks
+Always use: `npm install --no-workspaces --legacy-peer-deps` in subdirectories
 
-## Login → Redirect Back to Login Bug (Fixed)
-
-**Root cause chain:**
-1. First dashboard request fired before localStorage had tokens → no `X-Tenant-ID` → 401 "Tenant identifier required"
-2. The 401 interceptor tried to refresh using raw `axios.post` (bypasses the custom request interceptor) → no `X-Tenant-ID` header on the refresh call
-3. API `refresh` method checked `session.user.tenantId !== tenantId` where tenantId was `''` → ForbiddenException → caught by axios → `window.location.href = '/login'`
-4. `use-realtime.ts` referenced `token` instead of `accessToken` (the store property name)
-
-**Fixes applied:**
-- `api-client.ts`: refresh call now reads `tenantSlug` from localStorage and includes `X-Tenant-ID` header
-- `auth.service.ts` refresh: tenant check now skipped when `tenantId` is empty; uses `session.user.tenantId` as fallback in `generateTokenPair`
-- `auth.store.ts`: switched from `sessionStorage` to `localStorage` (avoids SSR hydration gaps)
-- Dashboard `layout.tsx`: added `AuthGuard` component — shows spinner until auth state confirmed, redirects to `/login` if unauthenticated
-- `use-realtime.ts`: fixed `token` → `accessToken`
+## Prisma client location
+`final_build/saas_build/apps/api/node_modules/@prisma/client`

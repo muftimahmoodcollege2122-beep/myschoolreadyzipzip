@@ -4,10 +4,18 @@ import { AuditService } from '../../common/audit/audit.service';
 import { PlanGuard } from '../../common/guards/plan.guard';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 @Injectable()
 export class TeachersService {
   private readonly logger = new Logger(TeachersService.name);
   constructor(private prisma: PrismaService, private audit: AuditService, private planGuard: PlanGuard) {}
+
+  private async resolveSchoolId(tenantId: string, schoolId?: string): Promise<string | undefined> {
+    if (schoolId && UUID_RE.test(schoolId)) return schoolId;
+    const school = await this.prisma.school.findFirst({ where: { tenantId, isActive: true }, select: { id: true } });
+    return school?.id;
+  }
 
   async create(dto: CreateTeacherDto, tenantId: string, schoolId: string, createdById: string) {
     await this.planGuard.assertTeacherLimit(tenantId);
@@ -22,13 +30,19 @@ export class TeachersService {
   }
 
   async findAll(tenantId: string, schoolId: string, page = 1, limit = 20, search?: string) {
-    const skip = (page - 1) * limit;
-    const where: any = { tenantId, schoolId, isActive: true, ...(search && { user: { profile: { OR: [{ firstName: { contains: search, mode: 'insensitive' } }, { lastName: { contains: search, mode: 'insensitive' } }] } } }) };
+    const resolvedSchoolId = await this.resolveSchoolId(tenantId, schoolId);
+    const skip = (Number(page) - 1) * Number(limit);
+    const where: any = {
+      tenantId,
+      ...(resolvedSchoolId && { schoolId: resolvedSchoolId }),
+      isActive: true,
+      ...(search && { user: { profile: { OR: [{ firstName: { contains: search, mode: 'insensitive' } }, { lastName: { contains: search, mode: 'insensitive' } }] } } }),
+    };
     const [data, total] = await Promise.all([
-      this.prisma.teacher.findMany({ where, include: { user: { include: { profile: true } }, department: true }, skip, take: limit, orderBy: { createdAt: 'desc' } }),
+      this.prisma.teacher.findMany({ where, include: { user: { include: { profile: true } }, department: true }, skip, take: Number(limit), orderBy: { createdAt: 'desc' } }),
       this.prisma.teacher.count({ where }),
     ]);
-    return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
+    return { data, meta: { total, page: Number(page), limit: Number(limit), totalPages: Math.ceil(total / Number(limit)) } };
   }
 
   async findOne(id: string, tenantId: string) {

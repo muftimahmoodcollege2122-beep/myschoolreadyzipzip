@@ -1,1 +1,1 @@
-- [MySchool SaaS Setup](myschool-saas-setup.md) — NestJS (port 3001) + Next.js (port 5000) monorepo extracted from zipFile.zip with many fixes needed to run.
+- [MySchool SaaS Setup](myschool-saas-setup.md) — full setup, auth fix, school ID resolution, demo seed, credentials

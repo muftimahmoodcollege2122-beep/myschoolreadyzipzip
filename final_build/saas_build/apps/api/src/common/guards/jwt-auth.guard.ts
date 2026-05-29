@@ -22,11 +22,15 @@ export class JwtAuthGuard implements CanActivate {
       (request as any).user = payload;
       const tenantId = (request as any).tenantContext?.tenantId;
       if (tenantId && payload.tid !== tenantId && payload.role !== 'SUPER_ADMIN') {
+        this.logger.warn(`Tenant mismatch: token.tid=${payload.tid} context.tenantId=${tenantId}`);
         throw new UnauthorizedException('Token tenant mismatch');
       }
       return true;
-    } catch (err) {
-      throw new UnauthorizedException('Invalid or expired token');
+    } catch (err: any) {
+      if (err?.status !== 401 && err?.status !== 403) {
+        this.logger.error(`Token validation error: ${err?.message ?? err}`);
+      }
+      throw new UnauthorizedException(err?.message ?? 'Invalid or expired token');
     }
   }
 

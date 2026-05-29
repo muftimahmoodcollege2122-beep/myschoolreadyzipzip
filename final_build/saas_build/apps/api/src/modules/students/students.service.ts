@@ -14,9 +14,17 @@ import { StudentListQueryDto } from './dto/student-list-query.dto';
 import { PaginatedResult } from '../../common/types/pagination.types';
 import { Prisma, Student } from '@prisma/client';
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 @Injectable()
 export class StudentsService {
   private readonly logger = new Logger(StudentsService.name);
+
+  private async resolveSchoolId(tenantId: string, schoolId?: string): Promise<string | undefined> {
+    if (schoolId && UUID_RE.test(schoolId)) return schoolId;
+    const school = await this.prisma.school.findFirst({ where: { tenantId, isActive: true }, select: { id: true } });
+    return school?.id;
+  }
 
   constructor(
     private readonly prisma: PrismaService,
@@ -126,12 +134,13 @@ export class StudentsService {
     schoolId: string,
     query: StudentListQueryDto,
   ): Promise<PaginatedResult<Student>> {
+    const resolvedSchoolId = await this.resolveSchoolId(tenantId, schoolId);
     const { page = 1, limit = 20, search, classId, sectionId, isActive } = query;
     const skip = (page - 1) * limit;
 
     const where: Prisma.StudentWhereInput = {
       tenantId,
-      schoolId,
+      ...(resolvedSchoolId && { schoolId: resolvedSchoolId }),
       ...(isActive !== undefined && { isActive }),
       ...(sectionId && {
         enrollments: {
