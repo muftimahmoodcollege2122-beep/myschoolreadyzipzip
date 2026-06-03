@@ -10,6 +10,9 @@ import { TenantContextMiddleware } from './common/middleware/tenant-context.midd
 
 import { AuthModule } from './modules/auth/auth.module';
 import { TenantsModule } from './modules/tenants/tenants.module';
+import { LibraryModule } from './modules/library/library.module';
+import { TransportModule } from './modules/transport/transport.module';
+import { SchoolDataModule } from './modules/school-data/school-data.module';
 import { StudentsModule } from './modules/students/students.module';
 import { TeachersModule } from './modules/teachers/teachers.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
@@ -69,6 +72,10 @@ import awsConfig from './config/aws.config';
     SearchModule,
     DashboardModule,
     ReportsModule,
+    // Enterprise modules
+    LibraryModule,
+    TransportModule,
+    SchoolDataModule,
     // Infrastructure
     RealtimeModule,
     HealthModule,
