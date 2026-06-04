@@ -220,6 +220,7 @@ model School {
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
 
   tenant       Tenant   @relation(fields: [tenantId], references: [id])
   classes      Class[]
@@ -255,6 +256,7 @@ model User {
   preferences     Json      @default("{}")
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
 
   tenant          Tenant    @relation(fields: [tenantId], references: [id])
   profile         UserProfile?
@@ -395,6 +397,7 @@ model Student {
   graduatedAt    DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
 
   user           User     @relation(fields: [userId], references: [id])
   enrollments    StudentEnrollment[]
@@ -481,6 +484,7 @@ model Teacher {
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
 
   user            User       @relation(fields: [userId], references: [id])
   department      Department? @relation(fields: [departmentId], references: [id])
@@ -509,6 +513,7 @@ model Staff {
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
 
   user         User     @relation(fields: [userId], references: [id])
   leaveRequests LeaveRequest[]

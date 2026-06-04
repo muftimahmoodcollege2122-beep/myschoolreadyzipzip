@@ -1,7 +1,7 @@
 import { Controller, Post, Get, Body, UseGuards, Req, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { LoginDto, RefreshTokenDto, LogoutDto } from './dto/login.dto';
+import { LoginDto, RefreshTokenDto, LogoutDto, RegisterDto } from './dto/login.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { TenantId, Public } from '../../common/decorators/tenant-id.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -34,6 +34,13 @@ export class AuthController {
   @ApiOperation({ summary: 'Logout and revoke session' })
   logout(@Body() dto: LogoutDto, @CurrentUser() user: any, @TenantId() tid: string) {
     return this.svc.logout(user.sub, dto.refreshToken, tid);
+  }
+
+  @Post('register') @HttpCode(HttpStatus.CREATED)
+  @Public()
+  @ApiOperation({ summary: 'Self-service school registration — creates tenant + admin user' })
+  register(@Body() dto: RegisterDto) {
+    return this.svc.register(dto);
   }
 
   @Get('me') @UseGuards(JwtAuthGuard) @ApiBearerAuth()

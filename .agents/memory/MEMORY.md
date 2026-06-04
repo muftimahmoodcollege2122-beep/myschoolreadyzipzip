@@ -2,3 +2,4 @@
 - [MySchool Tenant Auth](myschool-tenant-auth.md) — x-tenant-id header must be the slug (e.g. "demo"), NOT the UUID; middleware does findUnique by slug
 - [MySchool Schema Quirks](myschool-schema-quirks.md) — Announcement uses body+createdById (not content/authorId); BookIssue has no user relation; Section._count.students refers to StudentEnrollment[]
 - [MySchool Module Stack](myschool-module-stack.md) — API port 3001, Next.js port 5000, Redis local; Kafka ECONNREFUSED is non-fatal; JWT tokens are redacted in Replit shell but work correctly in browser
+- [MySchool Startup Quirks](myschool-startup-quirks.md) — Prisma must be generated before API starts; schema has soft-delete middleware needing deletedAt on User/School/Student/Teacher/Staff

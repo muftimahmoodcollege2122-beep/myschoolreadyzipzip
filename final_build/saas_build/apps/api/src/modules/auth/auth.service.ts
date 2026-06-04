@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ForbiddenException, BadRequestException, ConflictException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../database/prisma.service';
@@ -6,7 +6,7 @@ import { CacheService } from '../../common/cache/cache.service';
 import { AuditService } from '../../common/audit/audit.service';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
-import { LoginDto, RefreshTokenDto } from './dto/login.dto';
+import { LoginDto, RefreshTokenDto, RegisterDto } from './dto/login.dto';
 
 export interface TokenPair {
   accessToken: string;
@@ -169,6 +169,80 @@ export class AuthService {
     if (user.failedLoginCount >= this.MAX_FAILED_ATTEMPTS) {
       await this.prisma.user.update({ where: { id: userId }, data: { lockedUntil: new Date(Date.now() + this.LOCKOUT_DURATION * 1000) } });
     }
+  }
+
+  async register(dto: RegisterDto): Promise<any> {
+    const rawSlug = (dto.domain || dto.schoolName)
+      .toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').slice(0, 40);
+    const slug = rawSlug || 'school';
+
+    const existing = await this.prisma.tenant.findUnique({ where: { slug } });
+    if (existing) throw new ConflictException('A school with this name or domain already exists. Please choose a different domain.');
+
+    const emailExists = await this.prisma.user.findFirst({ where: { email: dto.email } });
+    if (emailExists) throw new ConflictException('An account with this email already exists.');
+
+    const nameParts = dto.principalName.trim().split(/\s+/);
+    const firstName = nameParts[0] || 'Admin';
+    const lastName = nameParts.slice(1).join(' ') || nameParts[0];
+
+    const suffix = Math.floor(100 + Math.random() * 900);
+    const tempPassword = `Welcome@${new Date().getFullYear()}${suffix}`;
+    const passwordHash = await bcrypt.hash(tempPassword, this.BCRYPT_ROUNDS);
+
+    const tenantId = crypto.randomUUID();
+    const schemaName = `tenant_${slug.replace(/-/g, '_')}`;
+    const currentYear = new Date().getFullYear();
+    const academicYear = `${currentYear}-${currentYear + 1}`;
+
+    const planLimitsMap: Record<string, any> = {
+      Starter:      { maxStudents: 500,       maxTeachers: 50,  smsEnabled: false, storageGb: 5 },
+      Professional: { maxStudents: 2000,      maxTeachers: 200, smsEnabled: true,  storageGb: 25 },
+      Enterprise:   { maxStudents: 999999,    maxTeachers: 9999, smsEnabled: true, storageGb: 1000 },
+    };
+    const planLimits = planLimitsMap[dto.plan || 'Professional'] || planLimitsMap['Professional'];
+
+    await this.prisma.$transaction(async tx => {
+      await tx.tenant.create({
+        data: {
+          id: tenantId, name: dto.schoolName, slug,
+          tier: 'STARTER' as any, status: 'TRIAL' as any, schemaName,
+          dataRegion: 'ap-south-1',
+          trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          planLimits, settings: { timezone: 'Asia/Karachi', locale: 'en', currency: 'PKR', academicYear },
+        },
+      });
+
+      await tx.school.create({
+        data: {
+          tenantId, name: dto.schoolName, code: slug.slice(0, 10).toUpperCase(),
+          address: { country: dto.country || 'Pakistan' },
+          phone: dto.phone, email: dto.email,
+          timezone: 'Asia/Karachi', locale: 'en', academicYear,
+        },
+      });
+
+      await tx.user.create({
+        data: {
+          tenantId, email: dto.email, passwordHash, role: 'SCHOOL_ADMIN' as any, emailVerified: false,
+          profile: { create: { firstName, lastName, phone: dto.phone } },
+        },
+      });
+    });
+
+    this.logger.log(`New school registered: ${slug} (${dto.email})`);
+
+    return {
+      success: true,
+      slug,
+      schoolName: dto.schoolName,
+      adminEmail: dto.email,
+      tempPassword,
+      loginUrl: '/login',
+      dashboardUrl: `/dashboard`,
+      websiteUrl: `${slug}.myschool.pk`,
+      trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    };
   }
 
   private hashToken(token: string): string {

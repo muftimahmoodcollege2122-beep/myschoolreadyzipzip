@@ -9,8 +9,12 @@ $REDIS_SERVER --daemonize yes --logfile /tmp/redis.log --port 6379
 sleep 1
 echo "==> Redis started"
 
-echo "==> Starting NestJS API on port 3001 (background)..."
+echo "==> Generating Prisma Client..."
 cd "$SAAS_DIR/apps/api"
+node_modules/.bin/prisma generate 2>&1 | tail -3
+echo "==> Prisma client ready"
+
+echo "==> Starting NestJS API on port 3001 (background)..."
 node \
   -r ts-node/register/transpile-only \
   -r tsconfig-paths/register \
