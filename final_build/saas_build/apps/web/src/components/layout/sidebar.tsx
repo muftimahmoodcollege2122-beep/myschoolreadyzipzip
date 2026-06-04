@@ -11,74 +11,88 @@ const sections: NavSection[] = [
   {
     title: 'Overview',
     items: [
-      { href: '/dashboard',        icon: '📊', label: 'Dashboard',        roles: ['SCHOOL_ADMIN','TEACHER','SUPER_ADMIN','STUDENT','PARENT'] },
-      { href: '/analytics',        icon: '📈', label: 'Analytics',        roles: ['SCHOOL_ADMIN','SUPER_ADMIN'] },
+      { href: '/dashboard',        icon: '📊', label: 'Dashboard',         roles: ['SCHOOL_ADMIN','TEACHER','SUPER_ADMIN','STUDENT','PARENT'] },
+      { href: '/analytics',        icon: '📈', label: 'Analytics',         roles: ['SCHOOL_ADMIN','SUPER_ADMIN'] },
     ],
   },
   {
     title: 'Academic',
     items: [
-      { href: '/students',         icon: '👩‍🎓', label: 'Students',         roles: ['SCHOOL_ADMIN','TEACHER'] },
-      { href: '/teachers',         icon: '👨‍🏫', label: 'Teachers',         roles: ['SCHOOL_ADMIN'] },
-      { href: '/classes',          icon: '🏫', label: 'Classes',          roles: ['SCHOOL_ADMIN','TEACHER'] },
-      { href: '/subjects',         icon: '📚', label: 'Subjects',         roles: ['SCHOOL_ADMIN','TEACHER'] },
-      { href: '/timetable',        icon: '🗓️', label: 'Timetable',        roles: ['SCHOOL_ADMIN','TEACHER','STUDENT'] },
-      { href: '/attendance',       icon: '✅', label: 'Attendance',       roles: ['SCHOOL_ADMIN','TEACHER'] },
-      { href: '/grades',           icon: '🎯', label: 'Grades',           roles: ['SCHOOL_ADMIN','TEACHER'] },
-      { href: '/exams',            icon: '📝', label: 'Exams',            roles: ['SCHOOL_ADMIN','TEACHER'] },
+      { href: '/students',         icon: '👩‍🎓', label: 'Students',          roles: ['SCHOOL_ADMIN','TEACHER'] },
+      { href: '/teachers',         icon: '👨‍🏫', label: 'Teachers',          roles: ['SCHOOL_ADMIN'] },
+      { href: '/classes',          icon: '🏫', label: 'Classes',           roles: ['SCHOOL_ADMIN','TEACHER'] },
+      { href: '/subjects',         icon: '📚', label: 'Subjects',          roles: ['SCHOOL_ADMIN','TEACHER'] },
+      { href: '/timetable',        icon: '🗓️', label: 'Timetable',         roles: ['SCHOOL_ADMIN','TEACHER','STUDENT'] },
+      { href: '/attendance',       icon: '✅', label: 'Attendance',        roles: ['SCHOOL_ADMIN','TEACHER'] },
+      { href: '/grades',           icon: '🎯', label: 'Grades',            roles: ['SCHOOL_ADMIN','TEACHER'] },
+      { href: '/exams',            icon: '📝', label: 'Exams',             roles: ['SCHOOL_ADMIN','TEACHER'] },
     ],
   },
   {
     title: 'Learning',
     items: [
-      { href: '/lms',              icon: '🎓', label: 'LMS',              roles: ['SCHOOL_ADMIN','TEACHER','STUDENT'] },
+      { href: '/lms',              icon: '🎓', label: 'LMS',               roles: ['SCHOOL_ADMIN','TEACHER','STUDENT'] },
+      { href: '/library',          icon: '📖', label: 'Library',           roles: ['SCHOOL_ADMIN','TEACHER','STUDENT'] },
     ],
   },
   {
     title: 'Admissions & HR',
     items: [
-      { href: '/admissions',       icon: '📋', label: 'Admissions CRM',   roles: ['SCHOOL_ADMIN'] },
-      { href: '/staff',            icon: '👥', label: 'Staff',            roles: ['SCHOOL_ADMIN'] },
-      { href: '/hrm',              icon: '🏢', label: 'HR Management',    roles: ['SCHOOL_ADMIN'] },
+      { href: '/admissions',       icon: '📋', label: 'Admissions CRM',    roles: ['SCHOOL_ADMIN'] },
+      { href: '/staff',            icon: '👥', label: 'Staff',             roles: ['SCHOOL_ADMIN'] },
+      { href: '/hrm',              icon: '🏢', label: 'HR & Payroll',      roles: ['SCHOOL_ADMIN'] },
     ],
   },
   {
     title: 'Finance',
     items: [
-      { href: '/fees',             icon: '💰', label: 'Fees',             roles: ['SCHOOL_ADMIN','ACCOUNTANT'] },
-      { href: '/reports',          icon: '📄', label: 'Reports',          roles: ['SCHOOL_ADMIN'] },
+      { href: '/fees',             icon: '💰', label: 'Fees',              roles: ['SCHOOL_ADMIN','ACCOUNTANT'] },
+      { href: '/reports',          icon: '📄', label: 'Reports',           roles: ['SCHOOL_ADMIN'] },
     ],
   },
   {
     title: 'Resources',
     items: [
-      { href: '/library',          icon: '📖', label: 'Library',          roles: ['SCHOOL_ADMIN','TEACHER','STUDENT'] },
-      { href: '/transport',        icon: '🚌', label: 'Transport',        roles: ['SCHOOL_ADMIN','TEACHER','STUDENT','PARENT'] },
-      { href: '/inventory',        icon: '📦', label: 'Inventory',        roles: ['SCHOOL_ADMIN'] },
-      { href: '/hostel',           icon: '🏠', label: 'Hostel',           roles: ['SCHOOL_ADMIN'] },
-      { href: '/events',           icon: '🎉', label: 'Events',           roles: ['SCHOOL_ADMIN','TEACHER','STUDENT','PARENT'] },
+      { href: '/transport',        icon: '🚌', label: 'Transport',         roles: ['SCHOOL_ADMIN','TEACHER','STUDENT','PARENT'] },
+      { href: '/inventory',        icon: '📦', label: 'Inventory',         roles: ['SCHOOL_ADMIN'] },
+      { href: '/hostel',           icon: '🏠', label: 'Hostel',            roles: ['SCHOOL_ADMIN'] },
+      { href: '/events',           icon: '🎉', label: 'Events',            roles: ['SCHOOL_ADMIN','TEACHER','STUDENT','PARENT'] },
     ],
   },
   {
     title: 'Portals',
     items: [
-      { href: '/teacher-portal',   icon: '👨‍🏫', label: 'Teacher Portal',  roles: ['TEACHER','SCHOOL_ADMIN'] },
-      { href: '/student-portal',   icon: '👩‍🎓', label: 'Student Portal',  roles: ['STUDENT','SCHOOL_ADMIN'] },
-      { href: '/parent-portal',    icon: '👨‍👩‍👧', label: 'Parent Portal',   roles: ['PARENT','SCHOOL_ADMIN'] },
+      { href: '/teacher-portal',   icon: '👨‍🏫', label: 'Teacher Portal',   roles: ['TEACHER','SCHOOL_ADMIN'] },
+      { href: '/student-portal',   icon: '👩‍🎓', label: 'Student Portal',   roles: ['STUDENT','SCHOOL_ADMIN'] },
+      { href: '/parent-portal',    icon: '👨‍👩‍👧', label: 'Parent Portal',    roles: ['PARENT','SCHOOL_ADMIN'] },
+      { href: '/alumni',           icon: '🎓', label: 'Alumni Portal',     roles: ['SCHOOL_ADMIN'] },
+    ],
+  },
+  {
+    title: 'Communication',
+    items: [
+      { href: '/communications',   icon: '💬', label: 'Communications',    roles: ['SCHOOL_ADMIN','TEACHER'] },
+      { href: '/notifications',    icon: '🔔', label: 'Notifications',     roles: ['SCHOOL_ADMIN','TEACHER','STUDENT','PARENT'] },
+    ],
+  },
+  {
+    title: 'Research',
+    items: [
+      { href: '/research',         icon: '🔬', label: 'Research',          roles: ['SCHOOL_ADMIN','TEACHER'] },
     ],
   },
   {
     title: 'Tools',
     items: [
-      { href: '/website-builder',  icon: '🌐', label: 'Website Builder',  roles: ['SCHOOL_ADMIN'] },
-      { href: '/ai',               icon: '🤖', label: 'AI Assistant',     roles: ['SCHOOL_ADMIN','TEACHER'] },
+      { href: '/website-builder',  icon: '🌐', label: 'Website Builder',   roles: ['SCHOOL_ADMIN'] },
+      { href: '/ai',               icon: '🤖', label: 'AI Assistant',      roles: ['SCHOOL_ADMIN','TEACHER'] },
     ],
   },
   {
     title: 'System',
     items: [
-      { href: '/notifications',    icon: '🔔', label: 'Notifications',    roles: ['SCHOOL_ADMIN','TEACHER','STUDENT','PARENT'] },
-      { href: '/settings',         icon: '⚙️', label: 'Settings',         roles: ['SCHOOL_ADMIN'] },
+      { href: '/security',         icon: '🛡️', label: 'Security',          roles: ['SCHOOL_ADMIN'] },
+      { href: '/settings',         icon: '⚙️', label: 'Settings',          roles: ['SCHOOL_ADMIN'] },
     ],
   },
 ];
@@ -102,8 +116,14 @@ export function Sidebar() {
             <p className="text-white/30 text-[10px] uppercase tracking-wide">School Portal</p>
           </div>
         )}
-        <button onClick={() => setCollapsed(!collapsed)} className="text-white/30 hover:text-white/70 transition-colors flex-shrink-0">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={collapsed ? "M9 5l7 7-7 7" : "M15 19l-7-7 7-7"} /></svg>
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="text-white/30 hover:text-white/70 transition-colors flex-shrink-0"
+          title={collapsed ? 'Expand' : 'Collapse'}
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={collapsed ? 'M9 5l7 7-7 7' : 'M15 19l-7-7 7-7'} />
+          </svg>
         </button>
       </div>
 
@@ -114,7 +134,11 @@ export function Sidebar() {
           if (!visible.length) return null;
           return (
             <div key={section.title} className="mb-1">
-              {!collapsed && <p className="px-4 py-1.5 text-[10px] font-bold text-white/25 uppercase tracking-wider">{section.title}</p>}
+              {!collapsed && (
+                <p className="px-4 py-1.5 text-[10px] font-bold text-white/25 uppercase tracking-wider">
+                  {section.title}
+                </p>
+              )}
               {visible.map(item => {
                 const active = isActive(item.href);
                 return (
@@ -122,11 +146,26 @@ export function Sidebar() {
                     key={item.href}
                     href={item.href}
                     title={collapsed ? item.label : undefined}
-                    className={`flex items-center gap-3 mx-2 px-3 py-2 rounded-lg mb-0.5 text-sm font-medium transition-all group ${active ? 'bg-blue-600/30 text-white' : 'text-white/50 hover:text-white/90 hover:bg-white/5'}`}
+                    className={`flex items-center gap-3 mx-2 px-3 py-2 rounded-lg mb-0.5 text-sm font-medium transition-all group relative ${
+                      active
+                        ? 'bg-blue-600/30 text-white'
+                        : 'text-white/50 hover:text-white/90 hover:bg-white/5'
+                    }`}
                   >
-                    <span className="text-base flex-shrink-0">{item.icon}</span>
+                    <span className="text-base flex-shrink-0 leading-none">{item.icon}</span>
                     {!collapsed && <span className="truncate">{item.label}</span>}
-                    {active && !collapsed && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0" />}
+                    {active && !collapsed && (
+                      <span className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+                    )}
+                    {active && collapsed && (
+                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-blue-500 rounded-r-full" />
+                    )}
+                    {/* Tooltip on collapse */}
+                    {collapsed && (
+                      <div className="absolute left-full ml-3 px-2 py-1 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-opacity z-50">
+                        {item.label}
+                      </div>
+                    )}
                   </Link>
                 );
               })}
@@ -135,16 +174,21 @@ export function Sidebar() {
         })}
 
         {/* Super Admin Link */}
-        {!collapsed && user?.role === 'SUPER_ADMIN' && (
+        {user?.role === 'SUPER_ADMIN' && (
           <div className="mx-2 mt-2 mb-1">
-            <Link href="/super-admin" className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-yellow-400/80 hover:text-yellow-400 hover:bg-yellow-400/10 transition-all">
-              <span>👑</span><span>Super Admin Panel</span>
+            <Link
+              href="/super-admin"
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-yellow-400/80 hover:text-yellow-400 hover:bg-yellow-400/10 transition-all ${collapsed ? 'justify-center' : ''}`}
+              title={collapsed ? 'Super Admin Panel' : undefined}
+            >
+              <span>👑</span>
+              {!collapsed && <span>Super Admin Panel</span>}
             </Link>
           </div>
         )}
       </nav>
 
-      {/* User */}
+      {/* User Footer */}
       <div className="p-2 border-t border-white/10 flex-shrink-0">
         <div className={`flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 cursor-pointer ${collapsed ? 'justify-center' : ''}`}>
           <div className="w-8 h-8 rounded-lg bg-blue-600/40 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
@@ -152,7 +196,9 @@ export function Sidebar() {
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-white text-xs font-semibold truncate">{user?.profile?.firstName ?? user?.email}</p>
+              <p className="text-white text-xs font-semibold truncate">
+                {user?.profile?.firstName ? `${user.profile.firstName} ${user.profile.lastName ?? ''}`.trim() : user?.email}
+              </p>
               <p className="text-white/30 text-[10px]">{user?.role}</p>
             </div>
           )}
