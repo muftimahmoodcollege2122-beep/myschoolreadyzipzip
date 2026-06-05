@@ -56,7 +56,7 @@ function LoginForm() {
 
       if (data.tenantSlug) setTenantSlug(data.tenantSlug);
       setAuth(data.user, data.accessToken, data.refreshToken);
-      router.push('/dashboard');
+      window.location.href = '/dashboard';
 
     } catch {
       setError('Connection error — please check your internet and try again.');
