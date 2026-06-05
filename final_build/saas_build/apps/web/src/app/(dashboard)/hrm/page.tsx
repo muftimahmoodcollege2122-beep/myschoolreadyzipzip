@@ -43,7 +43,7 @@ export default function HRMPage() {
         {/* KPI */}
         <div className="grid grid-cols-4 gap-4 mb-6">
           {[
-            { label:'Total Employees', value: (staffData as any)?.meta?.total ?? staff.length || 24, icon:'👥', bg:'from-blue-500 to-blue-600' },
+            { label:'Total Employees', value: ((staffData as any)?.meta?.total ?? staff.length) || 24, icon:'👥', bg:'from-blue-500 to-blue-600' },
             { label:'On Leave Today', value: LEAVES.filter(l=>l.status==='APPROVED').length, icon:'🏖️', bg:'from-yellow-500 to-orange-500' },
             { label:'Monthly Payroll', value:`Rs. ${(totalPayroll/1000).toFixed(0)}K`, icon:'💰', bg:'from-green-500 to-green-600' },
             { label:'Pending Leaves', value: LEAVES.filter(l=>l.status==='PENDING').length, icon:'📋', bg:'from-purple-500 to-purple-600' },

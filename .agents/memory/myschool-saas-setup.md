@@ -45,3 +45,14 @@ Always use: `npm install --no-workspaces --legacy-peer-deps` in subdirectories
 
 ## Prisma client location
 `final_build/saas_build/apps/api/node_modules/@prisma/client`
+
+## TypeScript issues fixed (June 2026)
+- `analytics/page.tsx`: incomplete ternary `?? totalTeachers ? value` → add `: 'N/A'`
+- `hrm/page.tsx`: mixed `??` and `||` without parens → wrap in parens
+- `dashboard-stats.tsx`: rewrote to remove missing lucide-react / @/components/ui/card / @/lib/utils
+
+## Deployment readiness
+- `start.sh` auto-seeds demo tenant inline; checks `NODE_ENV=production` for `next build && next start`
+- `ENOWORKSPACES` npm error on startup is harmless (Replit IDE TypeScript installs types)
+- Login page: split layout at `(auth)/login/page.tsx`; pre-fills from `?slug=&email=&firstLogin=true`
+- Signup redirects to `/login?slug=X&email=Y&firstLogin=true` after 10-second countdown

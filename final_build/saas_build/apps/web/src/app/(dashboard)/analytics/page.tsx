@@ -90,7 +90,7 @@ export default function AnalyticsPage() {
     { label: "Today's Attendance", value: `${attendanceRate}%`, change: attendanceRate >= 85 ? '✅ Good' : '⚠ Low', icon: '✅', color: 'bg-green-50 text-green-700' },
     { label: 'Fee Collection Rate', value: `${collectionRate}%`, change: collectionRate >= 80 ? '✅ On track' : '⚠ Below target', icon: '💰', color: 'bg-yellow-50 text-yellow-700' },
     { label: 'Total Classes', value: classList.length, change: `${classList.reduce((s:number,c:any)=>s+(c.sections?.length??0),0)} sections`, icon: '🏫', color: 'bg-indigo-50 text-indigo-700' },
-    { label: 'Student:Teacher Ratio', value: totalTeachers ? `${Math.round(totalStudents/totalTeachers)}:1`, change: 'per teacher', icon: '📊', color: 'bg-orange-50 text-orange-700' },
+    { label: 'Student:Teacher Ratio', value: totalTeachers ? `${Math.round(totalStudents/totalTeachers)}:1` : 'N/A', change: 'per teacher', icon: '📊', color: 'bg-orange-50 text-orange-700' },
   ];
 
   return (
