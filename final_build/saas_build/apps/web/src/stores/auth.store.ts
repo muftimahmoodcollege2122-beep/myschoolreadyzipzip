@@ -20,9 +20,20 @@ interface AuthState {
   clearAuth: () => void;
 }
 
+const ssrSafeStorage = () => {
+  if (typeof window === 'undefined') {
+    return {
+      getItem: (_key: string) => null,
+      setItem: (_key: string, _value: string) => {},
+      removeItem: (_key: string) => {},
+    };
+  }
+  return localStorage;
+};
+
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       user: null, accessToken: null, refreshToken: null, tenantSlug: null, isAuthenticated: false,
 
       setAuth: (user, accessToken, refreshToken) =>
@@ -35,8 +46,14 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
-      storage: createJSONStorage(() => typeof window !== 'undefined' ? localStorage : localStorage),
-      partialize: s => ({ user: s.user, accessToken: s.accessToken, refreshToken: s.refreshToken, tenantSlug: s.tenantSlug, isAuthenticated: s.isAuthenticated }),
+      storage: createJSONStorage(ssrSafeStorage),
+      partialize: s => ({
+        user: s.user,
+        accessToken: s.accessToken,
+        refreshToken: s.refreshToken,
+        tenantSlug: s.tenantSlug,
+        isAuthenticated: s.isAuthenticated,
+      }),
     },
   ),
 );
