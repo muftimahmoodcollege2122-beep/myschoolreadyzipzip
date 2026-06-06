@@ -7,9 +7,19 @@ WEB_DIR="$SAAS_DIR/apps/web"
 
 echo "==> Starting Redis..."
 REDIS_SERVER=$(nix-shell -p redis --run "which redis-server" 2>/dev/null)
-$REDIS_SERVER --daemonize yes --logfile /tmp/redis.log --port 6379
+$REDIS_SERVER --daemonize yes --logfile /tmp/redis.log --port 6379 || true
 sleep 1
 echo "==> Redis started"
+
+echo "==> Installing web dependencies (if needed)..."
+cd "$WEB_DIR"
+if [ ! -f "node_modules/.bin/next" ]; then
+  echo "   Running pnpm install..."
+  pnpm install --no-frozen-lockfile 2>&1 | tail -5
+  echo "   Web dependencies installed"
+else
+  echo "   Web dependencies already installed"
+fi
 
 echo "==> Generating Prisma Client..."
 cd "$API_DIR"
@@ -17,7 +27,7 @@ node_modules/.bin/prisma generate 2>&1 | grep -v "^$" | grep -v "Update availabl
 echo "==> Prisma client ready"
 
 echo "==> Pushing database schema..."
-node_modules/.bin/prisma db push --skip-generate 2>&1 | grep -E "✔|Error|error" | head -3
+node_modules/.bin/prisma db push --skip-generate 2>&1 | grep -E "✔|🚀|Error|error|already" | head -3
 echo "==> Database schema synced"
 
 echo "==> Seeding demo tenant (if needed)..."
@@ -55,7 +65,6 @@ echo "API started in background (PID: $API_PID, logs: /tmp/api.log)"
 
 echo "==> Starting Next.js web on port 5000..."
 cd "$WEB_DIR"
-
 if [ "$NODE_ENV" = "production" ]; then
   echo "   Building for production..."
   ./node_modules/.bin/next build 2>&1 | tail -5

@@ -43,6 +43,8 @@ const sections: NavSection[] = [
       { href: '/admissions',       icon: '📝', label: 'Admissions CRM',    roles: ['SCHOOL_ADMIN'] },
       { href: '/staff',            icon: '👥', label: 'Staff',             roles: ['SCHOOL_ADMIN'] },
       { href: '/hrm',              icon: '🏢', label: 'HR & Payroll',      roles: ['SCHOOL_ADMIN'] },
+      { href: '/payroll',          icon: '💵', label: 'Payroll',           roles: ['SCHOOL_ADMIN'] },
+      { href: '/duty-roster',      icon: '📋', label: 'Duty Roster',       roles: ['SCHOOL_ADMIN'] },
     ],
   },
   {
@@ -55,12 +57,39 @@ const sections: NavSection[] = [
     ],
   },
   {
+    title: 'Students & Parents',
+    items: [
+      { href: '/parents',          icon: '👨‍👩‍👧', label: 'Parents',           roles: ['SCHOOL_ADMIN'] },
+      { href: '/conduct',          icon: '⚖️', label: 'Conduct & Discipline', roles: ['SCHOOL_ADMIN','TEACHER'] },
+      { href: '/medical',          icon: '🏥', label: 'Medical Records',   roles: ['SCHOOL_ADMIN'] },
+      { href: '/certificates',     icon: '📜', label: 'Certificates',      roles: ['SCHOOL_ADMIN'] },
+      { href: '/id-cards',         icon: '🪪', label: 'ID Cards',          roles: ['SCHOOL_ADMIN'] },
+    ],
+  },
+  {
     title: 'Resources',
     items: [
       { href: '/transport',        icon: '🚌', label: 'Transport',         roles: ['SCHOOL_ADMIN','TEACHER','STUDENT','PARENT'] },
       { href: '/inventory',        icon: '📦', label: 'Inventory',         roles: ['SCHOOL_ADMIN'] },
       { href: '/hostel',           icon: '🏠', label: 'Hostel',            roles: ['SCHOOL_ADMIN'] },
+      { href: '/canteen',          icon: '🍽️', label: 'Canteen & Store',   roles: ['SCHOOL_ADMIN'] },
       { href: '/events',           icon: '🎉', label: 'Events',            roles: ['SCHOOL_ADMIN','TEACHER','STUDENT','PARENT'] },
+      { href: '/academic-calendar',icon: '📅', label: 'Academic Calendar', roles: ['SCHOOL_ADMIN','TEACHER','STUDENT','PARENT'] },
+    ],
+  },
+  {
+    title: 'Co-curricular',
+    items: [
+      { href: '/sports',           icon: '⚽', label: 'Sports',            roles: ['SCHOOL_ADMIN','TEACHER'] },
+      { href: '/clubs',            icon: '🏛️', label: 'Clubs & Societies', roles: ['SCHOOL_ADMIN','TEACHER'] },
+    ],
+  },
+  {
+    title: 'Academic Tools',
+    items: [
+      { href: '/gradebook',        icon: '📊', label: 'Gradebook',         roles: ['SCHOOL_ADMIN','TEACHER'] },
+      { href: '/announcements',    icon: '📢', label: 'Announcements',     roles: ['SCHOOL_ADMIN','TEACHER'] },
+      { href: '/vehicle-tracking', icon: '🗺️', label: 'Vehicle Tracking',  roles: ['SCHOOL_ADMIN'] },
     ],
   },
   {
@@ -76,6 +105,7 @@ const sections: NavSection[] = [
     title: 'Communication',
     items: [
       { href: '/communications',   icon: '💬', label: 'Communications',    roles: ['SCHOOL_ADMIN','TEACHER'] },
+      { href: '/notices',          icon: '📢', label: 'Notices & Circulars', roles: ['SCHOOL_ADMIN','TEACHER'] },
       { href: '/notifications',    icon: '🔔', label: 'Notifications',     roles: ['SCHOOL_ADMIN','TEACHER','STUDENT','PARENT'] },
     ],
   },
@@ -84,6 +114,7 @@ const sections: NavSection[] = [
     items: [
       { href: '/blog',             icon: '📰', label: 'Blog & News',       roles: ['SCHOOL_ADMIN'] },
       { href: '/gallery',          icon: '🖼️', label: 'Photo Gallery',     roles: ['SCHOOL_ADMIN','TEACHER'] },
+      { href: '/documents',        icon: '📁', label: 'Documents',         roles: ['SCHOOL_ADMIN','TEACHER'] },
       { href: '/website-builder',  icon: '🌐', label: 'Website Builder',   roles: ['SCHOOL_ADMIN'] },
     ],
   },

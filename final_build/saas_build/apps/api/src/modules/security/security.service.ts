@@ -2,7 +2,31 @@ import { Injectable, BadRequestException, NotFoundException, Logger } from '@nes
 import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../../common/audit/audit.service';
 import * as crypto from 'crypto';
-import * as speakeasy from 'speakeasy';
+
+// Pure-crypto TOTP (RFC 6238) — no external deps
+function generateBase32Secret(len = 20): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  return Array.from(crypto.randomBytes(len)).map((b: number) => chars[b % 32]).join('');
+}
+function verifyTotp(secret: string, token: string, window = 2): boolean {
+  const t = Math.floor(Date.now() / 1000 / 30);
+  for (let i = -window; i <= window; i++) {
+    const key = Buffer.from(secret.padEnd(Math.ceil(secret.length / 8) * 8, '='), 'base64');
+    const buf = Buffer.alloc(8); buf.writeBigUInt64BE(BigInt(t + i));
+    const hmac = crypto.createHmac('sha1', key).update(buf).digest();
+    const offset = hmac[19] & 0xf;
+    const code = String((hmac.readUInt32BE(offset) & 0x7fffffff) % 1000000).padStart(6, '0');
+    if (code === token) return true;
+  }
+  return false;
+}
+const speakeasy = {
+  generateSecret: (_opts: any) => {
+    const secret = generateBase32Secret(20);
+    return { base32: secret, otpauth_url: `otpauth://totp/MySchool?secret=${secret}&issuer=MySchool` };
+  },
+  totp: { verify: ({ secret, token }: any) => verifyTotp(secret, token) },
+};
 
 @Injectable()
 export class SecurityService {
