@@ -10,17 +10,22 @@ const instance: AxiosInstance = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-instance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  if (typeof window === 'undefined') return config;
+function getAuthFromStorage() {
+  if (typeof window === 'undefined') return {};
   try {
     const stored = localStorage.getItem('auth-storage');
-    if (stored) {
-      const state = JSON.parse(stored);
-      const { accessToken, tenantSlug } = state?.state ?? {};
-      if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
-      if (tenantSlug) config.headers['X-Tenant-ID'] = tenantSlug;
-    }
-  } catch {}
+    if (!stored) return {};
+    return JSON.parse(stored)?.state ?? {};
+  } catch {
+    return {};
+  }
+}
+
+instance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  if (typeof window === 'undefined') return config;
+  const { accessToken, tenantSlug } = getAuthFromStorage();
+  if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
+  if (tenantSlug) config.headers['X-Tenant-ID'] = tenantSlug;
   if (typeof crypto !== 'undefined') config.headers['X-Correlation-ID'] = crypto.randomUUID();
   return config;
 }, err => Promise.reject(err));
@@ -34,24 +39,52 @@ const processQueue = (err: unknown, token: string | null = null) => {
 
 instance.interceptors.response.use(r => r, async (err: AxiosError) => {
   const orig = err.config as InternalAxiosRequestConfig & { _retry?: boolean };
+
   if (err.response?.status === 401 && !orig._retry && typeof window !== 'undefined') {
-    if (isRefreshing) return new Promise((res, rej) => failedQueue.push({ resolve: res, reject: rej })).then(t => { orig.headers.Authorization = `Bearer ${t}`; return instance(orig); });
-    orig._retry = true; isRefreshing = true;
+    if (isRefreshing) {
+      return new Promise((res, rej) => failedQueue.push({ resolve: res, reject: rej }))
+        .then(t => { orig.headers.Authorization = `Bearer ${t}`; return instance(orig); });
+    }
+    orig._retry = true;
+    isRefreshing = true;
     try {
-      const stored = localStorage.getItem('auth-storage');
-      const { refreshToken, tenantSlug } = JSON.parse(stored || '{}')?.state ?? {};
-      if (!refreshToken) { window.location.href = '/login'; return Promise.reject(err); }
+      const { refreshToken, tenantSlug } = getAuthFromStorage();
+      if (!refreshToken) {
+        // No refresh token — just reject, auth guard will handle redirect
+        return Promise.reject(err);
+      }
       const { data } = await axios.post(`${BASE_URL}/api/v1/auth/refresh`, { refreshToken }, {
         headers: { ...(tenantSlug ? { 'X-Tenant-ID': tenantSlug } : {}) },
       });
-      const state = JSON.parse(localStorage.getItem('auth-storage') || '{}');
-      if (state.state) { state.state.accessToken = data.accessToken; state.state.refreshToken = data.refreshToken; localStorage.setItem('auth-storage', JSON.stringify(state)); }
+      // Update stored tokens
+      const stored = localStorage.getItem('auth-storage');
+      const state = stored ? JSON.parse(stored) : { state: {}, version: 0 };
+      if (state.state) {
+        state.state.accessToken = data.accessToken;
+        state.state.refreshToken = data.refreshToken;
+        localStorage.setItem('auth-storage', JSON.stringify(state));
+      }
       processQueue(null, data.accessToken);
       orig.headers.Authorization = `Bearer ${data.accessToken}`;
       return instance(orig);
-    } catch (e) { processQueue(e); window.location.href = '/login'; return Promise.reject(e); }
-    finally { isRefreshing = false; }
+    } catch (e) {
+      processQueue(e);
+      // Refresh failed — clear auth so the auth guard redirects on next navigation
+      try {
+        const stored = localStorage.getItem('auth-storage');
+        const state = stored ? JSON.parse(stored) : { state: {}, version: 0 };
+        if (state.state) {
+          state.state.accessToken = null;
+          state.state.isAuthenticated = false;
+          localStorage.setItem('auth-storage', JSON.stringify(state));
+        }
+      } catch {}
+      return Promise.reject(e);
+    } finally {
+      isRefreshing = false;
+    }
   }
+
   return Promise.reject(err);
 });
 

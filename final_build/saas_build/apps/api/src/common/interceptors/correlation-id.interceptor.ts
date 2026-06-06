@@ -98,7 +98,7 @@ export class LoggingInterceptor implements NestInterceptor {
 // ─────────────────────────────────────────────
 const PII_FIELDS = new Set([
   'password', 'passwordHash', 'passwordConfirm',
-  'refreshToken', 'accessToken', 'mfaSecret',
+  'mfaSecret',
   'nationalId', 'medicalNotes', 'salary',
   'creditCard', 'bankAccount',
 ]);

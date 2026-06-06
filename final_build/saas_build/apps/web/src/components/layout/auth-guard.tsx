@@ -1,57 +1,41 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '../../stores/auth.store';
+
+function readAuthFromStorage(): boolean {
+  try {
+    const raw = localStorage.getItem('auth-storage');
+    if (!raw) return false;
+    const s = JSON.parse(raw)?.state ?? {};
+    return !!(s.isAuthenticated && s.accessToken);
+  } catch {
+    return false;
+  }
+}
+
+const Spinner = () => (
+  <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+  </div>
+);
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { isAuthenticated, accessToken } = useAuthStore();
-  const [checked, setChecked] = useState(false);
+  // Always start as 'loading' — same on server and client (no hydration mismatch)
+  const [status, setStatus] = useState<'loading' | 'allowed' | 'denied'>('loading');
 
   useEffect(() => {
-    const checkAuth = () => {
-      const storeState = useAuthStore.getState();
-      if (storeState.isAuthenticated && storeState.accessToken) {
-        setChecked(true);
-      } else {
-        try {
-          const raw = localStorage.getItem('auth-storage');
-          if (raw) {
-            const parsed = JSON.parse(raw);
-            const s = parsed?.state ?? {};
-            if (s.isAuthenticated && s.accessToken) {
-              setChecked(true);
-              return;
-            }
-          }
-        } catch {}
-        router.replace('/login');
-      }
-    };
-
-    if (useAuthStore.persist.hasHydrated()) {
-      checkAuth();
+    // Only runs in the browser — safe to use localStorage here
+    if (readAuthFromStorage()) {
+      setStatus('allowed');
     } else {
-      const unsub = useAuthStore.persist.onFinishHydration(checkAuth);
-      useAuthStore.persist.rehydrate();
-      return unsub;
+      setStatus('denied');
+      router.replace('/login');
     }
   }, [router]);
 
-  if (!checked) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (!isAuthenticated || !accessToken) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+  if (status !== 'allowed') {
+    return <Spinner />;
   }
 
   return <>{children}</>;

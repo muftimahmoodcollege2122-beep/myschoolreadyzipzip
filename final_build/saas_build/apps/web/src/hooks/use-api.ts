@@ -103,11 +103,19 @@ export const useSubmitGrade = () => {
 };
 
 // ── Notifications ─────────────────────────────────────────────────────────────
+function hasAuthToken() {
+  if (typeof window === 'undefined') return false;
+  try {
+    const s = localStorage.getItem('auth-storage');
+    return !!(s && JSON.parse(s)?.state?.accessToken);
+  } catch { return false; }
+}
+
 export const useNotifications = (page = 1) =>
-  useQuery({ queryKey: ['notifications', page], queryFn: () => apiClient.get(`/notifications?page=${page}&limit=20`), refetchInterval: 30000 });
+  useQuery({ queryKey: ['notifications', page], queryFn: () => apiClient.get(`/notifications?page=${page}&limit=20`), refetchInterval: 30000, enabled: hasAuthToken(), retry: false });
 
 export const useUnreadCount = () =>
-  useQuery({ queryKey: ['notifications-unread'], queryFn: () => apiClient.get('/notifications/unread-count'), refetchInterval: 30000 });
+  useQuery({ queryKey: ['notifications-unread'], queryFn: () => apiClient.get('/notifications/unread-count'), refetchInterval: 30000, enabled: hasAuthToken(), retry: false });
 
 // ── School Data ───────────────────────────────────────────────────────────────
 export const useClasses = () =>

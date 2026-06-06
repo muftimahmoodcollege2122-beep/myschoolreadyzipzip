@@ -56,6 +56,20 @@ function LoginForm() {
 
       if (data.tenantSlug) setTenantSlug(data.tenantSlug);
       setAuth(data.user, data.accessToken, data.refreshToken);
+
+      // Write synchronously to localStorage BEFORE navigating so the
+      // auth guard on /dashboard finds the token immediately on load.
+      localStorage.setItem('auth-storage', JSON.stringify({
+        state: {
+          user: data.user,
+          accessToken: data.accessToken,
+          refreshToken: data.refreshToken,
+          tenantSlug: data.tenantSlug || tenantSlug,
+          isAuthenticated: true,
+        },
+        version: 0,
+      }));
+
       window.location.href = '/dashboard';
 
     } catch {
