@@ -3,10 +3,10 @@ const nextConfig = {
   reactStrictMode: false,
   poweredByHeader: false,
   compress: true,
-  output: 'standalone',
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: '**.amazonaws.com' },
+      { protocol: 'https', hostname: '**.replit.dev' },
     ],
     formats: ['image/avif', 'image/webp'],
   },

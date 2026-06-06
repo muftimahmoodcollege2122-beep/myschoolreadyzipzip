@@ -4,6 +4,7 @@ channel = "stable-25_05"
 
 [agent]
 expertMode = true
+stack = "BEST_EFFORT_FALLBACK"
 
 [workflows]
 runButton = "Project"
@@ -40,3 +41,15 @@ externalPort = 5000
 [[ports]]
 localPort = 6379
 externalPort = 80
+
+[userenv]
+
+[userenv.shared]
+NODE_ENV = "development"
+PORT = "3001"
+REDIS_HOST = "localhost"
+REDIS_PORT = "6379"
+CORS_ORIGINS = "http://localhost:5000,https://localhost:5000"
+JWT_ACCESS_SECRET = "school-saas-access-secret-dev-2024"
+JWT_REFRESH_SECRET = "school-saas-refresh-secret-dev-2024"
+NEXT_PUBLIC_API_URL = "http://localhost:3001"

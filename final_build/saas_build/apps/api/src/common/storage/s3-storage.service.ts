@@ -22,7 +22,7 @@ export class S3StorageService {
       // In production: uses EKS IRSA (IAM Roles for Service Accounts)
       // No hardcoded credentials — ever
     });
-    this.bucket = config.getOrThrow('AWS_S3_BUCKET');
+    this.bucket = config.get('AWS_S3_BUCKET', 'local-storage-placeholder');
     this.presignExpirySeconds = config.get('AWS_S3_PRESIGN_EXPIRY', 900); // 15 min default
   }
 

@@ -6,20 +6,14 @@ API_DIR="$SAAS_DIR/apps/api"
 WEB_DIR="$SAAS_DIR/apps/web"
 
 echo "==> Starting Redis..."
-REDIS_SERVER=$(nix-shell -p redis --run "which redis-server" 2>/dev/null)
-$REDIS_SERVER --daemonize yes --logfile /tmp/redis.log --port 6379 || true
+redis-server --daemonize yes --logfile /tmp/redis.log --port 6379 2>/dev/null || \
+  nix-shell -p redis --run "redis-server --daemonize yes --logfile /tmp/redis.log --port 6379" 2>/dev/null || true
 sleep 1
 echo "==> Redis started"
 
-echo "==> Installing web dependencies (if needed)..."
-cd "$WEB_DIR"
-if [ ! -f "node_modules/.bin/next" ]; then
-  echo "   Running pnpm install..."
-  pnpm install --no-frozen-lockfile 2>&1 | tail -5
-  echo "   Web dependencies installed"
-else
-  echo "   Web dependencies already installed"
-fi
+echo "==> Setting CORS origins..."
+REPLIT_DOMAIN="${REPLIT_DEV_DOMAIN:-localhost:5000}"
+export CORS_ORIGINS="http://localhost:5000,https://${REPLIT_DOMAIN},http://${REPLIT_DOMAIN}"
 
 echo "==> Generating Prisma Client..."
 cd "$API_DIR"
@@ -27,7 +21,7 @@ node_modules/.bin/prisma generate 2>&1 | grep -v "^$" | grep -v "Update availabl
 echo "==> Prisma client ready"
 
 echo "==> Pushing database schema..."
-node_modules/.bin/prisma db push --skip-generate 2>&1 | grep -E "✔|🚀|Error|error|already" | head -3
+node_modules/.bin/prisma db push --skip-generate 2>&1 | grep -E "✔|🚀|Error|error|already|warn" | head -5 || true
 echo "==> Database schema synced"
 
 echo "==> Seeding demo tenant (if needed)..."
@@ -63,8 +57,18 @@ node \
 API_PID=$!
 echo "API started in background (PID: $API_PID, logs: /tmp/api.log)"
 
+echo "==> Waiting for API to be ready..."
+for i in $(seq 1 30); do
+  if curl -sf http://localhost:3001/api/v1/health/live >/dev/null 2>&1; then
+    echo "==> API is ready"
+    break
+  fi
+  sleep 2
+done
+
 echo "==> Starting Next.js web on port 5000..."
 cd "$WEB_DIR"
+export NEXT_PUBLIC_API_URL="http://localhost:3001"
 if [ "$NODE_ENV" = "production" ]; then
   echo "   Building for production..."
   ./node_modules/.bin/next build 2>&1 | tail -5
