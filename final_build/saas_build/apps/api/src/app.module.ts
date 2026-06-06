@@ -35,6 +35,19 @@ import databaseConfig from './config/database.config';
 import redisConfig from './config/redis.config';
 import awsConfig from './config/aws.config';
 
+// New modules
+import { QuestionBankModule } from './modules/question-bank/question-bank.module';
+import { DiscountsModule } from './modules/discounts/discounts.module';
+import { StudentRecordsModule } from './modules/student-records/student-records.module';
+import { HrExtendedModule } from './modules/hr-extended/hr-extended.module';
+import { FinanceModule } from './modules/finance/finance.module';
+import { ContentModule } from './modules/content/content.module';
+import { SecurityModule } from './modules/security/security.module';
+import { SupportTicketsModule } from './modules/support-tickets/support-tickets.module';
+import { AiAnalyticsModule } from './modules/ai-analytics/ai-analytics.module';
+import { FormsModule } from './modules/forms/forms.module';
+import { AlumniModule } from './modules/alumni/alumni.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -65,6 +78,8 @@ import awsConfig from './config/aws.config';
     // Finance
     FeesModule,
     BillingModule,
+    FinanceModule,
+    DiscountsModule,
     // Communication & Notifications
     NotificationsModule,
     CommunicationModule,
@@ -72,10 +87,19 @@ import awsConfig from './config/aws.config';
     SearchModule,
     DashboardModule,
     ReportsModule,
+    AiAnalyticsModule,
     // Enterprise modules
     LibraryModule,
     TransportModule,
     SchoolDataModule,
+    QuestionBankModule,
+    StudentRecordsModule,
+    HrExtendedModule,
+    ContentModule,
+    SecurityModule,
+    SupportTicketsModule,
+    FormsModule,
+    AlumniModule,
     // Infrastructure
     RealtimeModule,
     HealthModule,

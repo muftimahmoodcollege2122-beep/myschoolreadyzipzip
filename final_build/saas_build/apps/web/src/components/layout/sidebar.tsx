@@ -33,12 +33,14 @@ const sections: NavSection[] = [
     items: [
       { href: '/lms',              icon: '🎓', label: 'LMS',               roles: ['SCHOOL_ADMIN','TEACHER','STUDENT'] },
       { href: '/library',          icon: '📖', label: 'Library',           roles: ['SCHOOL_ADMIN','TEACHER','STUDENT'] },
+      { href: '/question-bank',    icon: '🧠', label: 'Question Bank',     roles: ['SCHOOL_ADMIN','TEACHER'] },
+      { href: '/lesson-plans',     icon: '📋', label: 'Lesson Plans',      roles: ['SCHOOL_ADMIN','TEACHER'] },
     ],
   },
   {
     title: 'Admissions & HR',
     items: [
-      { href: '/admissions',       icon: '📋', label: 'Admissions CRM',    roles: ['SCHOOL_ADMIN'] },
+      { href: '/admissions',       icon: '📝', label: 'Admissions CRM',    roles: ['SCHOOL_ADMIN'] },
       { href: '/staff',            icon: '👥', label: 'Staff',             roles: ['SCHOOL_ADMIN'] },
       { href: '/hrm',              icon: '🏢', label: 'HR & Payroll',      roles: ['SCHOOL_ADMIN'] },
     ],
@@ -47,6 +49,8 @@ const sections: NavSection[] = [
     title: 'Finance',
     items: [
       { href: '/fees',             icon: '💰', label: 'Fees',              roles: ['SCHOOL_ADMIN','ACCOUNTANT'] },
+      { href: '/budget',           icon: '📊', label: 'Budget & Expenses', roles: ['SCHOOL_ADMIN'] },
+      { href: '/scholarships',     icon: '🎖️', label: 'Scholarships',      roles: ['SCHOOL_ADMIN'] },
       { href: '/reports',          icon: '📄', label: 'Reports',           roles: ['SCHOOL_ADMIN'] },
     ],
   },
@@ -76,16 +80,24 @@ const sections: NavSection[] = [
     ],
   },
   {
-    title: 'Research',
+    title: 'Content',
     items: [
-      { href: '/research',         icon: '🔬', label: 'Research',          roles: ['SCHOOL_ADMIN','TEACHER'] },
+      { href: '/blog',             icon: '📰', label: 'Blog & News',       roles: ['SCHOOL_ADMIN'] },
+      { href: '/gallery',          icon: '🖼️', label: 'Photo Gallery',     roles: ['SCHOOL_ADMIN','TEACHER'] },
+      { href: '/website-builder',  icon: '🌐', label: 'Website Builder',   roles: ['SCHOOL_ADMIN'] },
     ],
   },
   {
-    title: 'Tools',
+    title: 'Research & AI',
     items: [
-      { href: '/website-builder',  icon: '🌐', label: 'Website Builder',   roles: ['SCHOOL_ADMIN'] },
+      { href: '/research',         icon: '🔬', label: 'Research',          roles: ['SCHOOL_ADMIN','TEACHER'] },
       { href: '/ai',               icon: '🤖', label: 'AI Assistant',      roles: ['SCHOOL_ADMIN','TEACHER'] },
+    ],
+  },
+  {
+    title: 'Support',
+    items: [
+      { href: '/support-tickets',  icon: '🎫', label: 'Support Tickets',   roles: ['SCHOOL_ADMIN'] },
     ],
   },
   {
