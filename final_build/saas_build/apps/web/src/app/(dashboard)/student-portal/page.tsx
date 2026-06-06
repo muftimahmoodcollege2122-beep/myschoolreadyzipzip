@@ -3,202 +3,323 @@ import React, { useState } from 'react';
 import { Topbar } from '../../../components/layout/topbar';
 import { useAuthStore } from '../../../stores/auth.store';
 import { Badge } from '../../../components/shared/badge';
+import {
+  useMyStudent,
+  useStudentGrades,
+  useStudentAttendance,
+  useStudentFees,
+  useSectionTimetable,
+  useAnnouncements,
+  useStudents,
+} from '../../../hooks/use-api';
 import Link from 'next/link';
 
-const SCHEDULE = [
-  { time:'8:00',subject:'Mathematics',teacher:'Mr. Ali Hassan',room:'Room 201' },
-  { time:'8:45',subject:'Physics',teacher:'Ms. Sara Ahmed',room:'Room 105' },
-  { time:'9:30',subject:'English',teacher:'Mr. Bilal Khan',room:'Room 301' },
-  { time:'11:15',subject:'Chemistry',teacher:'Dr. Fatima',room:'Lab 2' },
-  { time:'12:00',subject:'Urdu',teacher:'Ms. Nadia',room:'Room 201' },
-  { time:'12:45',subject:'Computer Science',teacher:'Mr. Usman',room:'Computer Lab' },
-];
-const SUBJECTS = [
-  { name:'Mathematics', teacher:'Mr. Ali Hassan', marks:87, total:100, grade:'A', attendance:94 },
-  { name:'Physics', teacher:'Ms. Sara Ahmed', marks:79, total:100, grade:'B+', attendance:91 },
-  { name:'English', teacher:'Mr. Bilal Khan', marks:92, total:100, grade:'A+', attendance:97 },
-  { name:'Chemistry', teacher:'Dr. Fatima Shah', marks:75, total:100, grade:'B', attendance:88 },
-  { name:'Urdu', teacher:'Ms. Nadia Malik', marks:83, total:100, grade:'A', attendance:95 },
-  { name:'Computer', teacher:'Mr. Usman Ali', marks:95, total:100, grade:'A+', attendance:100 },
-];
-const HOMEWORK = [
-  { subject:'Mathematics', task:'Exercise 7.3 — Quadratic Equations (Qs 1-10)', due:'Tomorrow', status:'PENDING' },
-  { subject:'English', task:'Write an essay: "Impact of Social Media"', due:'Jun 8', status:'PENDING' },
-  { subject:'Physics', task:'Lab Report — Pendulum Experiment', due:'Jun 7', status:'SUBMITTED' },
-  { subject:'Chemistry', task:'Draw & label unit cell structures', due:'Jun 10', status:'PENDING' },
-];
+function Skeleton() {
+  return (
+    <div className="space-y-3">
+      {[...Array(3)].map((_,i) => (
+        <div key={i} className="h-14 bg-gray-100 rounded-xl animate-pulse"/>
+      ))}
+    </div>
+  );
+}
+
+function Empty({ icon, title, desc, cta }: { icon:string; title:string; desc:string; cta?: React.ReactNode }) {
+  return (
+    <div className="flex flex-col items-center py-10 text-center">
+      <div className="text-4xl mb-2">{icon}</div>
+      <p className="font-bold text-gray-700">{title}</p>
+      <p className="text-sm text-gray-400 mt-1 mb-3">{desc}</p>
+      {cta}
+    </div>
+  );
+}
 
 export default function StudentPortalPage() {
   const { user } = useAuthStore();
-  const [tab, setTab] = useState<'home'|'grades'|'homework'|'fees'>('home');
-  const avgMarks = Math.round(SUBJECTS.reduce((a,s)=>a+(s.marks/s.total)*100,0)/SUBJECTS.length);
+  const [tab, setTab] = useState<'home'|'grades'|'timetable'|'fees'>('home');
+
+  const { data: myStudent, isLoading: loadingMe } = useMyStudent();
+  const studentId  = (myStudent as any)?.id;
+  const enrollment = (myStudent as any)?.enrollments?.[0];
+  const sectionId  = enrollment?.sectionId;
+  const className  = enrollment?.section?.class?.name || '';
+  const sectionName = enrollment?.section?.name || '';
+
+  const { data: gradesRaw,     isLoading: loadingGrades }     = useStudentGrades(studentId);
+  const { data: attendanceRaw, isLoading: loadingAttendance } = useStudentAttendance(studentId);
+  const { data: feesRaw,       isLoading: loadingFees }       = useStudentFees(studentId);
+  const { data: timetableRaw, isLoading: loadingTimetable }   = useSectionTimetable(sectionId);
+  const { data: announcementsRaw } = useAnnouncements();
+  const { data: studentsRaw }      = useStudents({ limit: 6 });
+
+  const grades     = (gradesRaw as any[]) || [];
+  const attendance = (attendanceRaw as any[]) || [];
+  const fees       = (feesRaw as any[]) || [];
+  const timetable  = (timetableRaw as any[]) || [];
+  const notices    = (announcementsRaw as any)?.data ?? ((Array.isArray(announcementsRaw) ? announcementsRaw : []) as any[]);
+  const students   = (studentsRaw as any)?.data ?? [];
+
+  const presentCount  = attendance.filter((a:any) => a.status === 'PRESENT').length;
+  const attRate       = attendance.length > 0 ? Math.round((presentCount / attendance.length) * 100) : 0;
+  const pendingFees   = fees.filter((f:any) => f.status === 'PENDING' || f.status === 'OVERDUE');
+  const totalPending  = pendingFees.reduce((s:number, f:any) => s + Number(f.amount || 0), 0);
+  const avgScore      = grades.length > 0
+    ? Math.round(grades.reduce((s:number, g:any) => s + (g.marksObtained / g.totalMarks) * 100, 0) / grades.length)
+    : 0;
+
+  const firstName = (myStudent as any)?.user?.profile?.firstName || user?.email?.split('@')[0] || 'Student';
+  const lastName  = (myStudent as any)?.user?.profile?.lastName  || '';
+  const isAdmin   = user?.role === 'SCHOOL_ADMIN';
+
+  const TABS = [
+    { key:'home',      label:'🏠 Home' },
+    { key:'grades',    label:'📊 Grades' },
+    { key:'timetable', label:'📅 Timetable' },
+    { key:'fees',      label:'💰 Fees' },
+  ] as const;
 
   return (
     <>
       <Topbar title="Student Portal" subtitle="Your personal learning dashboard" />
-      <div className="p-6">
-        {/* Welcome Banner */}
-        <div className="bg-gradient-to-r from-green-600 to-teal-600 rounded-2xl p-6 mb-6 text-white">
-          <div className="flex items-center justify-between">
+      <div className="p-6 space-y-5">
+
+        {/* Admin preview notice */}
+        {isAdmin && !loadingMe && !myStudent && (
+          <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
+            <span className="text-2xl">👀</span>
+            <div>
+              <p className="font-bold text-amber-800 text-sm">Admin Preview Mode</p>
+              <p className="text-amber-600 text-xs">You're viewing as admin. When students log in they see their personal data here.</p>
+            </div>
+          </div>
+        )}
+
+        {/* Welcome banner */}
+        <div className="bg-gradient-to-br from-green-600 to-teal-600 rounded-2xl p-6 text-white">
+          <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-green-200 text-sm">Welcome back,</p>
-              <h1 className="text-2xl font-black mt-1">{user?.profile?.firstName ? `${user.profile.firstName} ${user.profile.lastName}` : 'Student'}</h1>
-              <div className="flex items-center gap-4 mt-2">
-                <span className="text-sm text-green-100">📚 Grade 10-A</span>
-                <span className="text-sm text-green-100">🎯 Roll No. 12</span>
-                <span className="text-sm text-green-100">📊 {avgMarks}% avg</span>
+              {loadingMe
+                ? <div className="h-8 w-48 bg-white/20 rounded-lg mt-1 animate-pulse"/>
+                : <h2 className="text-2xl font-black mt-1">{firstName} {lastName}</h2>
+              }
+              <div className="flex flex-wrap gap-3 mt-2 text-sm text-green-100">
+                {className && <span>📚 {className}{sectionName ? ` · ${sectionName}` : ''}</span>}
+                {(myStudent as any)?.rollNumber && <span>🎯 Roll #{(myStudent as any).rollNumber}</span>}
+                {(myStudent as any)?.admissionNo && <span>🆔 {(myStudent as any).admissionNo}</span>}
               </div>
             </div>
-            <div className="text-right">
+            <div className="text-center shrink-0">
               <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center">
-                <span className="text-4xl font-black">{avgMarks}%</span>
+                {grades.length > 0
+                  ? <span className="text-3xl font-black">{avgScore}%</span>
+                  : <span className="text-4xl">👩‍🎓</span>
+                }
               </div>
-              <p className="text-green-200 text-xs mt-1">Overall Score</p>
+              {grades.length > 0 && <p className="text-xs text-green-200 mt-1">Avg Score</p>}
             </div>
           </div>
         </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
-          {[
-            { label:'Attendance', value:'94%', icon:'✅', bg:'bg-green-50', c:'text-green-600', sub:'This month' },
-            { label:'Avg Grade', value:`${avgMarks}%`, icon:'🎯', bg:'bg-blue-50', c:'text-blue-600', sub:'All subjects' },
-            { label:'Homework Due', value:HOMEWORK.filter(h=>h.status==='PENDING').length, icon:'📝', bg:'bg-yellow-50', c:'text-yellow-600', sub:'Pending tasks' },
-            { label:'Fee Status', value:'Paid', icon:'💰', bg:'bg-purple-50', c:'text-purple-600', sub:'June 2026' },
-          ].map(k=>(
-            <div key={k.label} className={`${k.bg} rounded-2xl p-4`}>
-              <div className="flex items-center gap-2 mb-1"><span className="text-xl">{k.icon}</span><p className={`text-2xl font-black ${k.c}`}>{k.value}</p></div>
-              <p className="text-xs text-gray-500">{k.label}</p>
-              <p className="text-[10px] text-gray-400">{k.sub}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-1 mb-5 bg-gray-100 rounded-xl p-1 w-fit">
-          {(['home','grades','homework','fees'] as const).map(t=>(
-            <button key={t} onClick={()=>setTab(t)} className={`px-4 py-1.5 text-sm font-bold rounded-lg capitalize transition-all ${tab===t?'bg-white shadow text-gray-900':'text-gray-500'}`}>
-              {t==='home'?'🏠 Home':t==='grades'?'📊 Grades':t==='homework'?'📝 Homework':'💰 Fees'}
-            </button>
-          ))}
-        </div>
-
-        {tab === 'home' && (
-          <div className="grid grid-cols-2 gap-5">
-            {/* Today's Schedule */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-              <h3 className="font-bold text-gray-900 mb-4">📅 Today&apos;s Schedule</h3>
-              <div className="space-y-2">
-                {SCHEDULE.map((s,i)=>{
-                  const now = new Date();
-                  const [h,m] = s.time.split(':').map(Number);
-                  const isPast = h < now.getHours() || (h===now.getHours()&&m<now.getMinutes());
-                  const isCurrent = h===now.getHours();
-                  return (
-                    <div key={i} className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${isCurrent?'bg-green-50 border-green-200':isPast?'opacity-50 bg-gray-50 border-gray-100':'bg-white border-gray-100'}`}>
-                      <div className="w-14 text-center flex-shrink-0">
-                        <p className={`font-black text-xs ${isCurrent?'text-green-700':isPast?'text-gray-400':'text-gray-700'}`}>{s.time}</p>
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-bold text-sm text-gray-900">{s.subject}</p>
-                        <p className="text-xs text-gray-400">{s.teacher} · {s.room}</p>
-                      </div>
-                      {isCurrent&&<Badge variant="green">Now</Badge>}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Upcoming & Notices */}
-            <div className="space-y-4">
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                <h3 className="font-bold text-gray-900 mb-3">📝 Pending Homework</h3>
-                <div className="space-y-2">
-                  {HOMEWORK.filter(h=>h.status==='PENDING').map((h,i)=>(
-                    <div key={i} className="flex items-start gap-3 p-3 bg-yellow-50 rounded-xl border border-yellow-100">
-                      <span className="text-yellow-500 text-lg mt-0.5">📌</span>
-                      <div><p className="text-xs font-bold text-gray-900">{h.subject}</p><p className="text-xs text-gray-500 mt-0.5">{h.task}</p><p className="text-[10px] text-red-500 mt-1 font-bold">Due: {h.due}</p></div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                <h3 className="font-bold text-gray-900 mb-3">🔔 School Notices</h3>
-                <div className="space-y-2">
-                  {['📋 Annual sports day on June 20 — All students to participate','📢 Fee submission deadline: June 15, 2026','🏆 Science fair registration open till June 10'].map((n,i)=>(
-                    <p key={i} className="text-xs text-gray-600 p-2 bg-blue-50 rounded-lg">{n}</p>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {tab === 'grades' && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="p-5 border-b border-gray-100"><h3 className="font-bold text-gray-900">Academic Performance</h3></div>
-            <table className="w-full">
-              <thead className="bg-gray-50"><tr>{['Subject','Teacher','Marks','Grade','Attendance','Progress'].map(h=><th key={h} className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">{h}</th>)}</tr></thead>
-              <tbody className="divide-y divide-gray-50">
-                {SUBJECTS.map((s,i)=>(
-                  <tr key={i} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 font-bold text-sm text-gray-900">{s.name}</td>
-                    <td className="px-4 py-3 text-xs text-gray-500">{s.teacher}</td>
-                    <td className="px-4 py-3 font-mono text-sm font-bold text-gray-900">{s.marks}/{s.total}</td>
-                    <td className="px-4 py-3"><Badge variant={s.grade==='A+'||s.grade==='A'?'green':s.grade==='B+'||s.grade==='B'?'blue':'yellow'}>{s.grade}</Badge></td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-12 h-1.5 bg-gray-100 rounded-full overflow-hidden"><div className={`h-full rounded-full ${s.attendance>=90?'bg-green-500':s.attendance>=75?'bg-yellow-500':'bg-red-500'}`} style={{width:`${s.attendance}%`}}/></div>
-                        <span className="text-xs text-gray-600">{s.attendance}%</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-20 h-2 bg-gray-100 rounded-full overflow-hidden"><div className={`h-full rounded-full ${(s.marks/s.total)>=0.8?'bg-green-500':(s.marks/s.total)>=0.6?'bg-blue-500':'bg-yellow-500'}`} style={{width:`${(s.marks/s.total)*100}%`}}/></div>
-                        <span className="text-xs font-bold text-gray-700">{Math.round((s.marks/s.total)*100)}%</span>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {tab === 'homework' && (
-          <div className="space-y-3">
-            {HOMEWORK.map((h,i)=>(
-              <div key={i} className={`bg-white rounded-2xl border shadow-sm p-5 flex items-start gap-4 ${h.status==='SUBMITTED'?'border-green-200 bg-green-50/30':'border-gray-100'}`}>
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0 ${h.status==='SUBMITTED'?'bg-green-100':'bg-yellow-100'}`}>{h.status==='SUBMITTED'?'✅':'📝'}</div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1"><p className="font-bold text-sm text-gray-900">{h.subject}</p><Badge variant={h.status==='SUBMITTED'?'green':'yellow'}>{h.status}</Badge></div>
-                  <p className="text-sm text-gray-600">{h.task}</p>
-                  <p className="text-xs text-gray-400 mt-1">Due: {h.due}</p>
-                </div>
-                {h.status==='PENDING'&&<button className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-500 flex-shrink-0">Submit →</button>}
+        {/* Stats row (only when student data exists) */}
+        {myStudent && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label:'Attendance', value: attendance.length > 0 ? `${attRate}%` : '—', icon:'✅', bg:'bg-green-50', fg:'text-green-700' },
+              { label:'Subjects',   value: grades.length || '—',                          icon:'📚', bg:'bg-blue-50',   fg:'text-blue-700' },
+              { label:'Avg Score',  value: grades.length > 0 ? `${avgScore}%` : '—',     icon:'📊', bg:'bg-purple-50', fg:'text-purple-700' },
+              { label:'Dues',       value: pendingFees.length > 0 ? `Rs.${Math.round(totalPending/1000)}K` : 'Clear ✓', icon:'💰', bg:'bg-yellow-50', fg:'text-yellow-700' },
+            ].map(s => (
+              <div key={s.label} className={`${s.bg} rounded-xl p-4`}>
+                <span className="text-xl">{s.icon}</span>
+                <p className={`text-xl font-black mt-1 ${s.fg}`}>{s.value}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{s.label}</p>
               </div>
             ))}
           </div>
         )}
 
-        {tab === 'fees' && (
-          <div className="max-w-2xl">
-            <div className="bg-green-50 border border-green-200 rounded-2xl p-5 mb-4 flex items-center gap-4">
-              <span className="text-4xl">✅</span>
-              <div><p className="font-black text-green-800 text-lg">June 2026 Fee Paid</p><p className="text-green-600 text-sm">Rs. 12,500 paid on June 1, 2026 via Bank Transfer</p></div>
-            </div>
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-              <h3 className="font-bold text-gray-900 mb-4">Fee History</h3>
-              <div className="divide-y divide-gray-50">
-                {['June 2026','May 2026','April 2026','March 2026'].map((m,i)=>(
-                  <div key={m} className="flex justify-between items-center py-3">
-                    <div><p className="font-semibold text-sm text-gray-900">{m}</p><p className="text-xs text-gray-400">Tuition + Transport</p></div>
-                    <div className="text-right"><p className="font-mono font-bold text-gray-900">Rs. 12,500</p><Badge variant="green">Paid</Badge></div>
+        {/* Tabs */}
+        <div className="flex gap-1 border-b border-gray-100">
+          {TABS.map(t => (
+            <button key={t.key} onClick={() => setTab(t.key)}
+              className={`px-4 py-2 text-sm font-semibold rounded-t-lg transition-all ${tab === t.key ? 'bg-green-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* ── HOME tab ── */}
+        {tab === 'home' && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {/* Announcements */}
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+              <h3 className="font-bold text-gray-800 mb-3">📢 Announcements</h3>
+              {notices.length === 0
+                ? <Empty icon="📢" title="No announcements" desc="School announcements will appear here"/>
+                : (
+                  <div className="space-y-2">
+                    {notices.slice(0,5).map((n:any) => (
+                      <div key={n.id} className="p-3 bg-blue-50 rounded-lg">
+                        <p className="text-sm font-semibold text-gray-800">{n.title}</p>
+                        <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{n.body || n.content || ''}</p>
+                        <p className="text-xs text-blue-400 mt-1">{new Date(n.createdAt).toLocaleDateString()}</p>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                )
+              }
             </div>
+
+            {/* Attendance or Student list (admin) */}
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+              <h3 className="font-bold text-gray-800 mb-3">
+                {myStudent ? '✅ Recent Attendance' : '👩‍🎓 Enrolled Students'}
+              </h3>
+              {myStudent ? (
+                loadingAttendance ? <Skeleton/> : attendance.length === 0
+                  ? <Empty icon="📋" title="No records" desc="Attendance will appear once recorded"/>
+                  : (
+                    <div className="space-y-2">
+                      {attendance.slice(0,8).map((a:any) => (
+                        <div key={a.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                          <span className="text-sm text-gray-600">{new Date(a.date).toLocaleDateString('en',{weekday:'short',month:'short',day:'numeric'})}</span>
+                          <Badge label={a.status} color={a.status==='PRESENT'?'green':a.status==='LATE'?'yellow':'red'} size="sm"/>
+                        </div>
+                      ))}
+                    </div>
+                  )
+              ) : (
+                students.length === 0
+                  ? <Empty icon="👩‍🎓" title="No students yet" desc="Enroll students first" cta={<Link href="/students" className="text-sm text-green-600 font-semibold">Enroll students →</Link>}/>
+                  : (
+                    <div className="space-y-2">
+                      {students.map((s:any) => (
+                        <div key={s.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                          <div>
+                            <p className="text-sm font-medium text-gray-800">{s.user?.profile?.firstName} {s.user?.profile?.lastName}</p>
+                            <p className="text-xs text-gray-400">{s.admissionNo || s.rollNumber || ''}</p>
+                          </div>
+                          <Badge label={s.isActive ? 'Active' : 'Inactive'} color={s.isActive ? 'green' : 'red'} size="sm"/>
+                        </div>
+                      ))}
+                    </div>
+                  )
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── GRADES tab ── */}
+        {tab === 'grades' && (
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+            {!myStudent && !loadingMe
+              ? <div className="p-6"><Empty icon="📊" title="Grade portal" desc="Students see their subject-wise grades here once results are entered"/></div>
+              : loadingGrades
+                ? <div className="p-6"><Skeleton/></div>
+                : grades.length === 0
+                  ? <div className="p-6"><Empty icon="📊" title="No grades yet" desc="Grades appear once teachers submit results"/></div>
+                  : (
+                    <table className="w-full">
+                      <thead className="bg-gray-50">
+                        <tr>{['Subject','Obtained','Total','%','Grade'].map(h=><th key={h} className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">{h}</th>)}</tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {grades.map((g:any) => {
+                          const pct = Math.round((g.marksObtained / g.totalMarks) * 100);
+                          const grade = g.grade || (pct>=90?'A+':pct>=80?'A':pct>=70?'B+':pct>=60?'B':'C');
+                          return (
+                            <tr key={g.id} className="hover:bg-gray-50">
+                              <td className="px-4 py-3 text-sm font-medium text-gray-800">{g.classSubject?.subject?.name || g.subject || 'Subject'}</td>
+                              <td className="px-4 py-3 text-sm text-gray-600">{g.marksObtained}</td>
+                              <td className="px-4 py-3 text-sm text-gray-600">{g.totalMarks}</td>
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-16 h-1.5 bg-gray-100 rounded-full">
+                                    <div className="h-full bg-green-500 rounded-full" style={{width:`${pct}%`}}/>
+                                  </div>
+                                  <span className="text-sm font-semibold">{pct}%</span>
+                                </div>
+                              </td>
+                              <td className="px-4 py-3"><Badge label={grade} color={pct>=80?'green':pct>=60?'yellow':'red'} size="sm"/></td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  )
+            }
+          </div>
+        )}
+
+        {/* ── TIMETABLE tab ── */}
+        {tab === 'timetable' && (
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+            {!sectionId && !loadingMe
+              ? <Empty icon="📅" title="No class assigned" desc="Timetable appears once you're enrolled in a class"/>
+              : loadingTimetable
+                ? <Skeleton/>
+                : timetable.length === 0
+                  ? <Empty icon="📅" title="No timetable yet" desc="Admin hasn't set up the timetable yet" cta={<Link href="/timetable" className="text-sm text-green-600 font-semibold">Set up timetable →</Link>}/>
+                  : (
+                    <div className="space-y-4">
+                      {[1,2,3,4,5,6].map(day => {
+                        const slots = timetable.filter((t:any) => t.dayOfWeek === day);
+                        if (!slots.length) return null;
+                        return (
+                          <div key={day}>
+                            <p className="text-xs font-bold text-gray-400 uppercase mb-2">{['Mon','Tue','Wed','Thu','Fri','Sat'][day-1]}</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                              {slots.map((s:any) => (
+                                <div key={s.id} className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                                  <div className="text-center min-w-12">
+                                    <p className="text-xs font-bold text-blue-700">{s.startTime}</p>
+                                    <p className="text-xs text-blue-400">{s.endTime}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-semibold text-gray-800">{s.classSubject?.subject?.name || 'Subject'}</p>
+                                    <p className="text-xs text-gray-500">{s.teacher?.user?.profile?.firstName || ''}{s.room ? ` · Room ${s.room}` : ''}</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )
+            }
+          </div>
+        )}
+
+        {/* ── FEES tab ── */}
+        {tab === 'fees' && (
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+            {!myStudent && !loadingMe
+              ? <div className="p-6"><Empty icon="💰" title="Fee portal" desc="Students see their fee invoices and payment history here"/></div>
+              : loadingFees
+                ? <div className="p-6"><Skeleton/></div>
+                : fees.length === 0
+                  ? <div className="p-6"><Empty icon="💰" title="No fees yet" desc="Fee invoices will appear here once generated" cta={<Link href="/fees" className="text-sm text-green-600 font-semibold">Manage fees →</Link>}/></div>
+                  : (
+                    <table className="w-full">
+                      <thead className="bg-gray-50">
+                        <tr>{['Description','Amount','Due Date','Status'].map(h=><th key={h} className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">{h}</th>)}</tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {fees.map((f:any) => (
+                          <tr key={f.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 text-sm font-medium text-gray-800">{f.description || f.feeType || 'Fee'}</td>
+                            <td className="px-4 py-3 text-sm font-bold text-gray-700">Rs. {Number(f.amount).toLocaleString()}</td>
+                            <td className="px-4 py-3 text-sm text-gray-500">{f.dueDate ? new Date(f.dueDate).toLocaleDateString() : '—'}</td>
+                            <td className="px-4 py-3"><Badge label={f.status} color={f.status==='PAID'?'green':f.status==='OVERDUE'?'red':'yellow'} size="sm"/></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )
+            }
           </div>
         )}
       </div>

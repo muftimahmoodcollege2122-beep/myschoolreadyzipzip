@@ -14,6 +14,8 @@ export class TeachersController {
   constructor(private readonly svc: TeachersService) {}
   @Post() @Roles('SCHOOL_ADMIN')
   create(@Body() dto: CreateTeacherDto, @TenantId() tid: string, @CurrentUser() u: any, @Req() req: Request) { return this.svc.create(dto, tid, req.query.schoolId as string, u.sub); }
+  @Get('me') @Roles('TEACHER','SCHOOL_ADMIN')
+  findMe(@TenantId() tid: string, @CurrentUser() u: any) { return this.svc.findByUserId(u.sub, tid); }
   @Get() @Roles('SCHOOL_ADMIN')
   findAll(@TenantId() tid: string, @Query('schoolId') sid: string, @Query('page') p: number, @Query('limit') l: number, @Query('search') s: string) { return this.svc.findAll(tid, sid, p, l, s); }
   @Get(':id') @Roles('SCHOOL_ADMIN','TEACHER')

@@ -9,6 +9,22 @@ const qs = (p: Record<string, any>) => new URLSearchParams(Object.entries(p).fil
 export const useDashboard = (schoolId: string) =>
   useQuery({ queryKey: ['dashboard', schoolId], queryFn: () => apiClient.get<DashboardStats>(`/dashboard?schoolId=${schoolId}`), staleTime: 5*60*1000 });
 
+// ── My Profile (role-based self-lookup) ──────────────────────────────────────
+export const useMyStudent = () =>
+  useQuery({ queryKey: ['my-student'], queryFn: () => apiClient.get('/students/me'), retry: false, staleTime: 5*60*1000 });
+
+export const useMyTeacher = () =>
+  useQuery({ queryKey: ['my-teacher'], queryFn: () => apiClient.get('/teachers/me'), retry: false, staleTime: 5*60*1000 });
+
+export const useTeacherSchedule = (teacherId: string) =>
+  useQuery({ queryKey: ['teacher-schedule', teacherId], queryFn: () => apiClient.get(`/teachers/${teacherId}/schedule`), enabled: !!teacherId, staleTime: 10*60*1000 });
+
+export const useSectionTimetable = (sectionId: string) =>
+  useQuery({ queryKey: ['section-timetable', sectionId], queryFn: () => apiClient.get(`/timetable/section/${sectionId}`), enabled: !!sectionId, staleTime: 10*60*1000 });
+
+export const useTeacherTimetable = (teacherId: string) =>
+  useQuery({ queryKey: ['teacher-timetable', teacherId], queryFn: () => apiClient.get(`/timetable/teacher/${teacherId}`), enabled: !!teacherId, staleTime: 10*60*1000 });
+
 // ── Students ────────────────────────────────────────────────────────────────
 export const useStudents = (params: any = {}) =>
   useQuery({ queryKey: ['students', params], queryFn: () => apiClient.get<PaginatedResponse<Student>>(`/students?${qs(params)}`) });

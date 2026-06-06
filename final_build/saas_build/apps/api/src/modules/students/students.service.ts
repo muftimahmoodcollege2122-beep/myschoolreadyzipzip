@@ -203,6 +203,19 @@ export class StudentsService {
     };
   }
 
+  async findByUserId(userId: string, tenantId: string): Promise<Student | null> {
+    return this.prisma.student.findFirst({
+      where: { userId, tenantId },
+      include: {
+        user: { include: { profile: true } },
+        enrollments: {
+          where: { isActive: true },
+          include: { section: { include: { class: true } } },
+        },
+      },
+    });
+  }
+
   async findOne(id: string, tenantId: string): Promise<Student> {
     const student = await this.prisma.student.findFirst({
       where: { id, tenantId },

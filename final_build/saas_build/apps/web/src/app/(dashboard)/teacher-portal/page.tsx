@@ -2,212 +2,326 @@
 import React, { useState } from 'react';
 import { Topbar } from '../../../components/layout/topbar';
 import { useAuthStore } from '../../../stores/auth.store';
-import { useClasses, useSections, useExams } from '../../../hooks/use-api';
-import Link from 'next/link';
 import { Badge } from '../../../components/shared/badge';
+import {
+  useMyTeacher,
+  useTeacherSchedule,
+  useTeacherTimetable,
+  useTeachers,
+  useExams,
+  useAnnouncements,
+  useStudents,
+} from '../../../hooks/use-api';
+import Link from 'next/link';
 
-const TODAY_SCHEDULE = [
-  { time:'8:00 AM', class:'Grade 10-A', subject:'Mathematics', room:'Room 201', students:42 },
-  { time:'9:30 AM', class:'Grade 9-B', subject:'Mathematics', room:'Room 104', students:38 },
-  { time:'11:00 AM', class:'Grade 8-A', subject:'Mathematics', room:'Room 301', students:45 },
-  { time:'12:30 PM', class:'Grade 10-B', subject:'Mathematics', room:'Room 201', students:40 },
-];
-const PENDING_TASKS = [
-  { task:'Mark attendance — Grade 10-A', priority:'HIGH', due:'Today 10:00 AM' },
-  { task:'Grade midterm papers — Grade 9-B', priority:'HIGH', due:'Today EOD' },
-  { task:'Submit lesson plan — Week 24', priority:'MEDIUM', due:'Jun 7, 2026' },
-  { task:'Parent feedback — Ahmed Ali', priority:'LOW', due:'Jun 10, 2026' },
-];
-const MY_STUDENTS = [
-  { name:'Ahmed Ali Khan', class:'10-A', attendance:96, lastGrade:'A+', status:'Excellent' },
-  { name:'Sara Fatima', class:'10-A', attendance:88, lastGrade:'A', status:'Good' },
-  { name:'Omar Hassan', class:'10-B', attendance:71, lastGrade:'B+', status:'Warning' },
-  { name:'Zara Malik', class:'9-B', attendance:94, lastGrade:'A+', status:'Excellent' },
-  { name:'Ibrahim Shah', class:'9-B', attendance:65, lastGrade:'C', status:'At Risk' },
-];
+function Skeleton() {
+  return (
+    <div className="space-y-3">
+      {[...Array(3)].map((_,i) => (
+        <div key={i} className="h-14 bg-gray-100 rounded-xl animate-pulse"/>
+      ))}
+    </div>
+  );
+}
+
+function Empty({ icon, title, desc, cta }: { icon:string; title:string; desc:string; cta?: React.ReactNode }) {
+  return (
+    <div className="flex flex-col items-center py-10 text-center">
+      <div className="text-4xl mb-2">{icon}</div>
+      <p className="font-bold text-gray-700">{title}</p>
+      <p className="text-sm text-gray-400 mt-1 mb-3">{desc}</p>
+      {cta}
+    </div>
+  );
+}
 
 export default function TeacherPortalPage() {
   const { user } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<'home'|'attendance'|'assignments'|'performance'>('home');
-  const { data: exams } = useExams();
-  const upcoming = (exams as any[])?.filter(e=>new Date(e.startDate)>=new Date()).slice(0,3)??[];
+  const [tab, setTab] = useState<'home'|'schedule'|'students'|'exams'>('home');
+
+  const { data: myTeacher, isLoading: loadingMe } = useMyTeacher();
+  const teacherId = (myTeacher as any)?.id;
+
+  const { data: scheduleRaw,  isLoading: loadingSchedule }  = useTeacherSchedule(teacherId);
+  const { data: timetableRaw, isLoading: loadingTimetable } = useTeacherTimetable(teacherId);
+  const { data: teachersRaw }   = useTeachers({ limit: 10 });
+  const { data: examsRaw }      = useExams();
+  const { data: studentsRaw }   = useStudents({ limit: 10 });
+  const { data: announcementsRaw } = useAnnouncements();
+
+  const schedule     = (scheduleRaw as any[]) || [];
+  const timetable    = (timetableRaw as any[]) || [];
+  const teachers     = (teachersRaw as any)?.data ?? [];
+  const exams        = (examsRaw as any)?.data ?? (Array.isArray(examsRaw) ? examsRaw : []);
+  const students     = (studentsRaw as any)?.data ?? [];
+  const notices      = (announcementsRaw as any)?.data ?? (Array.isArray(announcementsRaw) ? announcementsRaw : []);
+
+  const slots = timetable.length > 0 ? timetable : schedule;
+
+  const dept        = (myTeacher as any)?.department?.name || '';
+  const employeeId  = (myTeacher as any)?.employeeId || '';
+  const firstName   = (myTeacher as any)?.user?.profile?.firstName || user?.email?.split('@')[0] || 'Teacher';
+  const lastName    = (myTeacher as any)?.user?.profile?.lastName  || '';
+  const isAdmin     = user?.role === 'SCHOOL_ADMIN';
+
+  const uniqueSubjects = Array.from(new Set(slots.map((s:any) => s.classSubject?.subject?.name).filter(Boolean)));
+  const uniqueSections = Array.from(new Set(slots.map((s:any) => s.section ? `${s.section?.class?.name || ''}${s.section?.name || ''}` : null).filter(Boolean)));
+
+  const TABS = [
+    { key:'home',     label:'🏠 Home' },
+    { key:'schedule', label:'📅 Schedule' },
+    { key:'students', label:'👩‍🎓 Students' },
+    { key:'exams',    label:'📝 Exams' },
+  ] as const;
 
   return (
     <>
-      <Topbar title="Teacher Portal" subtitle="Your personal teaching dashboard" />
-      <div className="p-6">
-        {/* Welcome */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 mb-6 text-white">
-          <div className="flex items-center justify-between">
+      <Topbar title="Teacher Portal" subtitle="Your teaching dashboard" />
+      <div className="p-6 space-y-5">
+
+        {/* Admin notice */}
+        {isAdmin && !loadingMe && !myTeacher && (
+          <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
+            <span className="text-2xl">👀</span>
             <div>
-              <p className="text-blue-200 text-sm">Good morning,</p>
-              <h1 className="text-2xl font-black mt-1">{user?.profile?.firstName ? `${user.profile.firstName} ${user.profile.lastName}` : 'Teacher'}</h1>
-              <p className="text-blue-200 text-sm mt-1">You have <strong className="text-white">{TODAY_SCHEDULE.length} classes</strong> today · <strong className="text-white">{PENDING_TASKS.filter(t=>t.priority==='HIGH').length} urgent tasks</strong> pending</p>
+              <p className="font-bold text-amber-800 text-sm">Admin Preview Mode</p>
+              <p className="text-amber-600 text-xs">Teachers see their personal schedule and class info when they log in.</p>
             </div>
-            <div className="text-right">
-              <p className="text-5xl font-black">{new Date().getDate()}</p>
-              <p className="text-blue-200 text-sm">{new Date().toLocaleDateString('en-PK',{month:'long',year:'numeric'})}</p>
+          </div>
+        )}
+
+        {/* Welcome banner */}
+        <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 text-white">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-blue-200 text-sm">Good day,</p>
+              {loadingMe
+                ? <div className="h-8 w-48 bg-white/20 rounded-lg mt-1 animate-pulse"/>
+                : <h2 className="text-2xl font-black mt-1">{ myTeacher ? `${firstName} ${lastName}` : 'Teaching Staff'}</h2>
+              }
+              <div className="flex flex-wrap gap-3 mt-2 text-sm text-blue-100">
+                {dept        && <span>🏫 {dept}</span>}
+                {employeeId  && <span>🆔 {employeeId}</span>}
+                {uniqueSubjects.length > 0 && <span>📚 {uniqueSubjects.slice(0,3).join(', ')}</span>}
+              </div>
+            </div>
+            <div className="text-center shrink-0">
+              <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center">
+                <span className="text-4xl">👨‍🏫</span>
+              </div>
+              {myTeacher && <p className="text-xs text-blue-200 mt-1">{uniqueSections.length} class{uniqueSections.length !== 1 ? 'es' : ''}</p>}
             </div>
           </div>
         </div>
 
-        {/* KPI Row */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
-          {[
-            { label:"Today's Classes", value:TODAY_SCHEDULE.length, icon:'📚', bg:'bg-blue-50', c:'text-blue-600' },
-            { label:'Total Students', value:165, icon:'👩‍🎓', bg:'bg-green-50', c:'text-green-600' },
-            { label:'Pending Assignments', value:8, icon:'📝', bg:'bg-yellow-50', c:'text-yellow-600' },
-            { label:'Unread Notices', value:3, icon:'🔔', bg:'bg-red-50', c:'text-red-600' },
-          ].map(k=>(
-            <div key={k.label} className={`${k.bg} rounded-2xl p-4 flex items-center gap-3`}>
-              <span className="text-2xl">{k.icon}</span>
-              <div><p className={`text-3xl font-black ${k.c}`}>{k.value}</p><p className="text-xs text-gray-500">{k.label}</p></div>
-            </div>
-          ))}
-        </div>
+        {/* Stats row */}
+        {myTeacher ? (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label:'Subjects',  value: uniqueSubjects.length || '—', icon:'📚', bg:'bg-blue-50',   fg:'text-blue-700' },
+              { label:'Sections',  value: uniqueSections.length || '—', icon:'🏫', bg:'bg-indigo-50', fg:'text-indigo-700' },
+              { label:'Periods',   value: slots.length || '—',          icon:'📅', bg:'bg-purple-50', fg:'text-purple-700' },
+              { label:'Exams',     value: exams.length || '—',          icon:'📝', bg:'bg-green-50',  fg:'text-green-700' },
+            ].map(s => (
+              <div key={s.label} className={`${s.bg} rounded-xl p-4`}>
+                <span className="text-xl">{s.icon}</span>
+                <p className={`text-xl font-black mt-1 ${s.fg}`}>{s.value}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{s.label}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label:'Teachers',  value: teachers.length || '—', icon:'👩‍🏫', bg:'bg-blue-50',   fg:'text-blue-700' },
+              { label:'Students',  value: students.length || '—', icon:'👩‍🎓', bg:'bg-green-50',  fg:'text-green-700' },
+              { label:'Exams',     value: exams.length   || '—', icon:'📝', bg:'bg-purple-50', fg:'text-purple-700' },
+              { label:'Notices',   value: notices.length || '—', icon:'📢', bg:'bg-yellow-50', fg:'text-yellow-700' },
+            ].map(s => (
+              <div key={s.label} className={`${s.bg} rounded-xl p-4`}>
+                <span className="text-xl">{s.icon}</span>
+                <p className={`text-xl font-black mt-1 ${s.fg}`}>{s.value}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{s.label}</p>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Tabs */}
-        <div className="flex gap-1 mb-5 bg-gray-100 rounded-xl p-1 w-fit">
-          {(['home','attendance','assignments','performance'] as const).map(t=>(
-            <button key={t} onClick={()=>setActiveTab(t)} className={`px-4 py-1.5 text-sm font-bold rounded-lg capitalize transition-all ${activeTab===t?'bg-white shadow text-gray-900':'text-gray-500'}`}>
-              {t==='home'?'🏠 Overview':t==='attendance'?'✅ Attendance':t==='assignments'?'📝 Assignments':'📊 Performance'}
+        <div className="flex gap-1 border-b border-gray-100">
+          {TABS.map(t => (
+            <button key={t.key} onClick={() => setTab(t.key)}
+              className={`px-4 py-2 text-sm font-semibold rounded-t-lg transition-all ${tab === t.key ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'}`}>
+              {t.label}
             </button>
           ))}
         </div>
 
-        {activeTab === 'home' && (
-          <div className="grid grid-cols-3 gap-5">
-            {/* Today's Schedule */}
-            <div className="col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-              <h3 className="font-bold text-gray-900 mb-4">📅 Today&apos;s Schedule</h3>
-              <div className="space-y-3">
-                {TODAY_SCHEDULE.map((s,i)=>(
-                  <div key={i} className="flex items-center gap-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
-                    <div className="text-center w-20 flex-shrink-0">
-                      <p className="font-black text-blue-700 text-sm">{s.time}</p>
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-bold text-gray-900 text-sm">{s.subject} — {s.class}</p>
-                      <p className="text-xs text-gray-400">{s.room} · {s.students} students</p>
-                    </div>
-                    <Link href="/attendance" className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-500">Mark ✓</Link>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Tasks */}
-            <div className="space-y-4">
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                <h3 className="font-bold text-gray-900 mb-3">⚡ Pending Tasks</h3>
-                <div className="space-y-2">
-                  {PENDING_TASKS.map((t,i)=>(
-                    <div key={i} className="p-3 bg-gray-50 rounded-xl">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="text-xs font-semibold text-gray-800 leading-tight">{t.task}</p>
-                        <Badge variant={t.priority==='HIGH'?'red':t.priority==='MEDIUM'?'yellow':'gray'}>{t.priority}</Badge>
-                      </div>
-                      <p className="text-[10px] text-gray-400 mt-1">Due: {t.due}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                <h3 className="font-bold text-gray-900 mb-3">📝 Upcoming Exams</h3>
-                {upcoming.length===0?<p className="text-sm text-gray-400">No upcoming exams</p>:(
+        {/* ── HOME tab ── */}
+        {tab === 'home' && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {/* Announcements */}
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+              <h3 className="font-bold text-gray-800 mb-3">📢 Announcements</h3>
+              {notices.length === 0
+                ? <Empty icon="📢" title="No announcements" desc="School-wide announcements appear here"/>
+                : (
                   <div className="space-y-2">
-                    {upcoming.map((e:any,i:number)=>(
-                      <div key={i} className="p-3 bg-yellow-50 rounded-xl border border-yellow-100">
-                        <p className="text-xs font-bold text-gray-900">{e.title}</p>
-                        <p className="text-[10px] text-gray-400">{new Date(e.startDate).toLocaleDateString('en-PK')}</p>
+                    {notices.slice(0,5).map((n:any) => (
+                      <div key={n.id} className="p-3 bg-blue-50 rounded-lg">
+                        <p className="text-sm font-semibold text-gray-800">{n.title}</p>
+                        <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{n.body || n.content || ''}</p>
+                        <p className="text-xs text-blue-400 mt-1">{new Date(n.createdAt).toLocaleDateString()}</p>
                       </div>
                     ))}
                   </div>
-                )}
-              </div>
+                )
+              }
             </div>
-          </div>
-        )}
 
-        {activeTab === 'attendance' && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-            <h3 className="font-bold text-gray-900 mb-4">Quick Attendance</h3>
-            <div className="flex gap-3 mb-5">
-              <select className="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white">
-                {TODAY_SCHEDULE.map(s=><option key={s.class}>{s.class} — {s.subject}</option>)}
-              </select>
-              <input type="date" defaultValue={new Date().toISOString().split('T')[0]} className="px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400"/>
-            </div>
-            <div className="grid grid-cols-2 gap-2 mb-4">
-              {MY_STUDENTS.slice(0,6).map((s,i)=>(
-                <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 bg-blue-100 rounded-lg flex items-center justify-center font-bold text-blue-700 text-xs">{s.name[0]}</div>
-                    <p className="text-sm font-medium text-gray-800">{s.name.split(' ')[0]}</p>
-                  </div>
-                  <div className="flex gap-1">
-                    <button className="px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-lg hover:bg-green-200">P</button>
-                    <button className="px-2 py-1 bg-red-100 text-red-600 text-xs font-bold rounded-lg hover:bg-red-200">A</button>
-                    <button className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-bold rounded-lg hover:bg-yellow-200">L</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <Link href="/attendance" className="block w-full text-center py-2.5 bg-green-600 text-white font-bold rounded-xl hover:bg-green-500 text-sm">Open Full Attendance Module →</Link>
-          </div>
-        )}
-
-        {activeTab === 'performance' && (
-          <div className="space-y-4">
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-              <div className="p-4 border-b border-gray-100"><h3 className="font-bold text-gray-900">My Students Performance</h3></div>
-              <table className="w-full">
-                <thead className="bg-gray-50"><tr>{['Student','Class','Attendance','Last Grade','Status'].map(h=><th key={h} className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">{h}</th>)}</tr></thead>
-                <tbody className="divide-y divide-gray-50">
-                  {MY_STUDENTS.map((s,i)=>(
-                    <tr key={i} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3"><div className="flex items-center gap-2"><div className="w-7 h-7 bg-blue-100 rounded-lg flex items-center justify-center font-bold text-blue-700 text-xs">{s.name[0]}</div><p className="font-semibold text-sm">{s.name}</p></div></td>
-                      <td className="px-4 py-3 text-sm text-gray-600">Grade {s.class}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden"><div className={`h-full rounded-full ${s.attendance>=90?'bg-green-500':s.attendance>=75?'bg-yellow-500':'bg-red-500'}`} style={{width:`${s.attendance}%`}}/></div>
-                          <span className="text-xs font-bold text-gray-700">{s.attendance}%</span>
+            {/* Today's schedule or teacher list */}
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+              <h3 className="font-bold text-gray-800 mb-3">
+                {myTeacher ? "📅 Today's Classes" : '👩‍🏫 Teaching Staff'}
+              </h3>
+              {myTeacher ? (
+                loadingSchedule ? <Skeleton/> : slots.length === 0
+                  ? <Empty icon="📅" title="No classes today" desc="Your schedule will appear here"/>
+                  : (
+                    <div className="space-y-2">
+                      {slots.slice(0,6).map((s:any) => (
+                        <div key={s.id} className="flex items-center gap-3 p-3 bg-indigo-50 rounded-lg">
+                          <div className="min-w-14 text-center">
+                            <p className="text-xs font-bold text-indigo-700">{s.startTime}</p>
+                            <p className="text-xs text-indigo-400">{s.endTime}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-800">{s.classSubject?.subject?.name || 'Subject'}</p>
+                            <p className="text-xs text-gray-500">{s.section?.class?.name || ''}{s.section?.name || ''}{s.room ? ` · Room ${s.room}` : ''}</p>
+                          </div>
                         </div>
-                      </td>
-                      <td className="px-4 py-3"><Badge variant={s.lastGrade==='A+'||s.lastGrade==='A'?'green':s.lastGrade==='B+'||s.lastGrade==='B'?'blue':'yellow'}>{s.lastGrade}</Badge></td>
-                      <td className="px-4 py-3"><Badge variant={s.status==='Excellent'?'green':s.status==='Good'?'blue':s.status==='Warning'?'yellow':'red'}>{s.status}</Badge></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      ))}
+                    </div>
+                  )
+              ) : (
+                teachers.length === 0
+                  ? <Empty icon="👩‍🏫" title="No teachers yet" desc="Add teachers to the school" cta={<Link href="/teachers" className="text-sm text-blue-600 font-semibold">Add teachers →</Link>}/>
+                  : (
+                    <div className="space-y-2">
+                      {teachers.map((t:any) => (
+                        <div key={t.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                          <div>
+                            <p className="text-sm font-medium text-gray-800">{t.user?.profile?.firstName} {t.user?.profile?.lastName}</p>
+                            <p className="text-xs text-gray-400">{t.department?.name || t.employeeId || ''}</p>
+                          </div>
+                          <Badge label={t.isActive ? 'Active' : 'Inactive'} color={t.isActive ? 'green' : 'red'} size="sm"/>
+                        </div>
+                      ))}
+                    </div>
+                  )
+              )}
             </div>
           </div>
         )}
 
-        {activeTab === 'assignments' && (
-          <div className="grid grid-cols-2 gap-4">
-            {TODAY_SCHEDULE.map((cls,i)=>(
-              <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                <div className="flex justify-between items-start mb-3">
-                  <div><h3 className="font-bold text-gray-900">{cls.class}</h3><p className="text-xs text-gray-400">{cls.subject}</p></div>
-                  <button className="px-3 py-1.5 bg-blue-50 text-blue-700 text-xs font-bold rounded-lg hover:bg-blue-100">+ Assignment</button>
-                </div>
-                <div className="space-y-2">
-                  {[{t:`Chapter ${i+4} Exercise`,due:'Jun 8',sub:Math.floor(cls.students*0.7),total:cls.students},{t:`Quiz ${i+1} Preparation`,due:'Jun 12',sub:0,total:cls.students}].map((a,j)=>(
-                    <div key={j} className="p-3 bg-gray-50 rounded-xl">
-                      <div className="flex justify-between items-start">
-                        <p className="text-xs font-semibold text-gray-800">{a.t}</p>
-                        <span className="text-[10px] text-gray-400">Due {a.due}</span>
-                      </div>
-                      <div className="flex items-center gap-2 mt-1.5">
-                        <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden"><div className="h-full bg-green-500 rounded-full" style={{width:`${(a.sub/a.total)*100}%`}}/></div>
-                        <span className="text-[10px] text-gray-500">{a.sub}/{a.total}</span>
-                      </div>
+        {/* ── SCHEDULE tab ── */}
+        {tab === 'schedule' && (
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+            {!teacherId && !loadingMe
+              ? <Empty icon="📅" title="Teacher schedule" desc="Teachers see their full weekly timetable here"/>
+              : (loadingSchedule || loadingTimetable)
+                ? <Skeleton/>
+                : slots.length === 0
+                  ? <Empty icon="📅" title="No schedule yet" desc="Timetable will appear once set up" cta={<Link href="/timetable" className="text-sm text-blue-600 font-semibold">Set up timetable →</Link>}/>
+                  : (
+                    <div className="space-y-4">
+                      {[1,2,3,4,5,6].map(day => {
+                        const daySlots = slots.filter((s:any) => s.dayOfWeek === day);
+                        if (!daySlots.length) return null;
+                        return (
+                          <div key={day}>
+                            <p className="text-xs font-bold text-gray-400 uppercase mb-2">{['Mon','Tue','Wed','Thu','Fri','Sat'][day-1]}</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                              {daySlots.map((s:any) => (
+                                <div key={s.id} className="flex items-center gap-3 p-3 bg-indigo-50 border border-indigo-100 rounded-lg">
+                                  <div className="min-w-12 text-center">
+                                    <p className="text-xs font-bold text-indigo-700">{s.startTime}</p>
+                                    <p className="text-xs text-indigo-400">{s.endTime}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-semibold text-gray-800">{s.classSubject?.subject?.name || 'Subject'}</p>
+                                    <p className="text-xs text-gray-500">{s.section?.class?.name || ''}{s.section?.name || ''}{s.room ? ` · ${s.room}` : ''}</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  ))}
-                </div>
-              </div>
-            ))}
+                  )
+            }
+          </div>
+        )}
+
+        {/* ── STUDENTS tab ── */}
+        {tab === 'students' && (
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+            {students.length === 0
+              ? <div className="p-6"><Empty icon="👩‍🎓" title="No students yet" desc="Enroll students to manage them here" cta={<Link href="/students" className="text-sm text-blue-600 font-semibold">Enroll students →</Link>}/></div>
+              : (
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>{['Student','Admission No','Class','Status'].map(h=><th key={h} className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">{h}</th>)}</tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {students.map((s:any) => {
+                      const enroll = s.enrollments?.[0];
+                      return (
+                        <tr key={s.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3">
+                            <p className="text-sm font-medium text-gray-800">{s.user?.profile?.firstName} {s.user?.profile?.lastName}</p>
+                            <p className="text-xs text-gray-400">{s.user?.email || ''}</p>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600">{s.admissionNo || '—'}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600">{enroll ? `${enroll.section?.class?.name || ''}${enroll.section?.name || ''}` : '—'}</td>
+                          <td className="px-4 py-3"><Badge label={s.isActive ? 'Active' : 'Inactive'} color={s.isActive ? 'green' : 'red'} size="sm"/></td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )
+            }
+          </div>
+        )}
+
+        {/* ── EXAMS tab ── */}
+        {tab === 'exams' && (
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+            {exams.length === 0
+              ? <div className="p-6"><Empty icon="📝" title="No exams scheduled" desc="Exams will appear here once created" cta={<Link href="/exams" className="text-sm text-blue-600 font-semibold">Manage exams →</Link>}/></div>
+              : (
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>{['Exam','Start Date','End Date','Status'].map(h=><th key={h} className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">{h}</th>)}</tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {exams.map((e:any) => (
+                      <tr key={e.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3">
+                          <p className="text-sm font-medium text-gray-800">{e.name || e.title || 'Exam'}</p>
+                          <p className="text-xs text-gray-400">{e.examType || ''}</p>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600">{e.startDate ? new Date(e.startDate).toLocaleDateString() : '—'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-600">{e.endDate ? new Date(e.endDate).toLocaleDateString() : '—'}</td>
+                        <td className="px-4 py-3"><Badge label={e.status || 'Scheduled'} color={e.status==='COMPLETED'?'green':e.status==='ONGOING'?'blue':'yellow'} size="sm"/></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )
+            }
           </div>
         )}
       </div>

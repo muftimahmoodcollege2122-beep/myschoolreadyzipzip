@@ -58,6 +58,13 @@ export class StudentsController {
     return this.studentsService.create(dto, tenantId, schoolId, user.sub);
   }
 
+  @Get('me')
+  @Roles('STUDENT', 'SCHOOL_ADMIN', 'TEACHER', 'PARENT')
+  @ApiOperation({ summary: 'Get current user\'s student record' })
+  async findMe(@TenantId() tenantId: string, @CurrentUser() user: JwtPayload) {
+    return this.studentsService.findByUserId(user.sub, tenantId);
+  }
+
   @Get()
   @Roles('SCHOOL_ADMIN', 'TEACHER')
   @ApiOperation({ summary: 'List students with filters and pagination' })

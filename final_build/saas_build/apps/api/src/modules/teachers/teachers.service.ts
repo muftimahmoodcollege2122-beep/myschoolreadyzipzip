@@ -45,6 +45,13 @@ export class TeachersService {
     return { data, meta: { total, page: Number(page), limit: Number(limit), totalPages: Math.ceil(total / Number(limit)) } };
   }
 
+  async findByUserId(userId: string, tenantId: string) {
+    return this.prisma.teacher.findFirst({
+      where: { userId, tenantId },
+      include: { user: { include: { profile: true } }, department: true },
+    });
+  }
+
   async findOne(id: string, tenantId: string) {
     const t = await this.prisma.teacher.findFirst({ where: { id, tenantId }, include: { user: { include: { profile: true } }, department: true } });
     if (!t) throw new NotFoundException('Teacher not found');
