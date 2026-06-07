@@ -1,9 +1,9 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PageHeader } from '../../../components/shared/page-header';
 import { Topbar } from '../../../components/layout/topbar';
-import { useAuthStore } from '../../../stores/auth.store';
 import { Badge } from '../../../components/shared/badge';
+import { useSchoolInfo, useUpdateSchoolInfo } from '../../../hooks/use-api';
 
 const TABS = [
   { id:'profile', label:'School Profile', icon:'🏫' },
@@ -16,6 +16,7 @@ const TABS = [
   { id:'roles', label:'Roles & Permissions', icon:'🔐' },
   { id:'billing', label:'Billing', icon:'💰' },
   { id:'security', label:'Security', icon:'🛡️' },
+  { id:'backup', label:'Backup & Restore', icon:'💾' },
 ] as const;
 type TabId = typeof TABS[number]['id'];
 
@@ -40,13 +41,71 @@ const INTEGRATIONS = [
 ];
 
 export default function SettingsPage() {
-  const { user } = useAuthStore();
   const [tab, setTab] = useState<TabId>('profile');
   const [primaryColor, setPrimaryColor] = useState('#2563EB');
-  const [logoText, setLogoText] = useState('MySchool Academy');
+  const [logoText, setLogoText] = useState('');
   const [saved, setSaved] = useState(false);
+  const [saveErr, setSaveErr] = useState('');
+  const [backupLoading, setBackupLoading] = useState(false);
+  const [profile, setProfile] = useState({
+    name: '', phone: '', email: '', website: '',
+    principalName: '', registrationNo: '', city: '', address: '', academicYear: '',
+  });
 
-  const save = () => { setSaved(true); setTimeout(()=>setSaved(false), 2000); };
+  const { data: schoolData, isLoading: schoolLoading } = useSchoolInfo();
+  const updateSchool = useUpdateSchoolInfo();
+  const school = schoolData as any;
+
+  useEffect(() => {
+    if (!school) return;
+    const addr = school.address as any || {};
+    const sett = school.settings as any || {};
+    setProfile({
+      name: school.name ?? '',
+      phone: school.phone ?? '',
+      email: school.email ?? '',
+      website: school.website ?? '',
+      principalName: sett.profile?.principalName ?? '',
+      registrationNo: sett.profile?.registrationNo ?? '',
+      city: addr.city ?? sett.profile?.city ?? '',
+      address: addr.street ?? '',
+      academicYear: school.academicYear ?? '',
+    });
+    setLogoText(school.name ?? '');
+  }, [school]);
+
+  const setField = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    setProfile(p => ({ ...p, [k]: e.target.value }));
+
+  const saveProfile = async () => {
+    setSaveErr('');
+    try {
+      await updateSchool.mutateAsync(profile);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (e: any) {
+      setSaveErr(e?.response?.data?.message ?? 'Failed to save. Please try again.');
+    }
+  };
+
+  const downloadBackup = async () => {
+    setBackupLoading(true);
+    try {
+      const { apiClient } = await import('../../../lib/api-client');
+      const data = await apiClient.get('/school/backup');
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `school-backup-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      alert('Backup failed. Please try again.');
+    } finally {
+      setBackupLoading(false);
+    }
+  };
 
   return (
     <>
@@ -54,6 +113,7 @@ export default function SettingsPage() {
       <div className="p-6">
         <PageHeader title="Settings & Configuration" subtitle="Manage your school's settings, integrations, and preferences" />
         {saved && <div className="mb-4 bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm font-semibold text-green-700">✅ Settings saved successfully!</div>}
+        {saveErr && <div className="mb-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600">{saveErr}</div>}
         <div className="grid grid-cols-12 gap-6">
           {/* Sidebar */}
           <div className="col-span-3">
@@ -70,22 +130,37 @@ export default function SettingsPage() {
           <div className="col-span-9">
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
 
-              {/* School Profile */}
+              {/* School Profile — wired to real API */}
               {tab==='profile' && (
                 <div>
                   <h3 className="font-black text-gray-900 text-lg mb-5">School Profile</h3>
-                  <div className="flex items-start gap-5 mb-5">
-                    <div className="w-20 h-20 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-black text-3xl flex-shrink-0">M</div>
-                    <div><p className="font-semibold text-gray-900 mb-1">School Logo</p><p className="text-xs text-gray-400 mb-2">PNG or JPG, recommended 200×200px</p><button className="px-3 py-1.5 text-xs font-bold border border-gray-200 rounded-lg hover:bg-gray-50">Upload Logo</button></div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 mb-5">
-                    {[['School Name','MySchool Academy'],['Registration No.','SCH-2024-001'],['Principal Name','Dr. Ahmed Khan'],['Contact Email','info@myschool.edu.pk'],['Phone','+92-21-1234567'],['City','Karachi']].map(([l,v])=>(
-                      <div key={l}><label className="block text-xs font-bold text-gray-400 uppercase mb-1">{l}</label><input defaultValue={v} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400"/></div>
-                    ))}
-                  </div>
-                  <div><label className="block text-xs font-bold text-gray-400 uppercase mb-1">Full Address</label>
-                    <textarea defaultValue="123 Education Street, Gulshan-e-Iqbal, Karachi, Pakistan" rows={2} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 resize-none mb-4"/></div>
-                  <button onClick={save} className="px-5 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-500">Save Profile</button>
+                  {schoolLoading ? (
+                    <div className="space-y-3">{[...Array(6)].map((_,i)=><div key={i} className="h-10 bg-gray-100 rounded-xl animate-pulse"/>)}</div>
+                  ) : (
+                    <>
+                      <div className="flex items-start gap-5 mb-5">
+                        <div className="w-20 h-20 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-black text-3xl flex-shrink-0">
+                          {(profile.name || 'M')[0].toUpperCase()}
+                        </div>
+                        <div><p className="font-semibold text-gray-900 mb-1">School Logo</p><p className="text-xs text-gray-400 mb-2">PNG or JPG, recommended 200×200px</p><button className="px-3 py-1.5 text-xs font-bold border border-gray-200 rounded-lg hover:bg-gray-50">Upload Logo</button></div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 mb-5">
+                        <div><label className="block text-xs font-bold text-gray-400 uppercase mb-1">School Name *</label><input value={profile.name} onChange={setField('name')} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400"/></div>
+                        <div><label className="block text-xs font-bold text-gray-400 uppercase mb-1">Registration No.</label><input value={profile.registrationNo} onChange={setField('registrationNo')} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400"/></div>
+                        <div><label className="block text-xs font-bold text-gray-400 uppercase mb-1">Principal Name</label><input value={profile.principalName} onChange={setField('principalName')} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400"/></div>
+                        <div><label className="block text-xs font-bold text-gray-400 uppercase mb-1">Contact Email</label><input type="email" value={profile.email} onChange={setField('email')} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400"/></div>
+                        <div><label className="block text-xs font-bold text-gray-400 uppercase mb-1">Phone</label><input value={profile.phone} onChange={setField('phone')} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400"/></div>
+                        <div><label className="block text-xs font-bold text-gray-400 uppercase mb-1">City</label><input value={profile.city} onChange={setField('city')} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400"/></div>
+                        <div><label className="block text-xs font-bold text-gray-400 uppercase mb-1">Website</label><input value={profile.website} onChange={setField('website')} placeholder="https://" className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400"/></div>
+                        <div><label className="block text-xs font-bold text-gray-400 uppercase mb-1">Academic Year</label><input value={profile.academicYear} onChange={setField('academicYear')} placeholder="2025-2026" className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400"/></div>
+                      </div>
+                      <div className="mb-5"><label className="block text-xs font-bold text-gray-400 uppercase mb-1">Full Address</label>
+                        <textarea value={profile.address} onChange={setField('address')} rows={2} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 resize-none"/></div>
+                      <button onClick={saveProfile} disabled={updateSchool.isPending} className="px-5 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-500 disabled:opacity-60">
+                        {updateSchool.isPending ? 'Saving…' : 'Save Profile'}
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -117,8 +192,8 @@ export default function SettingsPage() {
                       <p className="text-xs font-bold text-gray-500 uppercase mb-2">Live Preview</p>
                       <div className="border-2 border-dashed border-gray-200 rounded-xl p-4">
                         <div className="flex items-center gap-2 mb-3 p-2 rounded-xl" style={{background:primaryColor+'20',border:`1px solid ${primaryColor}40`}}>
-                          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-black text-sm" style={{background:primaryColor}}>{logoText[0]}</div>
-                          <span className="font-bold text-sm" style={{color:primaryColor}}>{logoText}</span>
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-black text-sm" style={{background:primaryColor}}>{(logoText||'M')[0]}</div>
+                          <span className="font-bold text-sm" style={{color:primaryColor}}>{logoText||school?.name||'MySchool'}</span>
                         </div>
                         <button className="w-full py-2 rounded-xl text-white text-sm font-bold mb-2" style={{background:primaryColor}}>Primary Button</button>
                         <div className="p-3 rounded-xl border" style={{borderColor:primaryColor+'40',background:primaryColor+'10'}}>
@@ -127,7 +202,7 @@ export default function SettingsPage() {
                       </div>
                     </div>
                   </div>
-                  <button onClick={save} className="mt-5 px-5 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-500">Apply Theme</button>
+                  <button className="mt-5 px-5 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-500">Apply Theme</button>
                 </div>
               )}
 
@@ -158,7 +233,7 @@ export default function SettingsPage() {
                       </label>
                     ))}
                   </div>
-                  <button onClick={save} className="px-5 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-500">Save Settings</button>
+                  <button className="px-5 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-500">Save Settings</button>
                 </div>
               )}
 
@@ -207,7 +282,7 @@ export default function SettingsPage() {
                               <input type={f.toLowerCase().includes('key')||f.toLowerCase().includes('salt')||f.toLowerCase().includes('password')?'password':'text'} placeholder={`Enter ${f}`} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 bg-white"/></div>
                           ))}
                         </div>
-                        <button onClick={save} className="mt-3 px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-500">Save Config</button>
+                        <button className="mt-3 px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-500">Save Config</button>
                       </div>
                     ))}
                   </div>
@@ -237,7 +312,7 @@ export default function SettingsPage() {
                       ))}
                     </div>
                   </div>
-                  <button onClick={save} className="px-5 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-500">Save SMS Settings</button>
+                  <button className="px-5 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-500">Save SMS Settings</button>
                 </div>
               )}
 
@@ -261,7 +336,7 @@ export default function SettingsPage() {
                       ))}
                     </div>
                   </div>
-                  <button onClick={save} className="px-5 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-500">Test & Save</button>
+                  <button className="px-5 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-500">Test & Save</button>
                 </div>
               )}
 
@@ -335,6 +410,66 @@ export default function SettingsPage() {
                     <p className="font-bold text-yellow-800 text-sm">⚠️ Danger Zone</p>
                     <p className="text-yellow-600 text-xs mt-1 mb-3">These actions are irreversible. Proceed with caution.</p>
                     <button className="px-4 py-2 bg-red-50 text-red-600 text-xs font-bold rounded-xl border border-red-200 hover:bg-red-100">Delete School Account</button>
+                  </div>
+                </div>
+              )}
+
+              {/* Backup & Restore */}
+              {tab==='backup' && (
+                <div>
+                  <h3 className="font-black text-gray-900 text-lg mb-2">💾 Backup & Restore</h3>
+                  <p className="text-sm text-gray-500 mb-6">Export all your school data as a JSON file, or restore from a previous backup.</p>
+
+                  <div className="border border-green-200 bg-green-50 rounded-2xl p-5 mb-5">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center text-2xl">📦</div>
+                      <div>
+                        <p className="font-bold text-green-900">Full Data Export</p>
+                        <p className="text-xs text-green-600">Students, teachers, classes, subjects, sections, announcements, events</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-green-700 mb-4">The backup file includes all your school data in JSON format. Keep it safe — it can be used to restore your data.</p>
+                    <button
+                      onClick={downloadBackup}
+                      disabled={backupLoading}
+                      className="px-5 py-2.5 bg-green-600 text-white text-sm font-bold rounded-xl hover:bg-green-500 transition-colors disabled:opacity-60 flex items-center gap-2"
+                    >
+                      {backupLoading ? '⏳ Generating…' : '⬇️ Download Backup'}
+                    </button>
+                  </div>
+
+                  <div className="border border-blue-200 bg-blue-50 rounded-2xl p-5 mb-5">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-2xl">📋</div>
+                      <div>
+                        <p className="font-bold text-blue-900">What&apos;s included in the backup</p>
+                        <p className="text-xs text-blue-600">All core school data</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      {['👨‍🎓 Students','👨‍🏫 Teachers','🏫 Classes','📚 Subjects','📋 Sections','📢 Announcements','🎉 Events','🏫 School Profile','⚙️ Settings'].map(item=>(
+                        <div key={item} className="flex items-center gap-2 bg-white rounded-lg px-3 py-2 border border-blue-100">
+                          <span className="text-xs text-gray-700">{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="border border-orange-200 bg-orange-50 rounded-2xl p-5">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center text-2xl">📤</div>
+                      <div>
+                        <p className="font-bold text-orange-900">Restore from Backup</p>
+                        <p className="text-xs text-orange-600">Upload a previously exported JSON backup file</p>
+                      </div>
+                    </div>
+                    <div className="border-2 border-dashed border-orange-300 rounded-xl p-6 text-center bg-white">
+                      <p className="text-2xl mb-2">📁</p>
+                      <p className="text-sm font-semibold text-gray-700 mb-1">Drop your backup file here</p>
+                      <p className="text-xs text-gray-400 mb-3">or click to browse — .json files only</p>
+                      <button className="px-4 py-2 bg-orange-100 text-orange-700 text-xs font-bold rounded-lg border border-orange-200 hover:bg-orange-200">Browse File</button>
+                    </div>
+                    <p className="text-xs text-orange-600 mt-3">⚠️ Restoring will overwrite existing data. Make sure to backup first.</p>
                   </div>
                 </div>
               )}

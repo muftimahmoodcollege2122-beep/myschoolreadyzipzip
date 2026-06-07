@@ -1,126 +1,152 @@
 'use client';
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../../../lib/api-client';
 import { Topbar } from '../../../components/layout/topbar';
 import { PageHeader } from '../../../components/shared/page-header';
-import { Modal } from '../../../components/shared/modal';
 import { Badge } from '../../../components/shared/badge';
-import { DataTable } from '../../../components/shared/data-table';
+import { Modal } from '../../../components/shared/modal';
+import { useLessonPlans, useCreateLessonPlan, useSubmitLessonPlan, useSubjects, useSections } from '../../../hooks/use-api';
 
-const STATUSES_LP = ['DRAFT','SUBMITTED','APPROVED','REJECTED'];
-const SV: Record<string,any> = { DRAFT:'gray', SUBMITTED:'blue', APPROVED:'green', REJECTED:'red' };
+const STATUS_COLOR: Record<string, string> = { DRAFT: 'gray', SUBMITTED: 'blue', APPROVED: 'green', REJECTED: 'red' };
+const EMPTY = { title: '', subjectId: '', sectionId: '', week: new Date().toISOString().split('T')[0].substring(0, 7), objectives: '', content: '', resources: '', activities: '', assessment: '' };
 
 export default function LessonPlansPage() {
-  const qc = useQueryClient();
-  const [tab, setTab] = useState<'plans'|'substitutions'|'training'>('plans');
-  const [createModal, setCreateModal] = useState(false);
-  const [viewModal, setViewModal] = useState<any>(null);
-  const [subModal, setSubModal] = useState(false);
-  const [filterStatus, setFilterStatus] = useState('');
-  const [form, setForm] = useState({ title:'', objectives:'', materials:'', methodology:'', activities:'', assessment:'', scheduledDate:new Date().toISOString().split('T')[0], duration:45 });
-  const [subForm, setSubForm] = useState({ absentTeacherId:'', substituteTeacherId:'', date:new Date().toISOString().split('T')[0], reason:'' });
+  const [statusFilter, setStatusFilter] = useState('');
+  const [search, setSearch] = useState('');
+  const [modal, setModal] = useState(false);
+  const [form, setForm] = useState(EMPTY);
+  const [selected, setSelected] = useState<any>(null);
 
-  const { data: plans, isLoading } = useQuery({ queryKey:['lesson-plans',filterStatus], queryFn:()=>apiClient.get(`/hr-extended/lesson-plans?status=${filterStatus}`) });
-  const { data: subs, isLoading:sl } = useQuery({ queryKey:['substitutions'], queryFn:()=>apiClient.get('/hr-extended/substitutions'), enabled:tab==='substitutions' });
-  const { data: training, isLoading:tl } = useQuery({ queryKey:['training'], queryFn:()=>apiClient.get('/hr-extended/training'), enabled:tab==='training' });
-  const { data: teachers } = useQuery({ queryKey:['teachers-list'], queryFn:()=>apiClient.get('/teachers') });
-
-  const create = useMutation({ mutationFn:(d:any)=>apiClient.post('/hr-extended/lesson-plans',d), onSuccess:()=>{qc.invalidateQueries({queryKey:['lesson-plans']});setCreateModal(false);setForm({title:'',objectives:'',materials:'',methodology:'',activities:'',assessment:'',scheduledDate:new Date().toISOString().split('T')[0],duration:45});} });
-  const approve = useMutation({ mutationFn:(id:string)=>apiClient.put(`/hr-extended/lesson-plans/${id}/approve`,{}), onSuccess:()=>qc.invalidateQueries({queryKey:['lesson-plans']}) });
-  const reject = useMutation({ mutationFn:(id:string)=>apiClient.put(`/hr-extended/lesson-plans/${id}/reject`,{}), onSuccess:()=>qc.invalidateQueries({queryKey:['lesson-plans']}) });
-  const createSub = useMutation({ mutationFn:(d:any)=>apiClient.post('/hr-extended/substitutions',d), onSuccess:()=>{qc.invalidateQueries({queryKey:['substitutions']});setSubModal(false);} });
+  const { data: plans = [], isLoading } = useLessonPlans({ status: statusFilter });
+  const { data: subjects = [] } = useSubjects();
+  const { data: sections = [] } = useSections();
+  const create = useCreateLessonPlan();
+  const submit = useSubmitLessonPlan();
 
   const planList: any[] = Array.isArray(plans) ? plans : [];
-  const subList: any[] = Array.isArray(subs) ? subs : [];
-  const trainingList: any[] = Array.isArray(training) ? training : [];
-  const teacherList: any[] = Array.isArray(teachers) ? teachers : ((teachers as any)?.data ?? []);
+  const filtered = planList.filter(p =>
+    (!search || p.title?.toLowerCase().includes(search.toLowerCase())) &&
+    (!statusFilter || p.status === statusFilter)
+  );
 
-  const planCols = [
-    { key:'title', header:'Lesson Plan', render:(p:any)=><div><p className="font-bold text-sm">{p.title}</p><p className="text-xs text-gray-400">{p.teacher?.user?.profile?.firstName} · {p.subject?.name}</p></div> },
-    { key:'date', header:'Scheduled', render:(p:any)=><span className="text-xs text-gray-500">{new Date(p.scheduledDate).toLocaleDateString()}</span> },
-    { key:'dur', header:'Duration', render:(p:any)=><span className="text-sm font-medium">{p.duration} min</span> },
-    { key:'status', header:'Status', render:(p:any)=><Badge variant={SV[p.status]}>{p.status}</Badge> },
-    { key:'act', header:'', render:(p:any)=>(
-      <div className="flex gap-2">
-        <button onClick={()=>setViewModal(p)} className="px-2 py-1 text-xs text-blue-700 bg-blue-50 rounded font-bold">View</button>
-        {p.status==='SUBMITTED'&&<><button onClick={()=>approve.mutate(p.id)} className="px-2 py-1 text-xs text-green-700 bg-green-50 rounded font-bold">✓</button><button onClick={()=>reject.mutate(p.id)} className="px-2 py-1 text-xs text-red-700 bg-red-50 rounded font-bold">✕</button></>}
-      </div>
-    )},
-  ];
-  const subCols = [
-    { key:'absent', header:'Absent Teacher', render:(s:any)=><span className="font-semibold text-sm">{s.absentTeacher?.user?.profile?.firstName??'—'}</span> },
-    { key:'sub', header:'Substitute', render:(s:any)=><span className="text-sm">{s.substituteTeacher?.user?.profile?.firstName??'—'}</span> },
-    { key:'date', header:'Date', render:(s:any)=><span className="text-xs">{new Date(s.date).toLocaleDateString()}</span> },
-    { key:'reason', header:'Reason', render:(s:any)=><span className="text-xs text-gray-400">{s.reason}</span> },
-    { key:'status', header:'Status', render:(s:any)=><Badge variant={s.status==='CONFIRMED'?'green':'yellow'}>{s.status}</Badge> },
-  ];
-  const trainingCols = [
-    { key:'title', header:'Training Program', render:(t:any)=><div><p className="font-bold text-sm">{t.title}</p>{t.provider&&<p className="text-xs text-gray-400">{t.provider}</p>}</div> },
-    { key:'type', header:'Type', render:(t:any)=><span className="text-xs text-gray-500">{t.type}</span> },
-    { key:'date', header:'Date', render:(t:any)=><span className="text-xs">{t.startDate?new Date(t.startDate).toLocaleDateString():'—'}</span> },
-    { key:'status', header:'Status', render:(t:any)=><Badge variant={t.status==='COMPLETED'?'green':t.status==='ONGOING'?'blue':'gray'}>{t.status}</Badge> },
-    { key:'cert', header:'Certificate', render:(t:any)=>t.certificateUrl&&<a href={t.certificateUrl} target="_blank" className="text-xs text-blue-600 underline">Download</a> },
-  ];
+  const handleCreate = async () => {
+    if (!form.title) return;
+    await create.mutateAsync(form);
+    setForm(EMPTY); setModal(false);
+  };
 
-  const draftCount = planList.filter((p:any)=>p.status==='DRAFT').length;
-  const pendingCount = planList.filter((p:any)=>p.status==='SUBMITTED').length;
+  const handleSubmit = async (id: string) => {
+    await submit.mutateAsync(id);
+  };
+
+  const formatDate = (d: string) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
 
   return (
     <>
-      <Topbar title="HR Tools" subtitle="Lesson plans, substitutions, and training"/>
+      <Topbar title="Lesson Plans" subtitle="Teaching plan management" />
       <div className="p-6">
-        <PageHeader title="HR Tools" subtitle={`${draftCount} drafts · ${pendingCount} pending approval`}
-          action={<div className="flex gap-2">
-            <div className="flex bg-gray-100 p-1 rounded-lg">{(['plans','substitutions','training'] as const).map(t=><button key={t} onClick={()=>setTab(t)} className={`px-3 py-1.5 text-xs font-bold rounded-md capitalize ${tab===t?'bg-white shadow':''}`}>{t}</button>)}</div>
-            {tab==='plans'&&<button onClick={()=>setCreateModal(true)} className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg">+ Lesson Plan</button>}
-            {tab==='substitutions'&&<button onClick={()=>setSubModal(true)} className="px-4 py-2 bg-orange-600 text-white text-sm font-bold rounded-lg">+ Substitution</button>}
-          </div>}/>
-
-        {tab==='plans'&&(<>
-          <div className="flex gap-2 mb-4">{['','DRAFT','SUBMITTED','APPROVED','REJECTED'].map(s=><button key={s} onClick={()=>setFilterStatus(s)} className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all ${filterStatus===s?'bg-blue-600 text-white border-blue-600':'border-gray-200 text-gray-500 hover:bg-gray-50'}`}>{s||'All'}</button>)}</div>
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm"><DataTable columns={planCols} data={planList} isLoading={isLoading} emptyMessage="No lesson plans found"/></div>
-        </>)}
-        {tab==='substitutions'&&<div className="bg-white rounded-xl border border-gray-100 shadow-sm"><DataTable columns={subCols} data={subList} isLoading={sl} emptyMessage="No substitutions recorded"/></div>}
-        {tab==='training'&&<div className="bg-white rounded-xl border border-gray-100 shadow-sm"><DataTable columns={trainingCols} data={trainingList} isLoading={tl} emptyMessage="No training records found"/></div>}
-
-        <Modal isOpen={createModal} onClose={()=>setCreateModal(false)} title="Create Lesson Plan" size="lg">
-          <div className="space-y-3 max-h-[70vh] overflow-y-auto">
-            <div><label className="block text-xs font-bold text-gray-400 uppercase mb-1">Title</label><input value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))} placeholder="e.g. Introduction to Algebra" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"/></div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><label className="block text-xs font-bold text-gray-400 uppercase mb-1">Scheduled Date</label><input type="date" value={form.scheduledDate} onChange={e=>setForm(f=>({...f,scheduledDate:e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"/></div>
-              <div><label className="block text-xs font-bold text-gray-400 uppercase mb-1">Duration (min)</label><input type="number" value={form.duration} onChange={e=>setForm(f=>({...f,duration:+e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"/></div>
+        <PageHeader title="Lesson Plans" subtitle={`${planList.length} lesson plans`}
+          action={<button onClick={() => setModal(true)} className="px-4 py-2 bg-green-600 text-white text-sm font-bold rounded-lg hover:bg-green-500">+ Create Plan</button>}
+        />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          {[
+            { label: 'Total Plans', value: planList.length, icon: '📋', color: 'text-blue-600', bg: 'bg-blue-50' },
+            { label: 'Approved', value: planList.filter(p => p.status === 'APPROVED').length, icon: '✅', color: 'text-green-600', bg: 'bg-green-50' },
+            { label: 'Submitted', value: planList.filter(p => p.status === 'SUBMITTED').length, icon: '📤', color: 'text-blue-600', bg: 'bg-blue-50' },
+            { label: 'Drafts', value: planList.filter(p => p.status === 'DRAFT').length, icon: '✏️', color: 'text-gray-600', bg: 'bg-gray-50' },
+          ].map(s => (
+            <div key={s.label} className={`${s.bg} rounded-xl p-4`}>
+              <div className="flex items-center gap-2 mb-1"><span>{s.icon}</span><p className="text-xs text-gray-500">{s.label}</p></div>
+              <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
             </div>
-            <div><label className="block text-xs font-bold text-gray-400 uppercase mb-1">Learning Objectives</label><textarea value={form.objectives} onChange={e=>setForm(f=>({...f,objectives:e.target.value}))} rows={2} placeholder="Students will be able to..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"/></div>
-            <div><label className="block text-xs font-bold text-gray-400 uppercase mb-1">Materials Needed</label><textarea value={form.materials} onChange={e=>setForm(f=>({...f,materials:e.target.value}))} rows={2} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"/></div>
-            <div><label className="block text-xs font-bold text-gray-400 uppercase mb-1">Teaching Methodology</label><textarea value={form.methodology} onChange={e=>setForm(f=>({...f,methodology:e.target.value}))} rows={2} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"/></div>
-            <div><label className="block text-xs font-bold text-gray-400 uppercase mb-1">Activities</label><textarea value={form.activities} onChange={e=>setForm(f=>({...f,activities:e.target.value}))} rows={2} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"/></div>
-            <div><label className="block text-xs font-bold text-gray-400 uppercase mb-1">Assessment Method</label><textarea value={form.assessment} onChange={e=>setForm(f=>({...f,assessment:e.target.value}))} rows={2} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"/></div>
-            <div className="flex gap-2 sticky bottom-0 bg-white pt-2"><button onClick={()=>setCreateModal(false)} className="flex-1 py-2 text-sm border rounded-lg">Cancel</button><button onClick={()=>create.mutate({...form,status:'DRAFT'})} disabled={!form.title||create.isPending} className="flex-1 py-2 text-sm bg-gray-600 text-white font-bold rounded-lg">Save Draft</button><button onClick={()=>create.mutate({...form,status:'SUBMITTED'})} disabled={!form.title||create.isPending} className="flex-1 py-2 text-sm bg-blue-600 text-white font-bold rounded-lg">{create.isPending?'Submitting...':'Submit for Approval'}</button></div>
-          </div>
-        </Modal>
-
-        <Modal isOpen={!!viewModal} onClose={()=>setViewModal(null)} title={viewModal?.title??''} size="lg">
-          {viewModal&&<div className="space-y-3">
-            <div className="flex gap-2"><Badge variant={SV[viewModal.status]}>{viewModal.status}</Badge><span className="text-xs text-gray-400">{viewModal.duration} min</span></div>
-            {[{label:'Objectives',text:viewModal.objectives},{label:'Materials',text:viewModal.materials},{label:'Methodology',text:viewModal.methodology},{label:'Activities',text:viewModal.activities},{label:'Assessment',text:viewModal.assessment}].filter(s=>s.text).map(s=>(
-              <div key={s.label} className="bg-gray-50 rounded-xl p-3"><p className="text-xs font-bold text-gray-400 uppercase mb-1">{s.label}</p><p className="text-sm text-gray-700">{s.text}</p></div>
+          ))}
+        </div>
+        <div className="flex gap-3 mb-6 flex-wrap">
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search lesson plans..." className="flex-1 min-w-48 px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+          <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
+            {['', 'DRAFT', 'SUBMITTED', 'APPROVED', 'REJECTED'].map(s => (
+              <button key={s || 'all'} onClick={() => setStatusFilter(s)} className={`px-3 py-1 text-xs rounded-lg font-medium transition-all ${statusFilter === s ? 'bg-white text-green-700 shadow-sm' : 'text-gray-500'}`}>{s || 'All'}</button>
             ))}
-          </div>}
-        </Modal>
-
-        <Modal isOpen={subModal} onClose={()=>setSubModal(false)} title="Record Substitution">
-          <div className="space-y-3">
-            <div><label className="block text-xs font-bold text-gray-400 uppercase mb-1">Absent Teacher</label><select value={subForm.absentTeacherId} onChange={e=>setSubForm(f=>({...f,absentTeacherId:e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white"><option value="">Select teacher</option>{teacherList.map((t:any)=><option key={t.id} value={t.id}>{t.user?.profile?.firstName} {t.user?.profile?.lastName}</option>)}</select></div>
-            <div><label className="block text-xs font-bold text-gray-400 uppercase mb-1">Substitute Teacher</label><select value={subForm.substituteTeacherId} onChange={e=>setSubForm(f=>({...f,substituteTeacherId:e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white"><option value="">Select teacher</option>{teacherList.map((t:any)=><option key={t.id} value={t.id}>{t.user?.profile?.firstName} {t.user?.profile?.lastName}</option>)}</select></div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><label className="block text-xs font-bold text-gray-400 uppercase mb-1">Date</label><input type="date" value={subForm.date} onChange={e=>setSubForm(f=>({...f,date:e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"/></div>
-            </div>
-            <div><label className="block text-xs font-bold text-gray-400 uppercase mb-1">Reason</label><input value={subForm.reason} onChange={e=>setSubForm(f=>({...f,reason:e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"/></div>
-            <button onClick={()=>createSub.mutate(subForm)} disabled={!subForm.absentTeacherId||!subForm.substituteTeacherId||createSub.isPending} className="w-full py-2.5 bg-orange-600 text-white font-bold rounded-lg disabled:opacity-50">{createSub.isPending?'Saving...':'Save Substitution'}</button>
           </div>
-        </Modal>
+        </div>
+        {isLoading ? <div className="text-center py-12 text-gray-400">Loading lesson plans...</div>
+          : filtered.length === 0 ? (
+            <div className="text-center py-12 text-gray-400">
+              <p className="text-4xl mb-2">📋</p>
+              <p className="font-medium">{search || statusFilter ? 'No plans found' : 'No lesson plans yet'}</p>
+              {!search && !statusFilter && <p className="text-sm mt-1">Create your first lesson plan</p>}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filtered.map((plan: any) => (
+                <div key={plan.id} onClick={() => setSelected(plan)} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 cursor-pointer hover:shadow-md transition-all">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <p className="font-bold text-gray-900">{plan.title}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {plan.subject?.name || 'N/A'} · {plan.section ? `${plan.section.class?.name} - ${plan.section.name}` : 'N/A'}
+                        {plan.week ? ` · Week: ${plan.week}` : ''}
+                      </p>
+                    </div>
+                    <Badge variant={STATUS_COLOR[plan.status] as any}>{plan.status}</Badge>
+                  </div>
+                  {plan.objectives && <p className="text-xs text-gray-500 mb-3 line-clamp-2">🎯 {plan.objectives}</p>}
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                    <span className="text-xs text-gray-400">{formatDate(plan.createdAt)}</span>
+                    {plan.status === 'DRAFT' && (
+                      <button onClick={e => { e.stopPropagation(); handleSubmit(plan.id); }} className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100">📤 Submit</button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
       </div>
+      <Modal isOpen={modal} onClose={() => setModal(false)} title="Create Lesson Plan">
+        <div className="p-6 space-y-4">
+          <div><label className="text-xs text-gray-500 mb-1 block">Plan Title *</label>
+            <input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="e.g. Chapter 5: Photosynthesis" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className="text-xs text-gray-500 mb-1 block">Subject</label>
+              <select value={form.subjectId} onChange={e => setForm({ ...form, subjectId: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                <option value="">Select Subject</option>
+                {(Array.isArray(subjects) ? subjects : []).map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select></div>
+            <div><label className="text-xs text-gray-500 mb-1 block">Section</label>
+              <select value={form.sectionId} onChange={e => setForm({ ...form, sectionId: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                <option value="">Select Section</option>
+                {(Array.isArray(sections) ? sections : []).map((s: any) => <option key={s.id} value={s.id}>{s.class?.name} - {s.name}</option>)}
+              </select></div>
+          </div>
+          <div><label className="text-xs text-gray-500 mb-1 block">Week</label>
+            <input type="week" value={form.week} onChange={e => setForm({ ...form, week: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" /></div>
+          {[['objectives','Learning Objectives'],['content','Content / Topics'],['activities','Activities'],['resources','Resources / Materials'],['assessment','Assessment Method']].map(([k,label]) => (
+            <div key={k}><label className="text-xs text-gray-500 mb-1 block">{label}</label>
+              <textarea rows={2} value={(form as any)[k]} onChange={e => setForm({ ...form, [k]: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" placeholder={label} /></div>
+          ))}
+          <button onClick={handleCreate} disabled={create.isPending} className="w-full py-2 bg-green-600 text-white text-sm rounded-lg disabled:opacity-50">
+            {create.isPending ? 'Creating...' : 'Save as Draft'}
+          </button>
+        </div>
+      </Modal>
+      <Modal isOpen={!!selected} onClose={() => setSelected(null)} title={selected?.title || ''}>
+        {selected && (
+          <div className="p-6 space-y-3">
+            <div className="flex gap-2 mb-2">
+              <Badge variant={STATUS_COLOR[selected.status] as any}>{selected.status}</Badge>
+              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{selected.subject?.name || 'N/A'}</span>
+            </div>
+            {[['Objectives',selected.objectives],['Content',selected.content],['Activities',selected.activities],['Resources',selected.resources],['Assessment',selected.assessment]].filter(([,v]) => v).map(([k,v]) => (
+              <div key={k}>
+                <p className="text-xs font-bold text-gray-400 uppercase mb-1">{k}</p>
+                <p className="text-sm text-gray-700">{String(v)}</p>
+              </div>
+            ))}
+            {selected.status === 'DRAFT' && (
+              <button onClick={() => { handleSubmit(selected.id); setSelected(null); }} className="w-full py-2 bg-blue-600 text-white text-sm rounded-lg">📤 Submit for Approval</button>
+            )}
+          </div>
+        )}
+      </Modal>
     </>
   );
 }

@@ -474,3 +474,57 @@ export const useCreateForm = () => {
 
 export const useSubmitFormResponse = () =>
   useMutation({ mutationFn: ({ formId, ...dto }: any) => apiClient.post(`/forms/${formId}/submit`, dto) });
+
+// ── LMS ─────────────────────────────────────────────────────────────────────
+export const useLmsCourses = () =>
+  useQuery({ queryKey: ['lms-courses'], queryFn: () => apiClient.get('/school/lms'), staleTime: 5*60*1000 });
+
+export const useCreateLmsCourse = () => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (dto: any) => apiClient.post('/school/lms', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['lms-courses'] }) });
+};
+
+export const useUpdateLmsCourse = () => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: ({ id, ...dto }: any) => apiClient.put(`/school/lms/${id}`, dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['lms-courses'] }) });
+};
+
+export const useDeleteLmsCourse = () => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (id: string) => apiClient.delete(`/school/lms/${id}`), onSuccess: () => qc.invalidateQueries({ queryKey: ['lms-courses'] }) });
+};
+
+// ── Website Settings ─────────────────────────────────────────────────────────
+export const useWebsiteSettings = () =>
+  useQuery({ queryKey: ['website-settings'], queryFn: () => apiClient.get('/school/website-settings'), staleTime: 5*60*1000 });
+
+export const useSaveWebsiteSettings = () => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (dto: any) => apiClient.put('/school/website-settings', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['website-settings'] }) });
+};
+
+// ── Generic School Section CRUD ───────────────────────────────────────────────
+export const useSchoolSection = (section: string) =>
+  useQuery({ queryKey: ['school-section', section], queryFn: () => apiClient.get(`/school/section/${section}`), staleTime: 2*60*1000 });
+
+export const useCreateSchoolItem = (section: string) => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (dto: any) => apiClient.post(`/school/section/${section}`, dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['school-section', section] }) });
+};
+
+export const useUpdateSchoolItem = (section: string) => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: ({ id, ...dto }: any) => apiClient.put(`/school/section/${section}/${id}`, dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['school-section', section] }) });
+};
+
+export const useDeleteSchoolItem = (section: string) => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (id: string) => apiClient.delete(`/school/section/${section}/${id}`), onSuccess: () => qc.invalidateQueries({ queryKey: ['school-section', section] }) });
+};
+
+// ── Delete Announcement ───────────────────────────────────────────────────────
+export const useDeleteAnnouncement = () => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (id: string) => apiClient.delete(`/school/announcements/${id}`), onSuccess: () => qc.invalidateQueries({ queryKey: ['announcements'] }) });
+};
+

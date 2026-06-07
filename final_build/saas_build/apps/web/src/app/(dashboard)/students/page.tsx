@@ -7,7 +7,7 @@ import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
 import { Topbar } from '../../../components/layout/topbar';
 import type { Student } from '../../../types';
-const FIELDS = [['firstName','First Name','text'],['lastName','Last Name','text'],['email','Email','email'],['rollNumber','Roll Number','text'],['phone','Phone','tel'],['admissionDate','Admission Date','date']];
+const FIELDS = [['firstName','First Name','text'],['lastName','Last Name','text'],['email','Email','email'],['admissionNo','Admission No','text'],['rollNumber','Roll Number','text'],['phone','Phone','tel'],['admissionDate','Admission Date','date']];
 export default function StudentsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');

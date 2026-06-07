@@ -4,241 +4,124 @@ import { Topbar } from '../../../components/layout/topbar';
 import { PageHeader } from '../../../components/shared/page-header';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
+import { useSchoolSection, useCreateSchoolItem, useDeleteSchoolItem } from '../../../hooks/use-api';
 
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const DUTY_TYPES = ['Gate Duty', 'Canteen Supervision', 'Corridor Patrol', 'Library Duty', 'Assembly Duty', 'Exam Invigilation', 'Sports Supervision', 'Staff Room'];
-
-const ROSTER: Record<string, { teacher: string; duty: string; time: string; location: string }[]> = {
-  Monday: [
-    { teacher: 'Mr. Ahmed Malik', duty: 'Gate Duty', time: '7:30–8:30 AM', location: 'Main Gate' },
-    { teacher: 'Mrs. Sara Khan', duty: 'Assembly Duty', time: '8:00–8:30 AM', location: 'Assembly Hall' },
-    { teacher: 'Dr. Fatima Shah', duty: 'Canteen Supervision', time: '12:30–1:30 PM', location: 'Canteen' },
-    { teacher: 'Mr. Omar Qureshi', duty: 'Sports Supervision', time: '2:30–4:00 PM', location: 'School Ground' },
-  ],
-  Tuesday: [
-    { teacher: 'Mrs. Nadia Rehman', duty: 'Gate Duty', time: '7:30–8:30 AM', location: 'Main Gate' },
-    { teacher: 'Mr. Ibrahim Ali', duty: 'Corridor Patrol', time: '10:00–10:30 AM', location: 'Block A & B' },
-    { teacher: 'Mrs. Rukhsana Malik', duty: 'Library Duty', time: '1:00–3:00 PM', location: 'Library' },
-    { teacher: 'Mr. Bilal Hassan', duty: 'Canteen Supervision', time: '12:30–1:30 PM', location: 'Canteen' },
-  ],
-  Wednesday: [
-    { teacher: 'Dr. Fatima Shah', duty: 'Gate Duty', time: '7:30–8:30 AM', location: 'Main Gate' },
-    { teacher: 'Mr. Ahmed Malik', duty: 'Assembly Duty', time: '8:00–8:30 AM', location: 'Assembly Hall' },
-    { teacher: 'Mrs. Sara Khan', duty: 'Corridor Patrol', time: '11:00–11:30 AM', location: 'All Blocks' },
-    { teacher: 'Mr. Omar Qureshi', duty: 'Canteen Supervision', time: '12:30–1:30 PM', location: 'Canteen' },
-  ],
-  Thursday: [
-    { teacher: 'Mr. Ibrahim Ali', duty: 'Gate Duty', time: '7:30–8:30 AM', location: 'Main Gate' },
-    { teacher: 'Mrs. Nadia Rehman', duty: 'Library Duty', time: '11:00 AM–1:00 PM', location: 'Library' },
-    { teacher: 'Mr. Bilal Hassan', duty: 'Corridor Patrol', time: '10:00–10:30 AM', location: 'Block C & D' },
-    { teacher: 'Mrs. Rukhsana Malik', duty: 'Sports Supervision', time: '2:30–4:00 PM', location: 'Sports Ground' },
-  ],
-  Friday: [
-    { teacher: 'Mr. Ahmed Malik', duty: 'Gate Duty', time: '7:30–8:30 AM', location: 'Main Gate' },
-    { teacher: 'Dr. Fatima Shah', duty: 'Assembly Duty', time: '1:00–2:00 PM', location: 'Assembly Hall (Jummah)' },
-    { teacher: 'Mrs. Sara Khan', duty: 'Canteen Supervision', time: '12:00–1:00 PM', location: 'Canteen' },
-  ],
-  Saturday: [
-    { teacher: 'Mr. Omar Qureshi', duty: 'Gate Duty', time: '8:00–9:00 AM', location: 'Main Gate' },
-    { teacher: 'Mrs. Nadia Rehman', duty: 'Sports Supervision', time: '9:00 AM–12:00 PM', location: 'Ground' },
-  ],
-};
-
-const TEACHERS = ['Mr. Ahmed Malik', 'Mrs. Sara Khan', 'Dr. Fatima Shah', 'Mr. Omar Qureshi', 'Mrs. Nadia Rehman', 'Mr. Ibrahim Ali', 'Mr. Bilal Hassan', 'Mrs. Rukhsana Malik'];
+const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const DUTIES = ['Gate Duty','Library','Lab Supervision','Assembly','Playground','Exam Hall','Cafeteria','Office'];
+const EMPTY = { staffName: '', duty: 'Gate Duty', day: 'Monday', shift: 'Morning', from: '07:00', to: '14:00', location: '' };
 
 export default function DutyRosterPage() {
-  const [selectedDay, setSelectedDay] = useState('Monday');
-  const [view, setView] = useState<'weekly' | 'teacher' | 'substitution'>('weekly');
-  const [selectedTeacher, setSelectedTeacher] = useState('');
-  const [addModal, setAddModal] = useState(false);
-  const [subModal, setSubModal] = useState(false);
+  const [dayFilter, setDayFilter] = useState('');
+  const [modal, setModal] = useState(false);
+  const [form, setForm] = useState(EMPTY);
 
-  const teacherDuties = TEACHERS.map(t => ({
-    teacher: t,
-    duties: Object.entries(ROSTER).flatMap(([day, duties]) => duties.filter(d => d.teacher === t).map(d => ({ ...d, day }))),
-  }));
+  const { data: roster = [], isLoading } = useSchoolSection('dutyroster');
+  const create = useCreateSchoolItem('dutyroster');
+  const del = useDeleteSchoolItem('dutyroster');
 
-  const weeklyCount = (t: string) => teacherDuties.find(td => td.teacher === t)?.duties.length || 0;
+  const rosterList: any[] = Array.isArray(roster) ? roster : [];
+  const filtered = rosterList.filter(r => !dayFilter || r.day === dayFilter);
+
+  const handleCreate = async () => {
+    if (!form.staffName || !form.duty) return;
+    await create.mutateAsync(form);
+    setForm(EMPTY); setModal(false);
+  };
 
   return (
     <>
-      <Topbar title="Duty Roster" subtitle="Weekly staff duty assignments & supervision schedule" />
+      <Topbar title="Duty Roster" subtitle="Staff duty assignment schedule" />
       <div className="p-6">
-        <PageHeader title="Staff Duty Roster" subtitle="Week of June 9–14, 2026"
-          action={
-            <div className="flex gap-2">
-              <button onClick={() => setSubModal(true)} className="px-3 py-2 border border-gray-200 text-sm rounded-lg hover:bg-gray-50">⇄ Substitution</button>
-              <button onClick={() => setAddModal(true)} className="px-4 py-2 bg-green-600 text-white text-sm font-bold rounded-lg hover:bg-green-500">+ Assign Duty</button>
-            </div>
-          }
+        <PageHeader title="Duty Roster" subtitle={`${rosterList.length} duty assignments`}
+          action={<button onClick={() => setModal(true)} className="px-4 py-2 bg-green-600 text-white text-sm font-bold rounded-lg hover:bg-green-500">+ Assign Duty</button>}
         />
-
-        {/* Tabs */}
-        <div className="flex gap-1 mb-6 bg-gray-100 rounded-xl p-1 w-fit">
-          {(['weekly', 'teacher', 'substitution'] as const).map(v => (
-            <button key={v} onClick={() => setView(v)}
-              className={`px-4 py-1.5 text-sm rounded-lg font-medium transition-all capitalize ${view === v ? 'bg-white text-green-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
-              {v === 'teacher' ? 'By Teacher' : v === 'substitution' ? 'Substitutions' : 'Weekly View'}
-            </button>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          {[
+            { label: 'Total Duties', value: rosterList.length, icon: '📋', color: 'text-blue-600', bg: 'bg-blue-50' },
+            { label: 'Morning Shift', value: rosterList.filter(r => r.shift === 'Morning').length, icon: '🌅', color: 'text-orange-600', bg: 'bg-orange-50' },
+            { label: 'Afternoon Shift', value: rosterList.filter(r => r.shift === 'Afternoon').length, icon: '☀️', color: 'text-yellow-600', bg: 'bg-yellow-50' },
+            { label: 'Staff Assigned', value: new Set(rosterList.map(r => r.staffName)).size, icon: '👥', color: 'text-green-600', bg: 'bg-green-50' },
+          ].map(s => (
+            <div key={s.label} className={`${s.bg} rounded-xl p-4`}>
+              <div className="flex items-center gap-2 mb-1"><span>{s.icon}</span><p className="text-xs text-gray-500">{s.label}</p></div>
+              <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
+            </div>
           ))}
         </div>
-
-        {/* Weekly View */}
-        {view === 'weekly' && (
-          <div>
-            <div className="flex gap-2 mb-4 flex-wrap">
-              {DAYS.map(d => (
-                <button key={d} onClick={() => setSelectedDay(d)}
-                  className={`px-4 py-2 text-sm rounded-xl border transition-all ${selectedDay === d ? 'bg-green-600 text-white border-green-600' : 'border-gray-200 text-gray-500 hover:border-green-300'}`}>
-                  {d}
-                </button>
-              ))}
-            </div>
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
-              <div className="p-4 border-b border-gray-100">
-                <h3 className="font-bold text-gray-800">{selectedDay} Duties</h3>
-                <p className="text-xs text-gray-400">{ROSTER[selectedDay]?.length || 0} assignments</p>
-              </div>
-              <div className="p-4 space-y-3">
-                {(ROSTER[selectedDay] || []).map((duty, i) => (
-                  <div key={i} className="border border-gray-100 rounded-xl p-4 hover:border-green-200">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-sm font-bold text-green-600">
-                          {duty.teacher.split(' ').pop()![0]}
-                        </div>
-                        <div>
-                          <p className="font-bold text-sm text-gray-800">{duty.teacher}</p>
-                          <p className="text-xs text-gray-400">{duty.duty}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-medium text-gray-700">{duty.time}</p>
-                        <p className="text-xs text-gray-400">📍 {duty.location}</p>
-                      </div>
-                    </div>
-                    <div className="flex gap-2 mt-3">
-                      <button className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100">Edit</button>
-                      <button className="text-xs bg-orange-50 text-orange-600 px-2 py-1 rounded hover:bg-orange-100">Substitute</button>
-                      <button className="text-xs bg-red-50 text-red-600 px-2 py-1 rounded hover:bg-red-100">Remove</button>
-                    </div>
-                  </div>
-                ))}
-                <button onClick={() => setAddModal(true)} className="w-full py-3 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 hover:border-green-300 hover:text-green-600 text-sm">
-                  + Add {selectedDay} Duty
-                </button>
-              </div>
-            </div>
+        <div className="flex gap-3 mb-6">
+          <div className="flex gap-1 bg-gray-100 rounded-xl p-1 overflow-x-auto">
+            {['', ...DAYS].map(d => (
+              <button key={d || 'all'} onClick={() => setDayFilter(d)} className={`px-3 py-1 text-xs rounded-lg font-medium whitespace-nowrap transition-all ${dayFilter === d ? 'bg-white text-green-700 shadow-sm' : 'text-gray-500'}`}>{d || 'All Days'}</button>
+            ))}
           </div>
-        )}
-
-        {/* By Teacher */}
-        {view === 'teacher' && (
-          <div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              {TEACHERS.slice(0, 4).map(t => (
-                <div key={t} className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 text-center">
-                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-sm font-bold text-blue-600 mx-auto mb-2">{t.split(' ').pop()![0]}</div>
-                  <p className="text-xs font-medium text-gray-700 truncate">{t}</p>
-                  <p className="text-sm font-bold text-green-600">{weeklyCount(t)} duties</p>
-                </div>
-              ))}
+        </div>
+        {isLoading ? <div className="text-center py-12 text-gray-400">Loading roster...</div>
+          : filtered.length === 0 ? (
+            <div className="text-center py-12 text-gray-400">
+              <p className="text-4xl mb-2">📋</p>
+              <p className="font-medium">{dayFilter ? `No duties on ${dayFilter}` : 'No duty assignments yet'}</p>
+              {!dayFilter && <p className="text-sm mt-1">Assign duties to staff members</p>}
             </div>
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 mb-4">
-              <select value={selectedTeacher} onChange={e => setSelectedTeacher(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-                <option value="">Select teacher to view duties...</option>
-                {TEACHERS.map(t => <option key={t}>{t}</option>)}
-              </select>
-            </div>
-            {selectedTeacher && (
-              <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
-                <div className="p-4 border-b border-gray-100">
-                  <h3 className="font-bold text-gray-800">Weekly Duties: {selectedTeacher}</h3>
-                </div>
-                <div className="p-4 space-y-2">
-                  {teacherDuties.find(td => td.teacher === selectedTeacher)?.duties.map((d, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div><p className="text-sm font-medium text-gray-800">{d.duty}</p><p className="text-xs text-gray-400">{d.day} · {d.time}</p></div>
-                      <p className="text-xs text-gray-500">📍 {d.location}</p>
-                    </div>
+          ) : (
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+              <table className="w-full">
+                <thead><tr className="text-xs text-gray-500 bg-gray-50 border-b border-gray-100">
+                  <th className="px-4 py-3 text-left">Staff</th><th className="px-4 py-3 text-left">Duty</th>
+                  <th className="px-4 py-3 text-left">Day</th><th className="px-4 py-3 text-left">Shift</th>
+                  <th className="px-4 py-3 text-left">Time</th><th className="px-4 py-3 text-left">Location</th>
+                  <th className="px-4 py-3 text-left">Action</th>
+                </tr></thead>
+                <tbody>
+                  {filtered.map((r: any) => (
+                    <tr key={r.id} className="border-b border-gray-50 hover:bg-gray-50 text-sm">
+                      <td className="px-4 py-3 font-medium text-gray-800">{r.staffName}</td>
+                      <td className="px-4 py-3 text-gray-600">{r.duty}</td>
+                      <td className="px-4 py-3 text-gray-500">{r.day}</td>
+                      <td className="px-4 py-3"><Badge variant={r.shift === 'Morning' ? 'orange' : 'yellow'}>{r.shift}</Badge></td>
+                      <td className="px-4 py-3 text-gray-400 text-xs">{r.from} - {r.to}</td>
+                      <td className="px-4 py-3 text-gray-500">{r.location || '-'}</td>
+                      <td className="px-4 py-3"><button onClick={() => del.mutate(r.id)} className="text-xs text-red-500 hover:text-red-700">Remove</button></td>
+                    </tr>
                   ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Substitutions */}
-        {view === 'substitution' && (
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-gray-800">Substitution Requests</h3>
-              <button onClick={() => setSubModal(true)} className="px-3 py-2 bg-orange-600 text-white text-sm rounded-lg">+ New Request</button>
+                </tbody>
+              </table>
             </div>
-            <div className="text-center py-12 text-gray-300">
-              <p className="text-4xl mb-2">✅</p>
-              <p className="text-sm">No pending substitution requests this week</p>
-            </div>
-          </div>
-        )}
+          )}
       </div>
-
-      {/* Add Duty Modal */}
-      <Modal isOpen={addModal} onClose={() => setAddModal(false)} title="Assign Duty">
+      <Modal isOpen={modal} onClose={() => setModal(false)} title="Assign Duty">
         <div className="p-6 space-y-4">
-          <div><label className="text-xs text-gray-500 mb-1 block">Teacher</label>
-            <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-              {TEACHERS.map(t => <option key={t}>{t}</option>)}
-            </select>
-          </div>
-          <div><label className="text-xs text-gray-500 mb-1 block">Duty Type</label>
-            <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-              {DUTY_TYPES.map(dt => <option key={dt}>{dt}</option>)}
-            </select>
-          </div>
-          <div><label className="text-xs text-gray-500 mb-1 block">Day</label>
-            <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-              {DAYS.map(d => <option key={d}>{d}</option>)}
-            </select>
+          <div><label className="text-xs text-gray-500 mb-1 block">Staff Name *</label>
+            <input value={form.staffName} onChange={e => setForm({ ...form, staffName: e.target.value })} placeholder="Staff member name" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="text-xs text-gray-500 mb-1 block">Start Time</label>
-              <input type="time" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+            <div><label className="text-xs text-gray-500 mb-1 block">Duty</label>
+              <select value={form.duty} onChange={e => setForm({ ...form, duty: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                {DUTIES.map(d => <option key={d}>{d}</option>)}
+              </select>
             </div>
-            <div><label className="text-xs text-gray-500 mb-1 block">End Time</label>
-              <input type="time" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+            <div><label className="text-xs text-gray-500 mb-1 block">Day</label>
+              <select value={form.day} onChange={e => setForm({ ...form, day: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                {DAYS.map(d => <option key={d}>{d}</option>)}
+              </select>
             </div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div><label className="text-xs text-gray-500 mb-1 block">Shift</label>
+              <select value={form.shift} onChange={e => setForm({ ...form, shift: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                <option>Morning</option><option>Afternoon</option><option>Evening</option>
+              </select>
+            </div>
+            <div><label className="text-xs text-gray-500 mb-1 block">From</label>
+              <input type="time" value={form.from} onChange={e => setForm({ ...form, from: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" /></div>
+            <div><label className="text-xs text-gray-500 mb-1 block">To</label>
+              <input type="time" value={form.to} onChange={e => setForm({ ...form, to: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" /></div>
           </div>
           <div><label className="text-xs text-gray-500 mb-1 block">Location</label>
-            <input type="text" placeholder="e.g. Main Gate" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+            <input value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} placeholder="e.g. Main Gate, Science Lab..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
           </div>
-          <button className="w-full py-2 bg-green-600 text-white text-sm rounded-lg">Assign Duty</button>
-        </div>
-      </Modal>
-
-      {/* Substitution Modal */}
-      <Modal isOpen={subModal} onClose={() => setSubModal(false)} title="Request Substitution">
-        <div className="p-6 space-y-4">
-          <div><label className="text-xs text-gray-500 mb-1 block">Absent Teacher</label>
-            <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-              {TEACHERS.map(t => <option key={t}>{t}</option>)}
-            </select>
-          </div>
-          <div><label className="text-xs text-gray-500 mb-1 block">Date of Absence</label>
-            <input type="date" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-          </div>
-          <div><label className="text-xs text-gray-500 mb-1 block">Substitute Teacher</label>
-            <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-              <option>Auto-assign (system)</option>
-              {TEACHERS.map(t => <option key={t}>{t}</option>)}
-            </select>
-          </div>
-          <div><label className="text-xs text-gray-500 mb-1 block">Reason</label>
-            <select className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-              <option>Sick Leave</option><option>Emergency</option><option>Training</option><option>Personal</option>
-            </select>
-          </div>
-          <button className="w-full py-2 bg-orange-600 text-white text-sm rounded-lg">Submit Request</button>
+          <button onClick={handleCreate} disabled={create.isPending} className="w-full py-2 bg-green-600 text-white text-sm rounded-lg disabled:opacity-50">
+            {create.isPending ? 'Assigning...' : 'Assign Duty'}
+          </button>
         </div>
       </Modal>
     </>

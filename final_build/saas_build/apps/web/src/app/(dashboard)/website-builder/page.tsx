@@ -1,9 +1,9 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Topbar } from '../../../components/layout/topbar';
 import { PageHeader } from '../../../components/shared/page-header';
 import { Badge } from '../../../components/shared/badge';
-import { useSchoolInfo } from '../../../hooks/use-api';
+import { useSchoolInfo, useWebsiteSettings, useSaveWebsiteSettings } from '../../../hooks/use-api';
 
 const COMPONENTS = [
   { icon: '🦸', label: 'Hero Section', desc: 'Eye-catching banner with CTA' },
@@ -35,20 +35,40 @@ const PAGES_BUILT = [
   { name: 'Faculty', status: 'Draft', components: 2, lastEdit: '1 day ago' },
 ];
 
-const PREVIEW_CONTENT = {
-  hero: { heading: 'Shaping Future Leaders', sub: 'Excellence in Education Since 1995', school: 'MySchool Academy' },
-};
+const DEFAULT_COMPONENTS = ['Hero Section', 'About Us', 'Statistics', 'Events', 'Contact'];
 
 export default function WebsiteBuilderPage() {
   const [view, setView] = useState<'builder'|'pages'|'settings'>('builder');
   const [selectedTheme, setSelectedTheme] = useState(0);
-  const [addedComponents, setAddedComponents] = useState(['Hero Section', 'About Us', 'Statistics', 'Events', 'Contact']);
-  const [previewMode, setPreviewMode] = useState(false);
+  const [addedComponents, setAddedComponents] = useState(DEFAULT_COMPONENTS);
+  const [publishStatus, setPublishStatus] = useState<'idle'|'saving'|'saved'>('idle');
+
   const { data: schoolInfo } = useSchoolInfo();
+  const { data: websiteData } = useWebsiteSettings();
+  const saveSettings = useSaveWebsiteSettings();
   const school = schoolInfo as any;
+  const wsData = websiteData as any;
+
+  useEffect(() => {
+    if (!wsData) return;
+    if (wsData.theme !== undefined) setSelectedTheme(wsData.theme);
+    if (wsData.components) setAddedComponents(wsData.components);
+  }, [wsData]);
 
   const toggleComponent = (label: string) => {
     setAddedComponents(prev => prev.includes(label) ? prev.filter(c=>c!==label) : [...prev, label]);
+  };
+
+  const handlePublish = async () => {
+    setPublishStatus('saving');
+    try {
+      await saveSettings.mutateAsync({ theme: selectedTheme, components: addedComponents, publishedAt: new Date().toISOString() });
+      setPublishStatus('saved');
+      setTimeout(() => setPublishStatus('idle'), 3000);
+    } catch {
+      setPublishStatus('idle');
+      alert('Failed to save. Please try again.');
+    }
   };
 
   return (
@@ -60,10 +80,16 @@ export default function WebsiteBuilderPage() {
           subtitle="Design and publish your school website — no coding required"
           action={
             <div className="flex gap-2">
-              <button onClick={()=>setPreviewMode(!previewMode)} className="px-4 py-2 border border-gray-200 text-sm font-bold rounded-xl hover:bg-gray-50 transition-colors">
-                {previewMode?'✏️ Edit':'👁️ Preview'}
+              <button className="px-4 py-2 border border-gray-200 text-sm font-bold rounded-xl hover:bg-gray-50 transition-colors">
+                👁️ Preview
               </button>
-              <button className="px-4 py-2 bg-green-600 text-white text-sm font-bold rounded-xl hover:bg-green-500">🌐 Publish</button>
+              <button
+                onClick={handlePublish}
+                disabled={publishStatus === 'saving'}
+                className={`px-4 py-2 text-sm font-bold rounded-xl transition-colors disabled:opacity-60 ${publishStatus==='saved'?'bg-green-100 text-green-700 border border-green-200':'bg-green-600 text-white hover:bg-green-500'}`}
+              >
+                {publishStatus==='saving' ? '⏳ Saving…' : publishStatus==='saved' ? '✅ Published!' : '🌐 Publish'}
+              </button>
             </div>
           }
         />
@@ -72,7 +98,8 @@ export default function WebsiteBuilderPage() {
         <div className="flex items-center gap-4 mb-5 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"/>
           <p className="text-sm text-green-800 font-medium">Website is <strong>Live</strong> at <span className="font-mono text-blue-700 hover:underline cursor-pointer">demo.myschool.pk</span></p>
-          <span className="ml-auto text-xs text-gray-400">Last published: 2 days ago</span>
+          {wsData?.publishedAt && <span className="text-xs text-gray-400">Last published: {new Date(wsData.publishedAt).toLocaleDateString()}</span>}
+          <span className="ml-auto"/>
           <button className="px-3 py-1.5 text-xs bg-green-100 text-green-700 font-bold rounded-lg border border-green-200 hover:bg-green-200">🌐 Open Site</button>
         </div>
 
@@ -114,19 +141,16 @@ export default function WebsiteBuilderPage() {
                 </div>
               </div>
               <div className="bg-white rounded-2xl border-2 border-gray-200 overflow-hidden shadow-lg" style={{minHeight:500}}>
-                {/* Browser Chrome */}
                 <div className="bg-gray-100 px-3 py-2 flex items-center gap-2 border-b border-gray-200">
                   <div className="flex gap-1"><div className="w-2.5 h-2.5 rounded-full bg-red-400"/><div className="w-2.5 h-2.5 rounded-full bg-yellow-400"/><div className="w-2.5 h-2.5 rounded-full bg-green-400"/></div>
                   <div className="flex-1 mx-2 bg-white rounded-md px-3 py-1 text-xs text-gray-400 border border-gray-200">demo.myschool.pk</div>
                 </div>
-                {/* Preview Content */}
                 <div className="overflow-y-auto max-h-[520px]">
-                  {/* Hero */}
                   {addedComponents.includes('Hero Section') && (
                     <div className="py-10 px-6 text-center" style={{background:`linear-gradient(135deg, ${THEMES[selectedTheme].primary}, ${THEMES[selectedTheme].secondary})`}}>
                       <p className="text-white/60 text-xs font-medium mb-2">{school?.name ?? 'MySchool Academy'}</p>
-                      <h1 className="text-white font-black text-2xl mb-3">{PREVIEW_CONTENT.hero.heading}</h1>
-                      <p className="text-white/70 text-sm mb-5">{PREVIEW_CONTENT.hero.sub}</p>
+                      <h1 className="text-white font-black text-2xl mb-3">Shaping Future Leaders</h1>
+                      <p className="text-white/70 text-sm mb-5">Excellence in Education Since 1995</p>
                       <div className="flex gap-2 justify-center">
                         <button className="px-4 py-2 bg-white text-sm font-bold rounded-lg" style={{color:THEMES[selectedTheme].primary}}>Apply Now</button>
                         <button className="px-4 py-2 bg-white/20 text-white text-sm font-bold rounded-lg border border-white/30">Learn More</button>
@@ -150,7 +174,7 @@ export default function WebsiteBuilderPage() {
                     <div className="px-6 py-5 bg-gray-50">
                       <h2 className="font-black text-lg text-gray-900 mb-3">Upcoming Events</h2>
                       <div className="space-y-2">
-                        {[{t:'Annual Sports Day',d:'Jun 15'},{'t':'Parent-Teacher Meeting',d:'Jun 20'},{t:'Science Exhibition',d:'Jun 28'}].map(e=>(
+                        {[{t:'Annual Sports Day',d:'Jun 15'},{t:'Parent-Teacher Meeting',d:'Jun 20'},{t:'Science Exhibition',d:'Jun 28'}].map(e=>(
                           <div key={e.t} className="flex items-center gap-3 bg-white rounded-xl px-3 py-2 border border-gray-100">
                             <div className="w-8 h-8 rounded-lg flex flex-col items-center justify-center text-white font-black text-xs" style={{background:THEMES[selectedTheme].primary}}>
                               <span className="text-[9px]">JUN</span><span>{e.d.split(' ')[1]}</span>
@@ -165,7 +189,9 @@ export default function WebsiteBuilderPage() {
                     <div className="px-6 py-5">
                       <h2 className="font-black text-lg text-gray-900 mb-2">Contact Us</h2>
                       <div className="space-y-1.5 text-xs text-gray-500">
-                        <p>📍 123 School Street, Karachi, Pakistan</p><p>📞 +92-21-1234567</p><p>📧 info@demo.myschool.pk</p>
+                        <p>📍 {(school?.address as any)?.street ?? '123 School Street'}, {(school?.address as any)?.city ?? 'Karachi'}, Pakistan</p>
+                        <p>📞 {school?.phone ?? '+92-21-1234567'}</p>
+                        <p>📧 {school?.email ?? 'info@demo.myschool.pk'}</p>
                       </div>
                     </div>
                   )}
@@ -202,11 +228,17 @@ export default function WebsiteBuilderPage() {
                 <div>
                   <p className="text-xs font-bold text-gray-500 mb-2 uppercase">SEO Settings</p>
                   <div className="space-y-2">
-                    <input placeholder="Page Title" defaultValue="Home — MySchool Academy" className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs outline-none focus:border-blue-400"/>
+                    <input placeholder="Page Title" defaultValue={`Home — ${school?.name ?? 'MySchool Academy'}`} className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs outline-none focus:border-blue-400"/>
                     <textarea placeholder="Meta Description" defaultValue="Quality education since 1995" rows={2} className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs outline-none focus:border-blue-400 resize-none"/>
                   </div>
                 </div>
-                <button className="w-full py-2 bg-green-600 text-white text-xs font-bold rounded-xl hover:bg-green-500">🌐 Publish Changes</button>
+                <button
+                  onClick={handlePublish}
+                  disabled={publishStatus === 'saving'}
+                  className={`w-full py-2 text-xs font-bold rounded-xl transition-colors disabled:opacity-60 ${publishStatus==='saved'?'bg-green-100 text-green-700 border border-green-200':'bg-green-600 text-white hover:bg-green-500'}`}
+                >
+                  {publishStatus==='saving' ? '⏳ Saving…' : publishStatus==='saved' ? '✅ Saved!' : '🌐 Publish Changes'}
+                </button>
               </div>
             </div>
           </div>

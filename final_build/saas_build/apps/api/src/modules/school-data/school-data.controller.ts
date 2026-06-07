@@ -65,7 +65,47 @@ export class SchoolDataController {
   @Post('announcements') @Roles('SCHOOL_ADMIN','TEACHER')
   createAnnouncement(@TenantId() tid: string, @CurrentUser() u: any, @Body() dto: any) { return this.svc.createAnnouncement(tid, u?.sub ?? u?.id, dto); }
 
+  @Delete('announcements/:id') @Roles('SCHOOL_ADMIN')
+  deleteAnnouncement(@TenantId() tid: string, @Param('id') id: string) { return this.svc.deleteAnnouncement(tid, id); }
+
   // Departments
   @Get('departments') @Roles('SCHOOL_ADMIN','TEACHER')
   departments(@TenantId() tid: string, @Query('schoolId') sid: string) { return this.svc.listDepartments(tid, sid); }
+
+  // LMS
+  @Get('lms') @Roles('SCHOOL_ADMIN','TEACHER','STUDENT')
+  getLms(@TenantId() tid: string) { return this.svc.getLmsData(tid); }
+
+  @Post('lms') @Roles('SCHOOL_ADMIN','TEACHER')
+  createCourse(@TenantId() tid: string, @Body() dto: any) { return this.svc.createLmsCourse(tid, dto); }
+
+  @Put('lms/:id') @Roles('SCHOOL_ADMIN','TEACHER')
+  updateCourse(@TenantId() tid: string, @Param('id') id: string, @Body() dto: any) { return this.svc.updateLmsCourse(tid, id, dto); }
+
+  @Delete('lms/:id') @Roles('SCHOOL_ADMIN')
+  deleteCourse(@TenantId() tid: string, @Param('id') id: string) { return this.svc.deleteLmsCourse(tid, id); }
+
+  // Website Settings
+  @Get('website-settings') @Roles('SCHOOL_ADMIN','TEACHER','STUDENT','PARENT')
+  getWebsite(@TenantId() tid: string) { return this.svc.getWebsiteSettings(tid); }
+
+  @Put('website-settings') @Roles('SCHOOL_ADMIN')
+  saveWebsite(@TenantId() tid: string, @Body() dto: any) { return this.svc.saveWebsiteSettings(tid, dto); }
+
+  // Backup
+  @Get('backup') @Roles('SCHOOL_ADMIN')
+  backup(@TenantId() tid: string) { return this.svc.getBackup(tid); }
+
+  // Generic section CRUD — for canteen, sports, clubs, hostel, inventory, etc.
+  @Get('section/:name') @Roles('SCHOOL_ADMIN','TEACHER','STUDENT','PARENT')
+  getSection(@TenantId() tid: string, @Param('name') name: string) { return this.svc.getSection(tid, name); }
+
+  @Post('section/:name') @Roles('SCHOOL_ADMIN','TEACHER')
+  createItem(@TenantId() tid: string, @Param('name') name: string, @Body() dto: any) { return this.svc.createSectionItem(tid, name, dto); }
+
+  @Put('section/:name/:id') @Roles('SCHOOL_ADMIN','TEACHER')
+  updateItem(@TenantId() tid: string, @Param('name') name: string, @Param('id') id: string, @Body() dto: any) { return this.svc.updateSectionItem(tid, name, id, dto); }
+
+  @Delete('section/:name/:id') @Roles('SCHOOL_ADMIN')
+  deleteItem(@TenantId() tid: string, @Param('name') name: string, @Param('id') id: string) { return this.svc.deleteSectionItem(tid, name, id); }
 }

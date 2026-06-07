@@ -14,6 +14,48 @@ export class SchoolDataService {
     return s?.id;
   }
 
+  private async getSchool(tenantId: string) {
+    const s = await this.prisma.school.findFirst({ where: { tenantId, isActive: true } });
+    if (!s) throw new NotFoundException('School not found');
+    return s;
+  }
+
+  // ── Generic Section CRUD (stores arrays in school.settings[section]) ─────────
+  async getSection(tenantId: string, section: string) {
+    const school = await this.prisma.school.findFirst({ where: { tenantId, isActive: true }, select: { settings: true } });
+    if (!school) return [];
+    const data = (school.settings as any)?.[section];
+    return Array.isArray(data) ? data : [];
+  }
+
+  async createSectionItem(tenantId: string, section: string, dto: any) {
+    const school = await this.getSchool(tenantId);
+    const settings = (school.settings as any) || {};
+    const items: any[] = Array.isArray(settings[section]) ? settings[section] : [];
+    const newItem = { id: `${section.slice(0, 3)}${Date.now()}`, ...dto, createdAt: new Date().toISOString() };
+    await this.prisma.school.update({ where: { id: school.id }, data: { settings: { ...settings, [section]: [...items, newItem] } } });
+    return newItem;
+  }
+
+  async updateSectionItem(tenantId: string, section: string, itemId: string, dto: any) {
+    const school = await this.getSchool(tenantId);
+    const settings = (school.settings as any) || {};
+    const items: any[] = Array.isArray(settings[section]) ? settings[section] : [];
+    const idx = items.findIndex((i: any) => i.id === itemId);
+    if (idx === -1) throw new NotFoundException('Item not found');
+    items[idx] = { ...items[idx], ...dto };
+    await this.prisma.school.update({ where: { id: school.id }, data: { settings: { ...settings, [section]: items } } });
+    return items[idx];
+  }
+
+  async deleteSectionItem(tenantId: string, section: string, itemId: string) {
+    const school = await this.getSchool(tenantId);
+    const settings = (school.settings as any) || {};
+    const items = (Array.isArray(settings[section]) ? settings[section] : []).filter((i: any) => i.id !== itemId);
+    await this.prisma.school.update({ where: { id: school.id }, data: { settings: { ...settings, [section]: items } } });
+    return { success: true };
+  }
+
   // ── Classes ────────────────────────────────────────────────────────────────
   async listClasses(tenantId: string, schoolId: string) {
     const sid = await this.resolveSchoolId(tenantId, schoolId);
@@ -81,8 +123,7 @@ export class SchoolDataService {
     const sid = await this.resolveSchoolId(tenantId, schoolId);
     const existing = await this.prisma.user.findFirst({ where: { tenantId, email: dto.email } });
     if (existing) {
-      const staff = await this.prisma.staff.create({ data: { tenantId, schoolId: sid!, userId: existing.id, employeeId: dto.employeeId, designation: dto.designation, department: dto.department, joiningDate: new Date(dto.joiningDate), salary: dto.salary ? Number(dto.salary) : undefined } });
-      return staff;
+      return this.prisma.staff.create({ data: { tenantId, schoolId: sid!, userId: existing.id, employeeId: dto.employeeId, designation: dto.designation, department: dto.department, joiningDate: new Date(dto.joiningDate), salary: dto.salary ? Number(dto.salary) : undefined } });
     }
     return this.prisma.$transaction(async tx => {
       const user = await tx.user.create({ data: { tenantId, email: dto.email, role: 'TEACHER', profile: { create: { firstName: dto.firstName, lastName: dto.lastName, phone: dto.phone } } } });
@@ -115,9 +156,86 @@ export class SchoolDataService {
   }
 
   async updateSchoolInfo(tenantId: string, dto: any) {
-    const school = await this.prisma.school.findFirst({ where: { tenantId, isActive: true } });
-    if (!school) throw new NotFoundException('School not found');
-    return this.prisma.school.update({ where: { id: school.id }, data: { name: dto.name, phone: dto.phone, email: dto.email, website: dto.website } });
+    const school = await this.getSchool(tenantId);
+    const currentSettings = (school.settings as any) || {};
+    const currentAddress = (school.address as any) || {};
+    return this.prisma.school.update({
+      where: { id: school.id },
+      data: {
+        ...(dto.name && { name: dto.name }),
+        ...(dto.phone !== undefined && { phone: dto.phone }),
+        ...(dto.email !== undefined && { email: dto.email }),
+        ...(dto.website !== undefined && { website: dto.website }),
+        ...(dto.academicYear !== undefined && { academicYear: dto.academicYear }),
+        address: { ...currentAddress, ...(dto.address && { street: dto.address }), ...(dto.city && { city: dto.city }), ...(dto.country && { country: dto.country }) },
+        settings: { ...currentSettings, profile: { ...(currentSettings.profile || {}), ...(dto.principalName !== undefined && { principalName: dto.principalName }), ...(dto.registrationNo !== undefined && { registrationNo: dto.registrationNo }) } },
+      },
+    });
+  }
+
+  // ── LMS ────────────────────────────────────────────────────────────────────
+  async getLmsData(tenantId: string) {
+    const school = await this.prisma.school.findFirst({ where: { tenantId, isActive: true }, select: { settings: true } });
+    if (!school) return { courses: [] };
+    return { courses: ((school.settings as any)?.lms?.courses) || [] };
+  }
+
+  async createLmsCourse(tenantId: string, dto: any) {
+    const school = await this.getSchool(tenantId);
+    const settings = (school.settings as any) || {};
+    const courses = settings.lms?.courses || [];
+    const EMOJIS = ['📐','⚛️','📖','✍️','🧬','💻','🌍','🎨','🔬','📊','🎭','📚'];
+    const newCourse = { id: `c${Date.now()}`, title: dto.title, subject: dto.subject, description: dto.description || '', teacher: dto.teacher || '', status: 'DRAFT', lessons: 0, assignments: 0, students: 0, progress: 0, thumb: EMOJIS[courses.length % EMOJIS.length], createdAt: new Date().toISOString() };
+    await this.prisma.school.update({ where: { id: school.id }, data: { settings: { ...settings, lms: { courses: [...courses, newCourse] } } } });
+    return newCourse;
+  }
+
+  async updateLmsCourse(tenantId: string, courseId: string, dto: any) {
+    const school = await this.getSchool(tenantId);
+    const settings = (school.settings as any) || {};
+    const courses: any[] = settings.lms?.courses || [];
+    const idx = courses.findIndex((c: any) => c.id === courseId);
+    if (idx === -1) throw new NotFoundException('Course not found');
+    courses[idx] = { ...courses[idx], ...dto };
+    await this.prisma.school.update({ where: { id: school.id }, data: { settings: { ...settings, lms: { courses } } } });
+    return courses[idx];
+  }
+
+  async deleteLmsCourse(tenantId: string, courseId: string) {
+    const school = await this.getSchool(tenantId);
+    const settings = (school.settings as any) || {};
+    const courses = (settings.lms?.courses || []).filter((c: any) => c.id !== courseId);
+    await this.prisma.school.update({ where: { id: school.id }, data: { settings: { ...settings, lms: { courses } } } });
+    return { success: true };
+  }
+
+  // ── Website Settings ────────────────────────────────────────────────────────
+  async getWebsiteSettings(tenantId: string) {
+    const school = await this.prisma.school.findFirst({ where: { tenantId, isActive: true }, select: { settings: true } });
+    if (!school) return {};
+    return (school.settings as any)?.website || {};
+  }
+
+  async saveWebsiteSettings(tenantId: string, dto: any) {
+    const school = await this.getSchool(tenantId);
+    const settings = (school.settings as any) || {};
+    await this.prisma.school.update({ where: { id: school.id }, data: { settings: { ...settings, website: dto } } });
+    return { success: true, ...dto };
+  }
+
+  // ── Backup ─────────────────────────────────────────────────────────────────
+  async getBackup(tenantId: string) {
+    const [school, students, teachers, classes, subjects, sections, announcements, events] = await Promise.all([
+      this.prisma.school.findFirst({ where: { tenantId, isActive: true } }),
+      this.prisma.student.findMany({ where: { tenantId }, include: { user: { include: { profile: true } } } }),
+      this.prisma.teacher.findMany({ where: { tenantId }, include: { user: { include: { profile: true } } } }),
+      this.prisma.class.findMany({ where: { tenantId } }),
+      this.prisma.subject.findMany({ where: { tenantId } }),
+      this.prisma.section.findMany({ where: { tenantId } }),
+      this.prisma.announcement.findMany({ where: { tenantId }, take: 200, orderBy: { createdAt: 'desc' } }),
+      this.prisma.schoolEvent.findMany({ where: { tenantId }, take: 200, orderBy: { createdAt: 'desc' } }),
+    ]);
+    return { exportedAt: new Date().toISOString(), version: '1.0', tenantId, summary: { students: students.length, teachers: teachers.length, classes: classes.length, subjects: subjects.length, sections: sections.length, announcements: announcements.length, events: events.length }, school, students, teachers, classes, subjects, sections, announcements, events };
   }
 
   // ── Announcements ──────────────────────────────────────────────────────────
@@ -133,6 +251,13 @@ export class SchoolDataService {
   async createAnnouncement(tenantId: string, createdById: string, dto: any) {
     const sid = await this.resolveSchoolId(tenantId);
     return this.prisma.announcement.create({ data: { tenantId, schoolId: sid!, createdById, title: dto.title, body: dto.content ?? dto.body ?? '', targetRoles: dto.targetRoles ?? [], isPinned: dto.isPinned ?? false, expiresAt: dto.expiresAt ? new Date(dto.expiresAt) : undefined } });
+  }
+
+  async deleteAnnouncement(tenantId: string, id: string) {
+    const a = await this.prisma.announcement.findFirst({ where: { id, tenantId } });
+    if (!a) throw new NotFoundException('Announcement not found');
+    await this.prisma.announcement.delete({ where: { id } });
+    return { success: true };
   }
 
   // ── Departments ────────────────────────────────────────────────────────────
