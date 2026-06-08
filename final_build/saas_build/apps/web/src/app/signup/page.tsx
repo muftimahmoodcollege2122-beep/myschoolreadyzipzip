@@ -142,16 +142,25 @@ export default function SignupPage() {
             Your complete school management system is ready. Login credentials below — also sent to your email.
           </p>
 
-          <div className="bg-gray-50 rounded-xl p-5 mb-5 space-y-3 border border-gray-100">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-gray-400 uppercase tracking-wide">School Website</span>
-              <span className="text-sm font-bold text-blue-600">{result.websiteUrl}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-gray-400 uppercase tracking-wide">Admin Portal</span>
-              <span className="text-sm font-bold text-blue-600">{result.slug}.myschool.pk/dashboard</span>
-            </div>
-            <div className="h-px bg-gray-200" />
+          {/* 5 Portal URLs */}
+          <div className="mb-5 space-y-2">
+            {[
+              { icon: '🌐', label: 'School Website',    url: result.websiteUrl,                                    color: 'bg-blue-50 border-blue-200 text-blue-700'   },
+              { icon: '🏫', label: 'Admin Dashboard',   url: `${result.slug}.myschool.pk/dashboard`,               color: 'bg-indigo-50 border-indigo-200 text-indigo-700'},
+              { icon: '👨‍🏫', label: 'Teacher Portal',   url: `${result.slug}.myschool.pk/t/${result.slug}`,        color: 'bg-teal-50 border-teal-200 text-teal-700'   },
+              { icon: '👩‍🎓', label: 'Student Portal',   url: `${result.slug}.myschool.pk/learn/${result.slug}`,    color: 'bg-violet-50 border-violet-200 text-violet-700'},
+              { icon: '👨‍👩‍👧', label: 'Parent Portal',    url: `${result.slug}.myschool.pk/parent/${result.slug}`,  color: 'bg-rose-50 border-rose-200 text-rose-700'   },
+            ].map(portal => (
+              <div key={portal.label} className={`flex items-center justify-between border rounded-xl px-4 py-3 ${portal.color}`}>
+                <span className="text-sm font-semibold flex items-center gap-2">
+                  <span>{portal.icon}</span>{portal.label}
+                </span>
+                <span className="text-xs font-mono font-bold truncate max-w-[180px]">{portal.url}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="bg-gray-50 rounded-xl p-4 mb-5 space-y-2.5 border border-gray-100">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-gray-400 uppercase tracking-wide">Login Email</span>
               <span className="text-sm font-mono font-semibold text-gray-900">{result.adminEmail}</span>
@@ -165,12 +174,12 @@ export default function SignupPage() {
           </div>
 
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 mb-6 text-xs text-amber-800">
-            <p className="font-bold mb-0.5">Change your password after first login</p>
-            <p className="text-amber-700">Your school portal is on a 30-day free trial with full access.</p>
+            <p className="font-bold mb-0.5">Share portal links with your staff and parents</p>
+            <p className="text-amber-700">Teachers, students and parents each get their own dedicated portal. Change your password after first login.</p>
           </div>
 
           <Link href={loginUrl} className="block w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-xl text-center text-sm transition-colors mb-3">
-            Go to Admin Portal →
+            Go to Admin Dashboard →
           </Link>
 
           <p className="text-center text-xs text-gray-400">

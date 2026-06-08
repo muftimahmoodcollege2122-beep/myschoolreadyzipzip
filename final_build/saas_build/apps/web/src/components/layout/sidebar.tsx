@@ -132,6 +132,12 @@ const sections: NavSection[] = [
     ],
   },
   {
+    title: 'Portals & Sharing',
+    items: [
+      { href: '/portal-links',     icon: '🔗', label: 'Portal Links',       roles: ['SCHOOL_ADMIN'] },
+    ],
+  },
+  {
     title: 'System',
     items: [
       { href: '/security',         icon: '🛡️', label: 'Security',          roles: ['SCHOOL_ADMIN'] },

@@ -47,6 +47,7 @@ import { SupportTicketsModule } from './modules/support-tickets/support-tickets.
 import { AiAnalyticsModule } from './modules/ai-analytics/ai-analytics.module';
 import { FormsModule } from './modules/forms/forms.module';
 import { AlumniModule } from './modules/alumni/alumni.module';
+import { PaymentGatewayModule } from './modules/payment-gateway/payment-gateway.module';
 
 @Module({
   imports: [
@@ -100,6 +101,7 @@ import { AlumniModule } from './modules/alumni/alumni.module';
     SupportTicketsModule,
     FormsModule,
     AlumniModule,
+    PaymentGatewayModule,
     // Infrastructure
     RealtimeModule,
     HealthModule,

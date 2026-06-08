@@ -528,3 +528,40 @@ export const useDeleteAnnouncement = () => {
   return useMutation({ mutationFn: (id: string) => apiClient.delete(`/school/announcements/${id}`), onSuccess: () => qc.invalidateQueries({ queryKey: ['announcements'] }) });
 };
 
+// ── Payment Gateway ───────────────────────────────────────────────────────────
+export const usePlanPrices = () =>
+  useQuery({ queryKey: ['plan-prices'], queryFn: () => apiClient.get('/payments/plans'), staleTime: 60 * 60 * 1000 });
+
+export const useInitiatePayment = () =>
+  useMutation({ mutationFn: (dto: { method: string; plan: string; tenantId: string; email: string; schoolName: string; phone?: string }) => apiClient.post('/payments/initiate', dto) });
+
+export const useVerifyPayment = () =>
+  useMutation({ mutationFn: (dto: { paymentId: string; transactionId: string; screenshot?: string }) => apiClient.post('/payments/verify', dto) });
+
+export const usePendingPayments = () =>
+  useQuery({ queryKey: ['pending-payments'], queryFn: () => apiClient.get('/payments/admin/pending'), staleTime: 30 * 1000 });
+
+export const useApprovePayment = () => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (id: string) => apiClient.post(`/payments/admin/approve/${id}`, {}), onSuccess: () => qc.invalidateQueries({ queryKey: ['pending-payments'] }) });
+};
+
+// ── Portal-specific hooks (Teacher / Student / Parent) ────────────────────────
+export const usePortalAnnouncements = (slug: string) =>
+  useQuery({ queryKey: ['portal-notices', slug], queryFn: () => apiClient.get(`/school/announcements?tenantSlug=${slug}&limit=10`), enabled: !!slug, staleTime: 5 * 60 * 1000 });
+
+export const useMyLeaveRequests = () =>
+  useQuery({ queryKey: ['my-leave-requests'], queryFn: () => apiClient.get('/hr-extended/leave-requests/my'), staleTime: 2 * 60 * 1000 });
+
+export const useSubmitLeaveRequest = () => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (dto: any) => apiClient.post('/hr-extended/leave-requests', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['my-leave-requests'] }) });
+};
+
+export const useStudentFees = (studentId: string) =>
+  useQuery({ queryKey: ['student-fees', studentId], queryFn: () => apiClient.get(`/fees/student/${studentId}`), enabled: !!studentId, staleTime: 5 * 60 * 1000 });
+
+export const useTeacherStats = (slug: string) =>
+  useQuery({ queryKey: ['teacher-stats', slug], queryFn: () => apiClient.get(`/dashboard/stats?tenantSlug=${slug}`), enabled: !!slug, staleTime: 5 * 60 * 1000 });
+
+
