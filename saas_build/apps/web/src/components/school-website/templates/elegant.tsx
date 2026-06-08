@@ -5,6 +5,7 @@ import { SchoolNav } from '../partials/nav';
 import { SchoolFooter } from '../partials/footer';
 import { SchoolStats } from '../partials/stats';
 import { AdmissionForm } from '../partials/admission-form';
+import { PortalAccess } from '../partials/portal-access';
 
 export function ElegantTemplate({ theme, slug }: { theme: SchoolTheme; slug: string }) {
   const [showAdmission, setShowAdmission] = useState(false);
@@ -31,6 +32,7 @@ export function ElegantTemplate({ theme, slug }: { theme: SchoolTheme; slug: str
       </section>
 
       <SchoolStats theme={theme} />
+      <PortalAccess theme={theme} slug={slug} />
       <SchoolFooter theme={theme} slug={slug} />
       {showAdmission && <AdmissionForm theme={theme} slug={slug} onClose={() => setShowAdmission(false)} />}
     </div>

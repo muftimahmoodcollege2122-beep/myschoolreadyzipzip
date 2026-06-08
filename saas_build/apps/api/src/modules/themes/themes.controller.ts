@@ -19,6 +19,14 @@ export class ThemesController {
   @ApiOperation({ summary: 'Get all available theme presets' })
   presets() { return this.svc.getAvailablePresets(); }
 
+  @Get('current-theme') @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SCHOOL_ADMIN','TEACHER','STUDENT','PARENT')
+  @ApiOperation({ summary: 'Get current tenant theme (authenticated)' })
+  async currentTheme(@TenantId() tid: string) {
+    const tenant = await this.svc['prisma'].tenant.findUnique({ where: { id: tid }, select: { slug: true } });
+    if (!tenant) return {};
+    return this.svc.getSchoolTheme(tenant.slug);
+  }
+
   @Put('current') @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SCHOOL_ADMIN')
   @ApiOperation({ summary: 'Update school theme' })
   update(@Body() dto: any, @TenantId() tid: string) { return this.svc.updateTheme(tid, dto); }

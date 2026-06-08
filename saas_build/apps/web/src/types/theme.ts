@@ -1,5 +1,5 @@
 export interface SchoolTheme {
-  template:       'classic' | 'modern' | 'bold' | 'elegant' | 'vibrant';
+  template:       string;
   primaryColor:   string;
   secondaryColor: string;
   accentColor:    string;
@@ -24,4 +24,7 @@ export interface SchoolTheme {
   principalName:  string;
   coverImageUrl:  string;
   socialLinks:    { facebook?: string; twitter?: string; youtube?: string; instagram?: string };
+  sections?:      string[];
+  portalLinks?:   { student?: string; parent?: string; teacher?: string; admin?: string };
+  preset?:        string;
 }

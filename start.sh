@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-SAAS_DIR="$(pwd)/final_build/saas_build"
+SAAS_DIR="$(pwd)/saas_build"
 API_DIR="$SAAS_DIR/apps/api"
 WEB_DIR="$SAAS_DIR/apps/web"
 

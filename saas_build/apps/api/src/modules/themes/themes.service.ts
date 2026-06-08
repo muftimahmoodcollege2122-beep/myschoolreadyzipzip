@@ -3,7 +3,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { CacheService } from '../../common/cache/cache.service';
 
 export interface SchoolTheme {
-  template:       'classic' | 'modern' | 'bold' | 'elegant' | 'vibrant';
+  template:       string;
   primaryColor:   string;
   secondaryColor: string;
   accentColor:    string;
@@ -107,6 +107,9 @@ export class ThemesService {
       principalName: customTheme.principalName || '',
       coverImageUrl: customTheme.coverImageUrl || '',
       socialLinks:   customTheme.socialLinks   || {},
+      sections:      customTheme.sections      || ['hero','portals','stats','about','features','admissions','contact'],
+      portalLinks:   customTheme.portalLinks   || {},
+      preset:        customTheme.preset        || presetName,
     };
 
     await this.cache.set(cacheKey, theme, 600);
