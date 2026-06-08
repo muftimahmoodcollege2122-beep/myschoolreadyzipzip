@@ -112,6 +112,11 @@ export class TenantsService {
     await this.cache.delPattern('tenant:*');
   }
 
+  async isSlugAvailable(slug: string): Promise<boolean> {
+    const existing = await this.prisma.tenant.findUnique({ where: { slug } });
+    return !existing;
+  }
+
   private generateSlug(name: string): string {
     return name.toLowerCase()
       .replace(/[^a-z0-9\s-]/g, '')

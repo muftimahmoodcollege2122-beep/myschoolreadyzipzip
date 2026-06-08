@@ -36,7 +36,10 @@ export default function LoginPage() {
               {loading ? 'Signing in...' : 'Sign In →'}
             </button>
           </form>
-          <p className="text-white/25 text-xs text-center mt-6">Powered by NexGen Edu</p>
+          <p className="text-white/25 text-xs text-center mt-6">
+            Don&apos;t have an account?{' '}
+            <a href="/signup" className="text-emerald-400 hover:text-emerald-300 transition-colors">Register your school →</a>
+          </p>
         </div>
       </div>
     </div>

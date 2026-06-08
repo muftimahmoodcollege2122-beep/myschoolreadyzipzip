@@ -1,4 +1,4 @@
-import { IsString, IsEmail, MinLength, MaxLength, IsOptional } from 'class-validator';
+import { IsString, IsEmail, MinLength, MaxLength, IsOptional, IsIn } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateTenantDto {
@@ -53,4 +53,16 @@ export class CreateTenantDto {
   @ApiPropertyOptional()
   @IsOptional()
   address?: Record<string, string>;
+
+  @ApiPropertyOptional({ example: 'STARTER', enum: ['STARTER', 'GROWTH', 'PRO', 'ENTERPRISE'] })
+  @IsOptional() @IsIn(['STARTER', 'GROWTH', 'PRO', 'ENTERPRISE'])
+  plan?: string;
+
+  @ApiPropertyOptional({ example: 'School' })
+  @IsOptional() @IsString()
+  institutionType?: string;
+
+  @ApiPropertyOptional({ example: 'Karachi' })
+  @IsOptional() @IsString()
+  city?: string;
 }
