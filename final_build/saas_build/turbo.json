@@ -1,6 +1,6 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalEnv": ["NODE_ENV", "DATABASE_URL", "REDIS_HOST", "REDIS_PORT"],
+  "globalEnv": ["NODE_ENV", "DATABASE_URL", "REDIS_HOST", "REDIS_PORT", "NEXT_PUBLIC_API_URL"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
@@ -15,18 +15,16 @@
       "outputs": ["coverage/**"],
       "env": ["DATABASE_URL", "REDIS_HOST", "JWT_ACCESS_SECRET", "JWT_SECRET"]
     },
-    "lint": {
-      "outputs": []
-    },
-    "db:generate": {
-      "cache": false
-    },
-    "db:migrate": {
-      "cache": false
-    },
-    "db:seed": {
+    "lint": { "outputs": [] },
+    "type-check": { "outputs": [], "dependsOn": ["^build"] },
+    "db:generate": { "cache": false },
+    "db:migrate":  { "cache": false },
+    "db:seed":     { "cache": false, "dependsOn": ["db:migrate"] },
+    "start": {
       "cache": false,
-      "dependsOn": ["db:migrate"]
+      "persistent": true
     }
-  }
+  },
+  "globalDependencies": ["**/.env.*local"],
+  "pipeline": {}
 }
