@@ -5,6 +5,7 @@ import { SchoolNav } from '../partials/nav';
 import { SchoolFooter } from '../partials/footer';
 import { SchoolStats } from '../partials/stats';
 import { AdmissionForm } from '../partials/admission-form';
+import { SchoolHomeExtras } from '../partials/home-extras';
 
 export function BoldTemplate({ theme, slug }: { theme: SchoolTheme; slug: string }) {
   const [showAdmission, setShowAdmission] = useState(false);
@@ -24,7 +25,7 @@ export function BoldTemplate({ theme, slug }: { theme: SchoolTheme; slug: string
           <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '1.2rem', maxWidth: 500, marginBottom: 40, lineHeight: 1.7 }}>{theme.heroSubtitle || theme.tagline}</p>
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
             <button className="btn-primary" style={{ background: theme.accentColor, fontSize: '1rem', padding: '16px 36px' }} onClick={() => setShowAdmission(true)}>{theme.heroCtaText ? theme.heroCtaText.toUpperCase() : 'APPLY NOW'}</button>
-            <a href={`/s/${slug}/portal`} style={{ padding: '16px 36px', border: '2px solid rgba(255,255,255,0.5)', color: '#fff', fontWeight: 800, textDecoration: 'none', fontSize: '1rem', letterSpacing: '0.05em' }}>STUDENT PORTAL</a>
+            <a href={`/s/${slug}/login`} style={{ padding: '16px 36px', border: '2px solid rgba(255,255,255,0.5)', color: '#fff', fontWeight: 800, textDecoration: 'none', fontSize: '1rem', letterSpacing: '0.05em' }}>PORTAL LOGIN</a>
           </div>
         </div>
       </section>
@@ -35,6 +36,7 @@ export function BoldTemplate({ theme, slug }: { theme: SchoolTheme; slug: string
         <SchoolStats theme={theme} />
       </section>
       )}
+      <SchoolHomeExtras theme={theme} slug={slug} />
       <SchoolFooter theme={theme} slug={slug} dark />
       {showAdmission && <AdmissionForm theme={theme} slug={slug} onClose={() => setShowAdmission(false)} />}
     </div>

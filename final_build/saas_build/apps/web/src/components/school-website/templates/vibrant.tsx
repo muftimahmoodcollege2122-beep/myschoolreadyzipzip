@@ -5,6 +5,7 @@ import { SchoolNav } from '../partials/nav';
 import { SchoolFooter } from '../partials/footer';
 import { SchoolStats } from '../partials/stats';
 import { AdmissionForm } from '../partials/admission-form';
+import { SchoolHomeExtras } from '../partials/home-extras';
 
 export function VibrantTemplate({ theme, slug }: { theme: SchoolTheme; slug: string }) {
   const [showAdmission, setShowAdmission] = useState(false);
@@ -26,13 +27,14 @@ export function VibrantTemplate({ theme, slug }: { theme: SchoolTheme; slug: str
           <p style={{ fontSize: '1.15rem', color: '#4A5E6D', lineHeight: 1.8, marginBottom: 40 }}>{theme.heroSubtitle || theme.tagline}</p>
           <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
             <button className="btn-primary" style={{ fontSize: '1rem', padding: '14px 32px' }} onClick={() => setShowAdmission(true)}>🚀 {theme.heroCtaText || 'Apply Now'}</button>
-            <a href={`/s/${slug}/portal`} className="btn-secondary" style={{ textDecoration: 'none', fontSize: '1rem', padding: '14px 32px' }}>Student Portal</a>
+            <a href={`/s/${slug}/login`} className="btn-secondary" style={{ textDecoration: 'none', fontSize: '1rem', padding: '14px 32px' }}>Portal Login</a>
           </div>
         </div>
       </section>
       )}
 
       {theme.sections?.stats !== false && <SchoolStats theme={theme} />}
+      <SchoolHomeExtras theme={theme} slug={slug} />
       <SchoolFooter theme={theme} slug={slug} />
       {showAdmission && <AdmissionForm theme={theme} slug={slug} onClose={() => setShowAdmission(false)} />}
     </div>

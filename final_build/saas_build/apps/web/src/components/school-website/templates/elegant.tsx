@@ -5,6 +5,7 @@ import { SchoolNav } from '../partials/nav';
 import { SchoolFooter } from '../partials/footer';
 import { SchoolStats } from '../partials/stats';
 import { AdmissionForm } from '../partials/admission-form';
+import { SchoolHomeExtras } from '../partials/home-extras';
 
 export function ElegantTemplate({ theme, slug }: { theme: SchoolTheme; slug: string }) {
   const [showAdmission, setShowAdmission] = useState(false);
@@ -20,7 +21,10 @@ export function ElegantTemplate({ theme, slug }: { theme: SchoolTheme; slug: str
             <h1 style={{ color: '#fff', fontSize: 'clamp(2rem,4vw,3.5rem)', fontFamily: 'var(--font-heading)', fontWeight: 700, fontStyle: 'italic', lineHeight: 1.15, margin: '0 0 20px' }}>{theme.heroTitle || theme.schoolName}</h1>
             <div style={{ width: 60, height: 2, background: theme.accentColor, margin: '0 0 20px' }} />
             <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '1.1rem', lineHeight: 1.8, marginBottom: 36 }}>{theme.heroSubtitle || theme.tagline}</p>
-            <button className="btn-primary" style={{ background: '#fff', color: theme.primaryColor }} onClick={() => setShowAdmission(true)}>{theme.heroCtaText || 'Apply for Admission'}</button>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <button className="btn-primary" style={{ background: '#fff', color: theme.primaryColor }} onClick={() => setShowAdmission(true)}>{theme.heroCtaText || 'Apply for Admission'}</button>
+              <a href={`/s/${slug}/login`} style={{ padding: '12px 24px', border: '2px solid rgba(255,255,255,0.5)', color: '#fff', fontWeight: 700, textDecoration: 'none', borderRadius: 'var(--radius)' }}>Portal Login</a>
+            </div>
           </div>
           <div style={{ background: '#fff', borderRadius: 'var(--radius)', padding: 40, boxShadow: 'var(--shadow)' }}>
             <h3 style={{ fontFamily: 'var(--font-heading)', color: theme.secondaryColor, marginBottom: 20, fontStyle: 'italic' }}>Quick Admission</h3>
@@ -31,6 +35,7 @@ export function ElegantTemplate({ theme, slug }: { theme: SchoolTheme; slug: str
       )}
 
       {theme.sections?.stats !== false && <SchoolStats theme={theme} />}
+      <SchoolHomeExtras theme={theme} slug={slug} />
       <SchoolFooter theme={theme} slug={slug} />
       {showAdmission && <AdmissionForm theme={theme} slug={slug} onClose={() => setShowAdmission(false)} />}
     </div>
@@ -39,7 +44,7 @@ export function ElegantTemplate({ theme, slug }: { theme: SchoolTheme; slug: str
 
 function AdmissionFormInline({ theme, slug }: { theme: SchoolTheme; slug: string }) {
   const [name, setName] = useState(''); const [phone, setPhone] = useState(''); const [cls, setCls] = useState(''); const [sent, setSent] = useState(false);
-  const inputStyle = { width: '100%', padding: '10px 14px', border: `1.5px solid #E4EBF0`, borderRadius: 8, fontFamily: 'inherit', fontSize: '0.9rem', outline: 'none', marginBottom: 12 };
+  const inputStyle: React.CSSProperties = { width: '100%', padding: '10px 14px', border: '1.5px solid #E4EBF0', borderRadius: 8, fontFamily: 'inherit', fontSize: '0.9rem', outline: 'none', marginBottom: 12 };
   return sent ? <div style={{ textAlign: 'center', padding: 20 }}><div style={{ fontSize: '2rem', marginBottom: 8 }}>✅</div><p style={{ color: theme.primaryColor, fontWeight: 700 }}>Application Received!</p><p style={{ color: '#6B7280', fontSize: '0.88rem' }}>We'll contact you within 24 hours.</p></div>
     : <><input placeholder="Student Name" value={name} onChange={e => setName(e.target.value)} style={inputStyle} />
         <input placeholder="Parent Phone" value={phone} onChange={e => setPhone(e.target.value)} style={inputStyle} />

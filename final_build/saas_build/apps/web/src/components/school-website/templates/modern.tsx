@@ -5,6 +5,7 @@ import { SchoolNav } from '../partials/nav';
 import { SchoolFooter } from '../partials/footer';
 import { SchoolStats } from '../partials/stats';
 import { AdmissionForm } from '../partials/admission-form';
+import { SchoolHomeExtras } from '../partials/home-extras';
 
 export function ModernTemplate({ theme, slug }: { theme: SchoolTheme; slug: string }) {
   const [showAdmission, setShowAdmission] = useState(false);
@@ -20,7 +21,7 @@ export function ModernTemplate({ theme, slug }: { theme: SchoolTheme; slug: stri
           <p style={{ fontSize: '1.1rem', color: '#4A5E6D', lineHeight: 1.8, maxWidth: 420, marginBottom: 36 }}>{theme.heroSubtitle || theme.tagline}</p>
           <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
             <button className="btn-primary" onClick={() => setShowAdmission(true)}>{theme.heroCtaText || 'Apply Now'} →</button>
-            <a href={`/s/${slug}/portal`} className="btn-secondary" style={{ textDecoration: 'none' }}>Student Login</a>
+            <a href={`/s/${slug}/login`} className="btn-secondary" style={{ textDecoration: 'none' }}>Portal Login</a>
           </div>
           <div style={{ display: 'flex', gap: 32, marginTop: 48 }}>
             {[['Est.', theme.established], [theme.city, 'Location']].map(([label, val]) => (
@@ -48,6 +49,7 @@ export function ModernTemplate({ theme, slug }: { theme: SchoolTheme; slug: stri
       )}
 
       {theme.sections?.stats !== false && <SchoolStats theme={theme} />}
+      <SchoolHomeExtras theme={theme} slug={slug} />
       <SchoolFooter theme={theme} slug={slug} />
       {showAdmission && <AdmissionForm theme={theme} slug={slug} onClose={() => setShowAdmission(false)} />}
     </div>
