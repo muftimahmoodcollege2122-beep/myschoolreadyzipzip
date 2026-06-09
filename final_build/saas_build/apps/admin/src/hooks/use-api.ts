@@ -582,4 +582,22 @@ export const useSubmitLessonPlan = () => {
   return useMutation({ mutationFn: (id: string) => apiClient.patch(`/lesson-plans/${id}/submit`, {}), onSuccess: () => qc.invalidateQueries({ queryKey: ['lesson-plans'] }) });
 };
 
+// ── Portal Settings ────────────────────────────────────────────────────────────
+export const usePortalSettings = () =>
+  useQuery({ queryKey: ['portal-settings'], queryFn: () => apiClient.get('/themes/portal-settings'), staleTime: 5 * 60 * 1000, retry: false });
+
+export const useUpdatePortalSettings = () => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (dto: any) => apiClient.put('/themes/portal-settings', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['portal-settings'] }) });
+};
+
+// ── Custom Domain ─────────────────────────────────────────────────────────────
+export const useDomainInfo = () =>
+  useQuery({ queryKey: ['domain-info'], queryFn: () => apiClient.get('/themes/domain'), staleTime: 10 * 60 * 1000, retry: false });
+
+export const useSetCustomDomain = () => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (dto: { customDomain: string | null }) => apiClient.put('/themes/domain', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['domain-info'] }) });
+};
+
 

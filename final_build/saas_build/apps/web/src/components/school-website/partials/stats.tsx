@@ -4,10 +4,10 @@ import type { SchoolTheme } from '../../../types/theme';
 
 export function SchoolStats({ theme }: { theme: SchoolTheme }) {
   const stats = [
-    { icon: '👩‍🎓', value: '1,500+', label: 'Students' },
-    { icon: '👨‍🏫', value: '60+',    label: 'Teachers' },
-    { icon: '📚', value: '15+',     label: 'Programs' },
-    { icon: '🏆', value: '95%',     label: 'Pass Rate' },
+    { icon: '👩‍🎓', value: theme.statsStudents || '1,500+', label: 'Students' },
+    { icon: '👨‍🏫', value: theme.statsTeachers || '60+',    label: 'Teachers' },
+    { icon: '📅',  value: theme.statsYears    || '15+',    label: 'Years' },
+    { icon: '🏆',  value: theme.statsPassRate || '95%',    label: 'Pass Rate' },
   ];
   return (
     <section style={{ background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})`, padding: '48px 0' }}>

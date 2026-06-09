@@ -1,25 +1,41 @@
 'use client';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useParentAuth } from '../stores/auth.store';
 import { clearTokens } from '../lib/api-client';
 
-const NAV = [
-  { icon: '🏠', label: 'Overview',      href: '/dashboard' },
-  { icon: '✅', label: 'Attendance',    href: '/dashboard/attendance' },
-  { icon: '📊', label: 'Grades',        href: '/dashboard/grades' },
-  { icon: '💰', label: 'Fees',          href: '/dashboard/fees' },
-  { icon: '📅', label: 'Timetable',     href: '/dashboard/timetable' },
-  { icon: '💬', label: 'Announcements', href: '/dashboard/announcements' },
-  { icon: '📋', label: 'Assignments',   href: '/dashboard/assignments' },
-  { icon: '🏆', label: 'Results',       href: '/dashboard/results' },
+const ALL_NAV = [
+  { icon: '🏠', label: 'Overview',      href: '/dashboard',              flag: null },
+  { icon: '✅', label: 'Attendance',    href: '/dashboard/attendance',   flag: 'attendance' },
+  { icon: '📊', label: 'Grades',        href: '/dashboard/grades',       flag: 'grades' },
+  { icon: '💰', label: 'Fees',          href: '/dashboard/fees',         flag: 'fees' },
+  { icon: '📅', label: 'Timetable',     href: '/dashboard/timetable',    flag: 'timetable' },
+  { icon: '💬', label: 'Announcements', href: '/dashboard/announcements',flag: 'announcements' },
+  { icon: '📋', label: 'Assignments',   href: '/dashboard/assignments',  flag: 'assignments' },
+  { icon: '🏆', label: 'Results',       href: '/dashboard/results',      flag: 'results' },
+  { icon: '🚌', label: 'Transport',     href: '/dashboard/transport',    flag: 'transport' },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const router   = useRouter();
   const { user, slug, children, clear } = useParentAuth();
+  const [flags, setFlags] = useState<Record<string, boolean> | null>(null);
+
+  useEffect(() => {
+    if (!slug) return;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    fetch(`${apiUrl}/api/v1/themes/portal-settings/slug/${slug}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.parent) setFlags(d.parent); })
+      .catch(() => {});
+  }, [slug]);
+
+  const nav = ALL_NAV.filter(item => {
+    if (!item.flag || !flags) return true;
+    return flags[item.flag] !== false;
+  });
 
   const logout = () => { clearTokens(); clear(); router.push('/login'); };
 
@@ -50,7 +66,7 @@ export function Sidebar() {
       )}
 
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {NAV.map(item => {
+        {nav.map(item => {
           const active = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
           return (
             <Link key={item.href} href={item.href}

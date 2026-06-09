@@ -30,6 +30,57 @@ export interface SchoolTheme {
   socialLinks:    { facebook?: string; twitter?: string; youtube?: string; instagram?: string };
 }
 
+export interface PortalSettings {
+  teacher: {
+    attendance: boolean; timetable: boolean; gradebook: boolean;
+    lms: boolean; announcements: boolean; exams: boolean;
+    lessonPlans: boolean; resources: boolean; students: boolean; assignments: boolean;
+  };
+  student: {
+    timetable: boolean; assignments: boolean; grades: boolean;
+    attendance: boolean; fees: boolean; announcements: boolean;
+    resources: boolean; results: boolean; library: boolean;
+  };
+  parent: {
+    attendance: boolean; grades: boolean; fees: boolean;
+    timetable: boolean; announcements: boolean; assignments: boolean;
+    results: boolean; transport: boolean;
+  };
+  website: {
+    hero: boolean; about: boolean; stats: boolean; gallery: boolean;
+    events: boolean; admissions: boolean; staff: boolean;
+    testimonials: boolean; contact: boolean; news: boolean;
+    heroTitle: string; heroSubtitle: string; heroCtaText: string;
+    aboutText: string; statsStudents: string; statsTeachers: string;
+    statsYears: string; statsPassRate: string;
+  };
+}
+
+const DEFAULT_PORTAL_SETTINGS: PortalSettings = {
+  teacher: {
+    attendance: true, timetable: true, gradebook: true, lms: true,
+    announcements: true, exams: true, lessonPlans: true, resources: true,
+    students: true, assignments: true,
+  },
+  student: {
+    timetable: true, assignments: true, grades: true, attendance: true,
+    fees: true, announcements: true, resources: true, results: true, library: true,
+  },
+  parent: {
+    attendance: true, grades: true, fees: true, timetable: true,
+    announcements: true, assignments: true, results: true, transport: true,
+  },
+  website: {
+    hero: true, about: true, stats: true, gallery: true, events: true,
+    admissions: true, staff: true, testimonials: true, contact: true, news: true,
+    heroTitle: 'Shaping Future Leaders',
+    heroSubtitle: 'Excellence in Education — Nurturing young minds with world-class education.',
+    heroCtaText: 'Apply Now',
+    aboutText: 'We are committed to providing an exceptional learning environment where every student can thrive.',
+    statsStudents: '2500+', statsTeachers: '120+', statsYears: '30+', statsPassRate: '98%',
+  },
+};
+
 // 20 pre-built distinct palettes — no two look alike
 export const THEME_PRESETS: Record<string, Partial<SchoolTheme>> = {
   emerald:   { primaryColor: '#059669', secondaryColor: '#065F46', accentColor: '#F59E0B', bgColor: '#F0FDF4', template: 'classic',  heroStyle: 'centered',  fontHeading: 'Plus Jakarta Sans', fontBody: 'Inter',             borderRadius: 'medium', shadowStyle: 'soft',   navStyle: 'solid',       buttonStyle: 'solid'   },
@@ -113,6 +164,13 @@ export class ThemesService {
     return theme;
   }
 
+  async getSchoolThemeByDomain(domain: string): Promise<{ slug: string; theme: SchoolTheme }> {
+    const tenant = await this.prisma.tenant.findFirst({ where: { customDomain: domain } });
+    if (!tenant) throw new NotFoundException('No school found for this domain');
+    const theme = await this.getSchoolTheme(tenant.slug);
+    return { slug: tenant.slug, theme };
+  }
+
   async updateTheme(tenantId: string, theme: Partial<SchoolTheme>): Promise<void> {
     const tenant = await this.prisma.tenant.findUniqueOrThrow({ where: { id: tenantId } });
     const currentSettings = (tenant.settings as any) || {};
@@ -122,5 +180,77 @@ export class ThemesService {
 
   getAvailablePresets(): Record<string, Partial<SchoolTheme>> {
     return THEME_PRESETS;
+  }
+
+  // ── Portal Settings ────────────────────────────────────────────────────────
+
+  async getPortalSettings(tenantId: string): Promise<PortalSettings> {
+    const cacheKey = `portal-settings:${tenantId}`;
+    const cached = await this.cache.get<PortalSettings>(cacheKey);
+    if (cached) return cached;
+
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { settings: true } });
+    const settings = (tenant?.settings as any) || {};
+    const saved = settings.portalSettings || {};
+
+    const merged: PortalSettings = {
+      teacher: { ...DEFAULT_PORTAL_SETTINGS.teacher, ...(saved.teacher || {}) },
+      student: { ...DEFAULT_PORTAL_SETTINGS.student, ...(saved.student || {}) },
+      parent:  { ...DEFAULT_PORTAL_SETTINGS.parent,  ...(saved.parent  || {}) },
+      website: { ...DEFAULT_PORTAL_SETTINGS.website, ...(saved.website || {}) },
+    };
+
+    await this.cache.set(cacheKey, merged, 300);
+    return merged;
+  }
+
+  async getPortalSettingsBySlug(slug: string): Promise<PortalSettings> {
+    const tenant = await this.prisma.tenant.findUnique({ where: { slug }, select: { id: true } });
+    if (!tenant) throw new NotFoundException('Tenant not found');
+    return this.getPortalSettings(tenant.id);
+  }
+
+  async updatePortalSettings(tenantId: string, settings: Partial<PortalSettings>): Promise<PortalSettings> {
+    const tenant = await this.prisma.tenant.findUniqueOrThrow({ where: { id: tenantId } });
+    const currentSettings = (tenant.settings as any) || {};
+    const current = currentSettings.portalSettings || {};
+
+    const updated = {
+      teacher: { ...(current.teacher || {}), ...(settings.teacher || {}) },
+      student: { ...(current.student || {}), ...(settings.student || {}) },
+      parent:  { ...(current.parent  || {}), ...(settings.parent  || {}) },
+      website: { ...(current.website || {}), ...(settings.website || {}) },
+    };
+
+    await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: { settings: { ...currentSettings, portalSettings: updated } },
+    });
+    await this.cache.del(`portal-settings:${tenantId}`);
+    await this.cache.del(`theme:${tenant.slug}`);
+    return this.getPortalSettings(tenantId);
+  }
+
+  // ── Custom Domain ──────────────────────────────────────────────────────────
+
+  async getDomainInfo(tenantId: string): Promise<{ customDomain: string | null; slug: string }> {
+    const tenant = await this.prisma.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { slug: true, customDomain: true } });
+    return { customDomain: tenant.customDomain || null, slug: tenant.slug };
+  }
+
+  async setCustomDomain(tenantId: string, customDomain: string | null): Promise<{ customDomain: string | null; slug: string }> {
+    const tenant = await this.prisma.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { slug: true } });
+
+    if (customDomain) {
+      const existing = await this.prisma.tenant.findFirst({ where: { customDomain, NOT: { id: tenantId } } });
+      if (existing) throw new Error('Domain already in use by another school');
+    }
+
+    await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: { customDomain: customDomain || null },
+    });
+    await this.cache.del(`tenant-domain:${customDomain}`);
+    return { customDomain: customDomain || null, slug: tenant.slug };
   }
 }

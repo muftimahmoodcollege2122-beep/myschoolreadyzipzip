@@ -5,8 +5,8 @@ const nextConfig = {
   compress: true,
   images: {
     remotePatterns: [
-      { protocol: 'https', hostname: '**.amazonaws.com' },
-      { protocol: 'https', hostname: '**.replit.dev' },
+      { protocol: 'https', hostname: '**' },
+      { protocol: 'http', hostname: '**' },
     ],
     formats: ['image/avif', 'image/webp'],
   },

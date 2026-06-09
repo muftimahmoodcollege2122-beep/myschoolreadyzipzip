@@ -12,16 +12,15 @@ export function ElegantTemplate({ theme, slug }: { theme: SchoolTheme; slug: str
     <div style={{ background: theme.bgColor, minHeight: '100vh' }}>
       <SchoolNav theme={theme} slug={slug} onApply={() => setShowAdmission(true)} />
 
-      {/* Diagonal hero */}
+      {theme.sections?.hero !== false && (
       <section style={{ position: 'relative', padding: '120px 0 160px', overflow: 'hidden' }}>
-        {/* Diagonal background */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: `linear-gradient(135deg, ${theme.primaryColor} 0%, ${theme.primaryColor} 50%, ${theme.bgColor} 50%)`, zIndex: 0 }} />
         <div className="container" style={{ position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, alignItems: 'center' }}>
           <div>
-            <h1 style={{ color: '#fff', fontSize: 'clamp(2rem,4vw,3.5rem)', fontFamily: 'var(--font-heading)', fontWeight: 700, fontStyle: 'italic', lineHeight: 1.15, margin: '0 0 20px' }}>{theme.schoolName}</h1>
+            <h1 style={{ color: '#fff', fontSize: 'clamp(2rem,4vw,3.5rem)', fontFamily: 'var(--font-heading)', fontWeight: 700, fontStyle: 'italic', lineHeight: 1.15, margin: '0 0 20px' }}>{theme.heroTitle || theme.schoolName}</h1>
             <div style={{ width: 60, height: 2, background: theme.accentColor, margin: '0 0 20px' }} />
-            <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '1.1rem', lineHeight: 1.8, marginBottom: 36 }}>{theme.tagline}</p>
-            <button className="btn-primary" style={{ background: '#fff', color: theme.primaryColor }} onClick={() => setShowAdmission(true)}>Apply for Admission</button>
+            <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '1.1rem', lineHeight: 1.8, marginBottom: 36 }}>{theme.heroSubtitle || theme.tagline}</p>
+            <button className="btn-primary" style={{ background: '#fff', color: theme.primaryColor }} onClick={() => setShowAdmission(true)}>{theme.heroCtaText || 'Apply for Admission'}</button>
           </div>
           <div style={{ background: '#fff', borderRadius: 'var(--radius)', padding: 40, boxShadow: 'var(--shadow)' }}>
             <h3 style={{ fontFamily: 'var(--font-heading)', color: theme.secondaryColor, marginBottom: 20, fontStyle: 'italic' }}>Quick Admission</h3>
@@ -29,8 +28,9 @@ export function ElegantTemplate({ theme, slug }: { theme: SchoolTheme; slug: str
           </div>
         </div>
       </section>
+      )}
 
-      <SchoolStats theme={theme} />
+      {theme.sections?.stats !== false && <SchoolStats theme={theme} />}
       <SchoolFooter theme={theme} slug={slug} />
       {showAdmission && <AdmissionForm theme={theme} slug={slug} onClose={() => setShowAdmission(false)} />}
     </div>

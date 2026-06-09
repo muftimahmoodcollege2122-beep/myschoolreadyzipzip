@@ -12,14 +12,14 @@ export function ModernTemplate({ theme, slug }: { theme: SchoolTheme; slug: stri
     <div style={{ background: theme.bgColor, minHeight: '100vh' }}>
       <SchoolNav theme={theme} slug={slug} onApply={() => setShowAdmission(true)} />
 
-      {/* Hero — split layout */}
+      {theme.sections?.hero !== false && (
       <section style={{ minHeight: '90vh', display: 'grid', gridTemplateColumns: '1fr 1fr', background: '#fff' }}>
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '80px 60px', background: theme.bgColor }}>
           <div style={{ width: 60, height: 4, background: theme.primaryColor, borderRadius: 2, marginBottom: 24 }} />
-          <h1 style={{ fontSize: 'clamp(2.2rem,4vw,3.8rem)', fontFamily: 'var(--font-heading)', fontWeight: 800, color: theme.secondaryColor, lineHeight: 1.1, margin: '0 0 20px' }}>{theme.schoolName}</h1>
-          <p style={{ fontSize: '1.1rem', color: '#4A5E6D', lineHeight: 1.8, maxWidth: 420, marginBottom: 36 }}>{theme.tagline}</p>
+          <h1 style={{ fontSize: 'clamp(2.2rem,4vw,3.8rem)', fontFamily: 'var(--font-heading)', fontWeight: 800, color: theme.secondaryColor, lineHeight: 1.1, margin: '0 0 20px' }}>{theme.heroTitle || theme.schoolName}</h1>
+          <p style={{ fontSize: '1.1rem', color: '#4A5E6D', lineHeight: 1.8, maxWidth: 420, marginBottom: 36 }}>{theme.heroSubtitle || theme.tagline}</p>
           <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-            <button className="btn-primary" onClick={() => setShowAdmission(true)}>Apply Now →</button>
+            <button className="btn-primary" onClick={() => setShowAdmission(true)}>{theme.heroCtaText || 'Apply Now'} →</button>
             <a href={`/s/${slug}/portal`} className="btn-secondary" style={{ textDecoration: 'none' }}>Student Login</a>
           </div>
           <div style={{ display: 'flex', gap: 32, marginTop: 48 }}>
@@ -45,8 +45,9 @@ export function ModernTemplate({ theme, slug }: { theme: SchoolTheme; slug: stri
           </div>
         </div>
       </section>
+      )}
 
-      <SchoolStats theme={theme} />
+      {theme.sections?.stats !== false && <SchoolStats theme={theme} />}
       <SchoolFooter theme={theme} slug={slug} />
       {showAdmission && <AdmissionForm theme={theme} slug={slug} onClose={() => setShowAdmission(false)} />}
     </div>

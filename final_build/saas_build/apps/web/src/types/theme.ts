@@ -24,4 +24,18 @@ export interface SchoolTheme {
   principalName:  string;
   coverImageUrl:  string;
   socialLinks:    { facebook?: string; twitter?: string; youtube?: string; instagram?: string };
+  // Portal-controlled content & section visibility
+  heroTitle?:      string;
+  heroSubtitle?:   string;
+  heroCtaText?:    string;
+  aboutText?:      string;
+  statsStudents?:  string;
+  statsTeachers?:  string;
+  statsYears?:     string;
+  statsPassRate?:  string;
+  sections?: {
+    hero: boolean; about: boolean; stats: boolean; gallery: boolean;
+    events: boolean; admissions: boolean; staff: boolean;
+    testimonials: boolean; contact: boolean; news: boolean;
+  };
 }

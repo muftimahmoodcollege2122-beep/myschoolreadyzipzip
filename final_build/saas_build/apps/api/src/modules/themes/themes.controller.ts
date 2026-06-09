@@ -22,4 +22,33 @@ export class ThemesController {
   @Put('current') @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SCHOOL_ADMIN')
   @ApiOperation({ summary: 'Update school theme' })
   update(@Body() dto: any, @TenantId() tid: string) { return this.svc.updateTheme(tid, dto); }
+
+  // ── By custom domain (public — used by web middleware) ─────────────────────
+  @Get('by-domain/:domain') @Public()
+  @ApiOperation({ summary: 'Resolve school by custom domain (public)' })
+  getByDomain(@Param('domain') domain: string) { return this.svc.getSchoolThemeByDomain(domain); }
+
+  // ── Portal Settings ────────────────────────────────────────────────────────
+  @Get('portal-settings/slug/:slug') @Public()
+  @ApiOperation({ summary: 'Get portal feature flags by slug (public — used by portals)' })
+  getPortalSettingsBySlug(@Param('slug') slug: string) { return this.svc.getPortalSettingsBySlug(slug); }
+
+  @Get('portal-settings') @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SCHOOL_ADMIN', 'TEACHER', 'STUDENT', 'PARENT')
+  @ApiOperation({ summary: 'Get portal feature flags for current tenant' })
+  getPortalSettings(@TenantId() tid: string) { return this.svc.getPortalSettings(tid); }
+
+  @Put('portal-settings') @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SCHOOL_ADMIN')
+  @ApiOperation({ summary: 'Update portal feature flags (admin only)' })
+  updatePortalSettings(@TenantId() tid: string, @Body() dto: any) { return this.svc.updatePortalSettings(tid, dto); }
+
+  // ── Custom Domain ──────────────────────────────────────────────────────────
+  @Get('domain') @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SCHOOL_ADMIN')
+  @ApiOperation({ summary: 'Get current custom domain info' })
+  getDomain(@TenantId() tid: string) { return this.svc.getDomainInfo(tid); }
+
+  @Put('domain') @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SCHOOL_ADMIN')
+  @ApiOperation({ summary: 'Set or remove custom domain' })
+  setDomain(@TenantId() tid: string, @Body() dto: { customDomain: string | null }) {
+    return this.svc.setCustomDomain(tid, dto.customDomain);
+  }
 }

@@ -47,19 +47,29 @@ export class TenantContextMiddleware implements NestMiddleware {
       return next();
     }
 
-    const tenantSlug =
-      req.headers['x-tenant-id'] as string ||
-      this.extractTenantFromHost(req.hostname) ||
-      this.extractTenantFromPath(req.path);
+    const headerSlug = req.headers['x-tenant-id'] as string;
+    const subdomainSlug = this.extractTenantFromHost(req.hostname);
+    const pathSlug = this.extractTenantFromPath(req.path);
+    const tenantSlug = headerSlug || subdomainSlug || pathSlug;
 
+    let tenantContext: TenantContext | null = null;
+
+    // If no slug found, try resolving by custom domain
     if (!tenantSlug) {
-      throw new UnauthorizedException('Tenant identifier required');
+      tenantContext = await this.resolveTenantByDomain(req.hostname);
+      if (!tenantContext) {
+        throw new UnauthorizedException('Tenant identifier required');
+      }
+    } else {
+      tenantContext = await this.resolveTenant(tenantSlug);
+      // Fallback: if slug lookup fails, try custom domain
+      if (!tenantContext) {
+        tenantContext = await this.resolveTenantByDomain(req.hostname);
+      }
     }
 
-    const tenantContext = await this.resolveTenant(tenantSlug);
-
     if (!tenantContext) {
-      throw new UnauthorizedException(`Tenant not found: ${tenantSlug}`);
+      throw new UnauthorizedException(`Tenant not found: ${tenantSlug || req.hostname}`);
     }
 
     if (tenantContext.tier === 'SUSPENDED') {
@@ -74,6 +84,25 @@ export class TenantContextMiddleware implements NestMiddleware {
     await this.prisma.$executeRaw`SELECT set_config('app.current_tenant_id', ${tenantContext.tenantId}, true)`;
 
     next();
+  }
+
+  private async resolveTenantByDomain(domain: string): Promise<TenantContext | null> {
+    const cacheKey = `tenant-domain:${domain}`;
+    const cached = await this.cache.get<TenantContext>(cacheKey);
+    if (cached) return cached;
+
+    const tenant = await this.prisma.tenant.findFirst({
+      where: { customDomain: domain },
+      select: { id: true, slug: true, tier: true, status: true, schemaName: true, planLimits: true, dataRegion: true },
+    });
+
+    if (!tenant) return null;
+    const context: TenantContext = {
+      tenantId: tenant.id, tenantSlug: tenant.slug, tier: tenant.tier,
+      schemaName: tenant.schemaName, planLimits: tenant.planLimits as Record<string, unknown>, dataRegion: tenant.dataRegion,
+    };
+    await this.cache.set(cacheKey, context, 300);
+    return context;
   }
 
   private async resolveTenant(slug: string): Promise<TenantContext | null> {
