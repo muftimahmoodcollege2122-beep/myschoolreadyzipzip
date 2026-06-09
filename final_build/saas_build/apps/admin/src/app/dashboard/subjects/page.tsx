@@ -1,144 +1,97 @@
 'use client';
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../../../lib/api-client';
+import { useSubjects, useCreateSubject } from '../../../hooks/use-api';
+import { PageHeader } from '../../../components/shared/page-header';
+import { Topbar } from '../../../components/layout/topbar';
+import { Badge } from '../../../components/shared/badge';
+import { Modal } from '../../../components/shared/modal';
+
+const EMPTY = { name: '', code: '', description: '', isElective: false, creditHours: '1' };
 
 export default function SubjectsPage() {
-  const qc = useQueryClient();
-  const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ name: '', code: '', description: '', classId: '', teacherId: '' });
-  const [error, setError] = useState('');
+  const { data: subjects, isLoading } = useSubjects();
+  const createSubject = useCreateSubject();
+  const [modal, setModal] = useState(false);
+  const [form, setForm] = useState(EMPTY);
+  const [search, setSearch] = useState('');
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['subjects-admin'],
-    queryFn:  () => api.get('/subjects?limit=100').catch(() => []),
-  });
+  const list: any[] = Array.isArray(subjects) ? subjects : [];
+  const filtered = search ? list.filter(s => s.name.toLowerCase().includes(search.toLowerCase()) || s.code.toLowerCase().includes(search.toLowerCase())) : list;
 
-  const { data: classes } = useQuery({
-    queryKey: ['classes-dropdown'],
-    queryFn:  () => api.get('/classes?limit=50').catch(() => []),
-  });
-
-  const { data: teachers } = useQuery({
-    queryKey: ['teachers-dropdown'],
-    queryFn:  () => api.get('/teachers?limit=100').catch(() => []),
-  });
-
-  const addMutation = useMutation({
-    mutationFn: (d: any) => api.post('/subjects', d),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['subjects-admin'] }); setShowAdd(false); setForm({ name: '', code: '', description: '', classId: '', teacherId: '' }); },
-    onError: (e: any) => setError(e?.message || 'Failed to add subject'),
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/subjects/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['subjects-admin'] }),
-  });
-
-  const subjects: any[] = Array.isArray(data) ? data : [];
-
-  const SUBJECT_ICONS: Record<string, string> = {
-    Math: '➗', Mathematics: '➗', Physics: '⚛️', Chemistry: '⚗️', Biology: '🌿',
-    English: '📖', Urdu: '🖊️', Computer: '💻', History: '📜', Geography: '🌍',
-    Islamiyat: '🕌', Science: '🔬', Art: '🎨', 'Physical Education': '⚽',
+  const handleCreate = async () => {
+    await createSubject.mutateAsync(form);
+    setForm(EMPTY);
+    setModal(false);
   };
 
-  const getIcon = (name: string) => {
-    for (const [key, icon] of Object.entries(SUBJECT_ICONS)) {
-      if (name?.toLowerCase().includes(key.toLowerCase())) return icon;
-    }
-    return '📚';
-  };
+  const coreCount = list.filter(s => !s.isElective).length;
+  const electiveCount = list.filter(s => s.isElective).length;
 
   return (
-    <div className="p-6 space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-black text-gray-900">Subjects</h1>
-          <p className="text-gray-500 text-sm">{subjects.length} subjects across all classes</p>
-        </div>
-        <button onClick={() => setShowAdd(true)} className="bg-teal-600 hover:bg-teal-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm flex items-center gap-2">
-          📚 Add Subject
-        </button>
-      </div>
+    <>
+      <Topbar title="Subjects" subtitle="Curriculum & subject management" />
+      <div className="p-6">
+        <PageHeader
+          title="Subjects & Curriculum"
+          subtitle={`${list.length} subjects · ${coreCount} core · ${electiveCount} elective`}
+          action={<button onClick={() => setModal(true)} className="px-4 py-2 bg-green-600 text-white text-sm font-bold rounded-lg hover:bg-green-500">+ Add Subject</button>}
+        />
 
-      {isLoading ? <p className="text-center py-10 text-gray-400">Loading…</p>
-        : subjects.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center text-gray-400">
-            <p className="text-3xl mb-3">📚</p>
-            No subjects yet. <button onClick={() => setShowAdd(true)} className="text-teal-600 font-semibold">Add your first →</button>
+        <div className="flex gap-3 mb-6">
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search subjects..." className="flex-1 max-w-sm px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-green-400" />
+        </div>
+
+        {isLoading ? (
+          <div className="grid grid-cols-3 gap-4">{[...Array(9)].map((_,i)=><div key={i} className="h-28 bg-gray-100 rounded-xl animate-pulse"/>)}</div>
+        ) : filtered.length === 0 ? (
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-12 text-center">
+            <p className="text-5xl mb-3">📚</p>
+            <p className="text-gray-400">{search ? 'No subjects match your search' : 'No subjects added yet'}</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {subjects.map((s: any) => (
-              <div key={s.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition-all group">
-                <div className="flex items-start justify-between">
-                  <span className="text-3xl">{getIcon(s.name)}</span>
-                  <button onClick={() => deleteMutation.mutate(s.id)}
-                    className="text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 text-sm">
-                    🗑️
-                  </button>
+          <div className="grid grid-cols-3 gap-4">
+            {filtered.map((s: any) => (
+              <div key={s.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition-shadow">
+                <div className="flex items-start justify-between mb-2">
+                  <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center font-black text-green-700 text-sm flex-shrink-0">
+                    {s.code.substring(0,3)}
+                  </div>
+                  <Badge variant={s.isElective ? 'yellow' : 'green'}>{s.isElective ? 'Elective' : 'Core'}</Badge>
                 </div>
-                <h3 className="font-bold text-gray-900 mt-2 truncate">{s.name}</h3>
-                {s.code && <p className="text-xs font-mono text-gray-400">{s.code}</p>}
-                <p className="text-xs text-gray-500 mt-1 truncate">{s.class?.name || 'All Classes'}</p>
-                {s.teacher?.user?.name && <p className="text-xs text-teal-600 mt-0.5 truncate">👨‍🏫 {s.teacher.user.name}</p>}
+                <h3 className="font-bold text-gray-900 mt-2">{s.name}</h3>
+                <p className="text-xs text-gray-400 font-mono">{s.code}</p>
+                {s.description && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{s.description}</p>}
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-xs text-gray-400">{s.creditHours} credit hrs</span>
+                  {s._count?.classSubjects > 0 && <span className="text-xs text-gray-400">· {s._count.classSubjects} classes</span>}
+                </div>
               </div>
             ))}
           </div>
-        )
-      }
+        )}
+      </div>
 
-      {showAdd && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 space-y-4">
-            <h2 className="text-lg font-black">Add Subject</h2>
-            {error && <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">{error}</div>}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2">
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Subject Name *</label>
-                <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Mathematics"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Code</label>
-                <input value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value }))} placeholder="MATH101"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Class</label>
-                <select value={form.classId} onChange={e => setForm(f => ({ ...f, classId: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
-                  <option value="">All Classes</option>
-                  {Array.isArray(classes) && (classes as any[]).map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-              </div>
-              <div className="col-span-2">
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Assign Teacher</label>
-                <select value={form.teacherId} onChange={e => setForm(f => ({ ...f, teacherId: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
-                  <option value="">Select teacher…</option>
-                  {Array.isArray(teachers) && (teachers as any[]).map((t: any) => (
-                    <option key={t.id} value={t.id}>{t.user?.name || t.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="col-span-2">
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Description</label>
-                <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} placeholder="Brief description…"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none" />
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <button onClick={() => setShowAdd(false)} className="flex-1 border border-gray-200 font-semibold py-3 rounded-xl text-sm">Cancel</button>
-              <button onClick={() => { setError(''); addMutation.mutate(form); }} disabled={addMutation.isPending || !form.name}
-                className="flex-1 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold py-3 rounded-xl text-sm">
-                {addMutation.isPending ? 'Adding…' : 'Add Subject'}
-              </button>
-            </div>
+      <Modal isOpen={modal} onClose={() => { setModal(false); setForm(EMPTY); }} title="Add Subject">
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Subject Name *</label>
+              <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="e.g. Mathematics" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-green-400" /></div>
+            <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Code *</label>
+              <input value={form.code} onChange={e=>setForm(f=>({...f,code:e.target.value.toUpperCase()}))} placeholder="e.g. MATH101" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-green-400" /></div>
           </div>
+          <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Description</label>
+            <textarea value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} rows={2} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-green-400 resize-none" /></div>
+          <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Credit Hours</label>
+            <input type="number" value={form.creditHours} onChange={e=>setForm(f=>({...f,creditHours:e.target.value}))} min="1" max="6" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-green-400" /></div>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" checked={form.isElective} onChange={e=>setForm(f=>({...f,isElective:e.target.checked}))} className="w-4 h-4 accent-green-600" />
+            <span className="text-sm text-gray-700">This is an elective subject</span>
+          </label>
+          <button onClick={handleCreate} disabled={createSubject.isPending||!form.name||!form.code} className="w-full py-2.5 bg-green-600 text-white font-bold rounded-lg hover:bg-green-500 disabled:opacity-50">
+            {createSubject.isPending ? 'Adding...' : 'Add Subject'}
+          </button>
         </div>
-      )}
-    </div>
+      </Modal>
+    </>
   );
 }

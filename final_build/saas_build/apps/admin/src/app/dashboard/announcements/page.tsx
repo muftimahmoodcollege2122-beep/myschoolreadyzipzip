@@ -1,141 +1,156 @@
 'use client';
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../../../lib/api-client';
-import dayjs from 'dayjs';
+import { Topbar } from '../../../components/layout/topbar';
+import { PageHeader } from '../../../components/shared/page-header';
+import { Badge } from '../../../components/shared/badge';
+import { Modal } from '../../../components/shared/modal';
+import { useAnnouncements, useCreateAnnouncement, useDeleteAnnouncement } from '../../../hooks/use-api';
+
+const CAT_ICON: Record<string, string> = { Academic: '📚', Sports: '⚽', Holiday: '🎉', General: '📢', Event: '🎖️', Health: '🏥' };
 
 export default function AnnouncementsPage() {
-  const qc = useQueryClient();
-  const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ title: '', body: '', audience: 'ALL', priority: 'NORMAL' });
-  const [error, setError] = useState('');
+  const [search, setSearch] = useState('');
+  const [selectedAnn, setSelectedAnn] = useState<any>(null);
+  const [createModal, setCreateModal] = useState(false);
+  const [form, setForm] = useState({ title: '', body: '', category: 'General', isPinned: false });
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['announcements-admin'],
-    queryFn:  () => api.get('/announcements?limit=50').catch(() => []),
-  });
+  const { data, isLoading } = useAnnouncements(1);
+  const createAnn = useCreateAnnouncement();
+  const deleteAnn = useDeleteAnnouncement();
 
-  const addMutation = useMutation({
-    mutationFn: (d: any) => api.post('/announcements', d),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['announcements-admin'] }); setShowAdd(false); setForm({ title: '', body: '', audience: 'ALL', priority: 'NORMAL' }); },
-    onError: (e: any) => setError(e?.message || 'Failed to create announcement'),
-  });
+  const announcements: any[] = data?.data ?? [];
+  const filtered = announcements.filter(a => !search || a.title.toLowerCase().includes(search.toLowerCase()));
+  const pinned = filtered.filter(a => a.isPinned);
+  const regular = filtered.filter(a => !a.isPinned);
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/announcements/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['announcements-admin'] }),
-  });
-
-  const items: any[] = Array.isArray(data) ? data : [];
-
-  const AUDIENCE_BADGE: any = {
-    ALL: 'bg-blue-100 text-blue-700',
-    TEACHERS: 'bg-teal-100 text-teal-700',
-    STUDENTS: 'bg-violet-100 text-violet-700',
-    PARENTS: 'bg-rose-100 text-rose-700',
+  const handleCreate = async () => {
+    if (!form.title || !form.body) return;
+    await createAnn.mutateAsync({ title: form.title, body: form.body, isPinned: form.isPinned });
+    setForm({ title: '', body: '', category: 'General', isPinned: false });
+    setCreateModal(false);
   };
 
-  const PRIORITY_BADGE: any = {
-    HIGH: 'bg-red-100 text-red-700',
-    NORMAL: 'bg-gray-100 text-gray-600',
-    LOW: 'bg-green-100 text-green-700',
-  };
+  const formatDate = (d: string) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
   return (
-    <div className="p-6 space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-black text-gray-900">Announcements</h1>
-          <p className="text-gray-500 text-sm">Broadcast notices to teachers, students and parents</p>
+    <>
+      <Topbar title="Announcements" subtitle="School-wide announcements & notice board" />
+      <div className="p-6">
+        <PageHeader title="Announcement Board" subtitle={`${announcements.length} announcements · ${pinned.length} pinned`}
+          action={<button onClick={() => setCreateModal(true)} className="px-4 py-2 bg-green-600 text-white text-sm font-bold rounded-lg hover:bg-green-500">+ Post Announcement</button>}
+        />
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          {[
+            { label: 'Total', value: announcements.length, icon: '📢', color: 'text-blue-600', bg: 'bg-blue-50' },
+            { label: 'Pinned', value: pinned.length, icon: '📌', color: 'text-orange-600', bg: 'bg-orange-50' },
+            { label: 'This Week', value: announcements.filter(a => new Date(a.createdAt) > new Date(Date.now() - 7*864e5)).length, icon: '🗓️', color: 'text-purple-600', bg: 'bg-purple-50' },
+            { label: 'Active', value: announcements.filter(a => !a.expiresAt || new Date(a.expiresAt) > new Date()).length, icon: '✅', color: 'text-green-600', bg: 'bg-green-50' },
+          ].map(s => (
+            <div key={s.label} className={`${s.bg} rounded-xl p-4`}>
+              <div className="flex items-center gap-2 mb-1"><span>{s.icon}</span><p className="text-xs text-gray-500">{s.label}</p></div>
+              <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
+            </div>
+          ))}
         </div>
-        <button onClick={() => setShowAdd(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm flex items-center gap-2">
-          📢 New Announcement
-        </button>
-      </div>
 
-      <div className="space-y-3">
-        {isLoading ? <p className="text-center py-10 text-gray-400">Loading…</p>
-          : items.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center">
-              <p className="text-4xl mb-3">📢</p>
-              <p className="text-gray-500 text-sm">No announcements yet.</p>
-              <button onClick={() => setShowAdd(true)} className="mt-3 text-blue-600 font-semibold text-sm hover:underline">Create your first →</button>
-            </div>
-          ) : items.map((a: any) => (
-            <div key={a.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-all">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                    <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${PRIORITY_BADGE[a.priority] || 'bg-gray-100 text-gray-600'}`}>{a.priority}</span>
-                    <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${AUDIENCE_BADGE[a.audience] || 'bg-gray-100 text-gray-600'}`}>
-                      {a.audience || 'ALL'}
-                    </span>
+        <div className="flex gap-3 mb-6">
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search announcements..." className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+        </div>
+
+        {isLoading ? (
+          <div className="text-center py-12 text-gray-400">Loading announcements...</div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-12 text-gray-400">
+            <p className="text-4xl mb-2">📢</p>
+            <p className="font-medium">No announcements yet</p>
+            <p className="text-sm">Post the first announcement for your school</p>
+          </div>
+        ) : (
+          <>
+            {pinned.length > 0 && (
+              <div className="mb-6">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">📌 Pinned</p>
+                <div className="space-y-3">
+                  {pinned.map((ann: any) => (
+                    <div key={ann.id} onClick={() => setSelectedAnn(ann)} className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 cursor-pointer hover:shadow-md transition-all">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-start gap-3">
+                          <span className="text-xl mt-0.5">📌</span>
+                          <div>
+                            <p className="font-bold text-gray-900">{ann.title}</p>
+                            <p className="text-xs text-gray-500 mt-0.5">{formatDate(ann.createdAt)}</p>
+                          </div>
+                        </div>
+                        {ann.expiresAt && <span className="text-xs bg-red-50 text-red-600 px-2 py-0.5 rounded">Expires {formatDate(ann.expiresAt)}</span>}
+                      </div>
+                      <p className="text-sm text-gray-600 line-clamp-2 ml-8">{ann.body}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Recent Announcements</p>
+              <div className="space-y-3">
+                {regular.map((ann: any) => (
+                  <div key={ann.id} onClick={() => setSelectedAnn(ann)} className="bg-white border border-gray-100 rounded-xl p-4 cursor-pointer hover:border-gray-200 hover:shadow-sm transition-all">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-start gap-3">
+                        <span className="text-xl mt-0.5">📢</span>
+                        <div>
+                          <p className="font-bold text-sm text-gray-800">{ann.title}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">{formatDate(ann.createdAt)}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500 line-clamp-2 ml-8">{ann.body}</p>
                   </div>
-                  <h3 className="font-bold text-gray-900">{a.title}</h3>
-                  <p className="text-sm text-gray-600 mt-1 line-clamp-2">{a.body || a.content}</p>
-                  <p className="text-xs text-gray-400 mt-2">{dayjs(a.createdAt).format('MMMM D, YYYY [at] h:mm A')}</p>
-                </div>
-                <button onClick={() => deleteMutation.mutate(a.id)} disabled={deleteMutation.isPending}
-                  className="text-gray-400 hover:text-red-600 transition-colors text-sm flex-shrink-0 mt-1">🗑️</button>
+                ))}
               </div>
             </div>
-          ))
-        }
+          </>
+        )}
       </div>
 
-      {showAdd && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg">
-            <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="text-lg font-black text-gray-900">New Announcement</h2>
-              <button onClick={() => setShowAdd(false)} className="text-gray-400 hover:text-gray-700 text-xl">✕</button>
+      <Modal isOpen={!!selectedAnn} onClose={() => setSelectedAnn(null)} title={selectedAnn?.title || ''}>
+        {selectedAnn && (
+          <div className="p-6">
+            <div className="flex items-center gap-3 mb-4">
+              {selectedAnn.isPinned && <span className="text-xs bg-yellow-50 text-yellow-600 px-2 py-0.5 rounded">📌 Pinned</span>}
+              <span className="text-xs text-gray-400">{formatDate(selectedAnn.createdAt)}</span>
             </div>
-            <div className="p-6 space-y-4">
-              {error && <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">{error}</div>}
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Title *</label>
-                <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. School Holiday Announcement"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Message *</label>
-                <textarea value={form.body} onChange={e => setForm(f => ({ ...f, body: e.target.value }))} placeholder="Write your announcement here…" rows={4}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Audience</label>
-                  <select value={form.audience} onChange={e => setForm(f => ({ ...f, audience: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="ALL">Everyone</option>
-                    <option value="TEACHERS">Teachers Only</option>
-                    <option value="STUDENTS">Students Only</option>
-                    <option value="PARENTS">Parents Only</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Priority</label>
-                  <select value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="NORMAL">Normal</option>
-                    <option value="HIGH">High (Urgent)</option>
-                    <option value="LOW">Low</option>
-                  </select>
-                </div>
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button onClick={() => setShowAdd(false)} className="flex-1 border border-gray-200 text-gray-700 font-semibold py-3 rounded-xl text-sm">Cancel</button>
-                <button onClick={() => { setError(''); addMutation.mutate(form); }}
-                  disabled={addMutation.isPending || !form.title || !form.body}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold py-3 rounded-xl text-sm">
-                  {addMutation.isPending ? 'Publishing…' : 'Publish Announcement'}
-                </button>
-              </div>
+            <p className="text-sm text-gray-700 leading-relaxed mb-4">{selectedAnn.body}</p>
+            {selectedAnn.targetRoles?.length > 0 && (
+              <p className="text-xs text-gray-400 mb-4">Audience: {selectedAnn.targetRoles.join(', ')}</p>
+            )}
+            <div className="flex gap-2 mt-4">
+              <button onClick={async () => { await deleteAnn.mutateAsync(selectedAnn.id); setSelectedAnn(null); }}
+                className="flex-1 py-2 bg-red-50 text-red-600 text-sm rounded-lg hover:bg-red-100">Delete</button>
+              <button onClick={() => setSelectedAnn(null)} className="flex-1 py-2 border border-gray-200 text-sm rounded-lg">Close</button>
             </div>
           </div>
+        )}
+      </Modal>
+
+      <Modal isOpen={createModal} onClose={() => setCreateModal(false)} title="Post Announcement">
+        <div className="p-6 space-y-4">
+          <div><label className="text-xs text-gray-500 mb-1 block">Title *</label>
+            <input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Announcement title..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+          </div>
+          <div><label className="text-xs text-gray-500 mb-1 block">Body *</label>
+            <textarea rows={4} value={form.body} onChange={e => setForm({ ...form, body: e.target.value })} placeholder="Announcement details..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+          </div>
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input type="checkbox" checked={form.isPinned} onChange={e => setForm({ ...form, isPinned: e.target.checked })} />
+            📌 Pin this announcement (shows at top)
+          </label>
+          <button onClick={handleCreate} disabled={createAnn.isPending}
+            className="w-full py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-500 disabled:opacity-50">
+            {createAnn.isPending ? 'Posting...' : 'Post Announcement'}
+          </button>
         </div>
-      )}
-    </div>
+      </Modal>
+    </>
   );
 }

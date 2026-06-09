@@ -1,148 +1,140 @@
 'use client';
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../../../lib/api-client';
+import { useClasses, useCreateClass, useCreateSection, useSections } from '../../../hooks/use-api';
+import { PageHeader } from '../../../components/shared/page-header';
+import { Topbar } from '../../../components/layout/topbar';
+import { Modal } from '../../../components/shared/modal';
+import { Badge } from '../../../components/shared/badge';
 
 export default function ClassesPage() {
-  const qc = useQueryClient();
-  const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ name: '', description: '' });
-  const [showAddSection, setShowAddSection] = useState<string | null>(null);
-  const [sectionForm, setSectionForm] = useState({ name: '', capacity: '40' });
-
-  const { data: classes, isLoading } = useQuery({
-    queryKey: ['classes-admin'],
-    queryFn:  () => api.get('/classes?includeSections=true').catch(() => []),
-  });
-
-  const addClass = useMutation({
-    mutationFn: (d: any) => api.post('/classes', d),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['classes-admin'] }); setShowAdd(false); setForm({ name: '', description: '' }); },
-  });
-
-  const addSection = useMutation({
-    mutationFn: ({ classId, data }: any) => api.post(`/classes/${classId}/sections`, { ...data, capacity: Number(data.capacity) }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['classes-admin'] }); setShowAddSection(null); setSectionForm({ name: '', capacity: '40' }); },
-  });
-
-  const deleteClass = useMutation({
-    mutationFn: (id: string) => api.delete(`/classes/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['classes-admin'] }),
-  });
+  const { data: classes, isLoading } = useClasses();
+  const { data: allSections } = useSections();
+  const createClass = useCreateClass();
+  const createSection = useCreateSection();
+  const [showClassModal, setShowClassModal] = useState(false);
+  const [showSectionModal, setShowSectionModal] = useState(false);
+  const [selectedClass, setSelectedClass] = useState<any>(null);
+  const [classForm, setClassForm] = useState({ name: '', level: '' });
+  const [sectionForm, setSectionForm] = useState({ name: '', capacity: '40', roomNumber: '' });
 
   const classList: any[] = Array.isArray(classes) ? classes : [];
+  const totalStudents = classList.reduce((s: number, c: any) => s + (c.sections?.reduce((ss: number, sec: any) => ss + (sec._count?.students ?? 0), 0) ?? 0), 0);
+
+  const handleCreateClass = async () => {
+    await createClass.mutateAsync(classForm);
+    setClassForm({ name: '', level: '' });
+    setShowClassModal(false);
+  };
+
+  const handleCreateSection = async () => {
+    await createSection.mutateAsync({ ...sectionForm, classId: selectedClass?.id });
+    setSectionForm({ name: '', capacity: '40', roomNumber: '' });
+    setShowSectionModal(false);
+  };
 
   return (
-    <div className="p-6 space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-black text-gray-900">Classes & Sections</h1>
-          <p className="text-gray-500 text-sm">Manage grade levels and their sections</p>
-        </div>
-        <button onClick={() => setShowAdd(true)}
-          className="bg-violet-600 hover:bg-violet-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm flex items-center gap-2">
-          ➕ Add Class
-        </button>
-      </div>
+    <>
+      <Topbar title="Classes" subtitle="Manage grades, sections & enrollment" />
+      <div className="p-6">
+        <PageHeader
+          title="Classes & Sections"
+          subtitle={`${classList.length} grades · ${totalStudents} enrolled students`}
+          action={
+            <button onClick={() => setShowClassModal(true)} className="px-4 py-2 bg-green-600 text-white text-sm font-bold rounded-lg hover:bg-green-500">
+              + Add Class
+            </button>
+          }
+        />
 
-      {isLoading ? <p className="text-center py-10 text-gray-400">Loading…</p>
-        : classList.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center text-gray-400">
-            <p className="text-3xl mb-3">🏫</p>
-            No classes yet. <button onClick={() => setShowAdd(true)} className="text-violet-600 font-semibold">Add your first →</button>
-          </div>
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          {[
+            { label: 'Total Classes', value: classList.length, icon: '🏫' },
+            { label: 'Total Sections', value: classList.reduce((s: number, c: any) => s + (c.sections?.length ?? 0), 0), icon: '📋' },
+            { label: 'Total Students', value: totalStudents, icon: '👩‍🎓' },
+          ].map(s => (
+            <div key={s.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
+              <span className="text-3xl">{s.icon}</span>
+              <div><p className="text-2xl font-black text-gray-900">{s.value}</p><p className="text-xs text-gray-500 font-medium">{s.label}</p></div>
+            </div>
+          ))}
+        </div>
+
+        {/* Classes grid */}
+        {isLoading ? (
+          <div className="grid grid-cols-2 gap-4">{[...Array(6)].map((_,i) => <div key={i} className="h-48 bg-gray-100 rounded-xl animate-pulse" />)}</div>
         ) : (
-          <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
             {classList.map((cls: any) => (
-              <div key={cls.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                <div className="px-5 py-4 flex items-center justify-between border-b border-gray-50">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-violet-100 rounded-xl flex items-center justify-center text-lg font-black text-violet-700">
-                      {cls.name?.[0] || 'C'}
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-gray-900">{cls.name}</h3>
-                      {cls.description && <p className="text-xs text-gray-400">{cls.description}</p>}
-                    </div>
+              <div key={cls.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="font-bold text-gray-900">{cls.name}</h3>
+                    <p className="text-xs text-gray-400 mt-0.5">Level {cls.level} · {cls.academicYear}</p>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-gray-400">{cls.sections?.length || 0} section{cls.sections?.length !== 1 ? 's' : ''}</span>
-                    <button onClick={() => setShowAddSection(cls.id)}
-                      className="text-xs bg-violet-50 text-violet-700 border border-violet-200 px-3 py-1.5 rounded-lg font-semibold hover:bg-violet-100 transition-colors">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="blue">{cls.sections?.length ?? 0} sections</Badge>
+                    <button
+                      onClick={() => { setSelectedClass(cls); setShowSectionModal(true); }}
+                      className="text-xs px-2 py-1 border border-green-200 text-green-700 rounded-lg hover:bg-green-50 font-medium"
+                    >
                       + Section
                     </button>
-                    <button onClick={() => deleteClass.mutate(cls.id)} className="text-gray-400 hover:text-red-600 transition-colors text-sm">🗑️</button>
                   </div>
                 </div>
-                {cls.sections?.length > 0 && (
-                  <div className="p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-                    {cls.sections.map((sec: any) => (
-                      <div key={sec.id} className="bg-violet-50 border border-violet-100 rounded-xl p-3 text-center">
-                        <p className="font-bold text-violet-800 text-sm">{sec.name}</p>
-                        <p className="text-xs text-violet-500 mt-0.5">Capacity: {sec.capacity || 40}</p>
-                        <p className="text-xs text-violet-400 mt-0.5">{sec._count?.students || 0} students</p>
+                <div className="space-y-2">
+                  {(cls.sections ?? []).length === 0 ? (
+                    <p className="text-sm text-gray-400 text-center py-3 border border-dashed border-gray-200 rounded-lg">No sections yet</p>
+                  ) : (
+                    (cls.sections ?? []).map((sec: any) => (
+                      <div key={sec.id} className="flex items-center justify-between px-3 py-2.5 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-md bg-green-100 flex items-center justify-center text-green-700 font-bold text-xs">{sec.name}</div>
+                          <span className="text-sm font-medium text-gray-700">{cls.name}-{sec.name}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-gray-500">{sec._count?.students ?? 0}/{sec.capacity} students</span>
+                          <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                            <div className="h-full bg-green-500 rounded-full" style={{ width: `${Math.min(100, ((sec._count?.students ?? 0) / (sec.capacity || 40)) * 100)}%` }} />
+                          </div>
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                )}
+                    ))
+                  )}
+                </div>
               </div>
             ))}
           </div>
-        )
-      }
+        )}
+      </div>
 
-      {/* Add Class Modal */}
-      {showAdd && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 space-y-4">
-            <h2 className="text-lg font-black">Add Class</h2>
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">Class Name *</label>
-              <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Grade 9, Class VI"
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500" />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">Description</label>
-              <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Optional description"
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500" />
-            </div>
-            <div className="flex gap-3">
-              <button onClick={() => setShowAdd(false)} className="flex-1 border border-gray-200 font-semibold py-3 rounded-xl text-sm">Cancel</button>
-              <button onClick={() => addClass.mutate(form)} disabled={addClass.isPending || !form.name}
-                className="flex-1 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white font-bold py-3 rounded-xl text-sm">
-                {addClass.isPending ? 'Adding…' : 'Add Class'}
-              </button>
-            </div>
-          </div>
+      {/* Create Class Modal */}
+      <Modal isOpen={showClassModal} onClose={() => setShowClassModal(false)} title="Create New Class">
+        <div className="space-y-4">
+          <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Class Name</label>
+            <input value={classForm.name} onChange={e => setClassForm(f => ({...f, name: e.target.value}))} placeholder="e.g. Grade 11" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-green-400" /></div>
+          <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Level (for sorting)</label>
+            <input type="number" value={classForm.level} onChange={e => setClassForm(f => ({...f, level: e.target.value}))} placeholder="e.g. 11" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-green-400" /></div>
+          <button onClick={handleCreateClass} disabled={createClass.isPending || !classForm.name} className="w-full py-2.5 bg-green-600 text-white font-bold rounded-lg hover:bg-green-500 disabled:opacity-50">
+            {createClass.isPending ? 'Creating...' : 'Create Class'}
+          </button>
         </div>
-      )}
+      </Modal>
 
-      {/* Add Section Modal */}
-      {showAddSection && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 space-y-4">
-            <h2 className="text-lg font-black">Add Section</h2>
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">Section Name *</label>
-              <input value={sectionForm.name} onChange={e => setSectionForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. A, B, Red, Blue"
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500" />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">Capacity</label>
-              <input type="number" value={sectionForm.capacity} onChange={e => setSectionForm(f => ({ ...f, capacity: e.target.value }))}
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500" />
-            </div>
-            <div className="flex gap-3">
-              <button onClick={() => setShowAddSection(null)} className="flex-1 border border-gray-200 font-semibold py-3 rounded-xl text-sm">Cancel</button>
-              <button onClick={() => addSection.mutate({ classId: showAddSection, data: sectionForm })}
-                disabled={addSection.isPending || !sectionForm.name}
-                className="flex-1 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white font-bold py-3 rounded-xl text-sm">
-                {addSection.isPending ? 'Adding…' : 'Add Section'}
-              </button>
-            </div>
-          </div>
+      {/* Create Section Modal */}
+      <Modal isOpen={showSectionModal} onClose={() => setShowSectionModal(false)} title={`Add Section to ${selectedClass?.name}`}>
+        <div className="space-y-4">
+          <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Section Name</label>
+            <input value={sectionForm.name} onChange={e => setSectionForm(f => ({...f, name: e.target.value}))} placeholder="e.g. A, B, C" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-green-400" /></div>
+          <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Capacity</label>
+            <input type="number" value={sectionForm.capacity} onChange={e => setSectionForm(f => ({...f, capacity: e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-green-400" /></div>
+          <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Room Number</label>
+            <input value={sectionForm.roomNumber} onChange={e => setSectionForm(f => ({...f, roomNumber: e.target.value}))} placeholder="e.g. Room 101" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-green-400" /></div>
+          <button onClick={handleCreateSection} disabled={createSection.isPending || !sectionForm.name} className="w-full py-2.5 bg-green-600 text-white font-bold rounded-lg hover:bg-green-500 disabled:opacity-50">
+            {createSection.isPending ? 'Creating...' : 'Create Section'}
+          </button>
         </div>
-      )}
-    </div>
+      </Modal>
+    </>
   );
 }

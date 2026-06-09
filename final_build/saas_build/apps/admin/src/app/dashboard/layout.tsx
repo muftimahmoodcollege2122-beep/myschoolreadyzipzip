@@ -1,19 +1,19 @@
-'use client';
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Sidebar } from '../../components/Sidebar';
-import { useAdminAuth } from '../../stores/auth.store';
+import React from 'react';
+import { Sidebar } from '../../components/sidebar';
+import { RealtimeProvider } from '../../components/realtime-provider';
+import { AuthGuard } from '../../components/auth-guard';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
-  const { isAuthenticated } = useAdminAuth();
-  useEffect(() => { if (!isAuthenticated()) router.replace('/login'); }, []);
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      <Sidebar />
-      <main className="flex-1 ml-64 min-h-screen overflow-x-hidden">
-        {children}
-      </main>
-    </div>
+    <AuthGuard>
+      <RealtimeProvider>
+        <div className="min-h-screen bg-gray-50 flex">
+          <Sidebar />
+          <main className="flex-1 ml-[240px] min-h-screen flex flex-col overflow-x-hidden">
+            {children}
+          </main>
+        </div>
+      </RealtimeProvider>
+    </AuthGuard>
   );
 }

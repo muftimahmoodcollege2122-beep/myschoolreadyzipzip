@@ -44,3 +44,5 @@ export function clearTokens() {
   localStorage.removeItem('admin_access_token');
   localStorage.removeItem('admin_tenant_slug');
 }
+
+export const apiClient = api;

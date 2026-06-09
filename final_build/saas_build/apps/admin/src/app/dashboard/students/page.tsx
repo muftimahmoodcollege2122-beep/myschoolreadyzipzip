@@ -1,174 +1,70 @@
 'use client';
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../../../lib/api-client';
-import dayjs from 'dayjs';
-
+import { useStudents, useCreateStudent } from '../../../hooks/use-api';
+import { DataTable } from '../../../components/shared/data-table';
+import { PageHeader } from '../../../components/shared/page-header';
+import { Badge } from '../../../components/shared/badge';
+import { Modal } from '../../../components/shared/modal';
+import { Topbar } from '../../../components/layout/topbar';
+import type { Student } from '../../../types';
+const FIELDS = [['firstName','First Name','text'],['lastName','Last Name','text'],['email','Email','email'],['admissionNo','Admission No','text'],['rollNumber','Roll Number','text'],['phone','Phone','tel'],['admissionDate','Admission Date','date']];
 export default function StudentsPage() {
-  const qc = useQueryClient();
-  const [search, setSearch]   = useState('');
-  const [page, setPage]       = useState(1);
-  const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm]       = useState({ name: '', rollNumber: '', email: '', phone: '', sectionId: '', dateOfBirth: '', gender: 'MALE', fatherName: '', address: '' });
-  const [error, setError]     = useState('');
-
-  const { data, isLoading } = useQuery({
-    queryKey: ['students', search, page],
-    queryFn:  () => api.get('/students', { search, page, limit: 15 }).catch(() => ({ data: [], total: 0 })),
-  });
-
-  const { data: sections } = useQuery({
-    queryKey: ['sections-list'],
-    queryFn:  () => api.get('/sections?limit=100').catch(() => []),
-  });
-
-  const addMutation = useMutation({
-    mutationFn: (d: any) => api.post('/students', d),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['students'] }); setShowAdd(false); setForm({ name: '', rollNumber: '', email: '', phone: '', sectionId: '', dateOfBirth: '', gender: 'MALE', fatherName: '', address: '' }); },
-    onError: (e: any) => setError(e?.message || 'Failed to add student'),
-  });
-
-  const students: any[] = Array.isArray(data) ? data : (data as any)?.data || [];
-  const total: number   = Array.isArray(data) ? data.length : (data as any)?.total || 0;
-
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [modal, setModal] = useState(false);
+  const [form, setForm] = useState<any>({ email:'', firstName:'', lastName:'', rollNumber:'', phone:'', gender:'MALE', admissionDate:'' });
+  const { data, isLoading } = useStudents({ page, limit: 20, search: search||undefined });
+  const create = useCreateStudent();
+  const columns = [
+    { key:'rollNumber', header:'Roll No', render:(s:Student)=><span className="font-mono font-bold text-sm">{s.rollNumber}</span> },
+    { key:'name', header:'Student', render:(s:Student)=>(
+      <div className="flex items-center gap-2.5">
+        <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">{s.user.profile.firstName[0]}{s.user.profile.lastName[0]}</div>
+        <div><p className="font-semibold text-sm">{s.user.profile.firstName} {s.user.profile.lastName}</p><p className="text-xs text-gray-400">{s.user.email}</p></div>
+      </div>
+    )},
+    { key:'class', header:'Class', render:(s:Student)=><span className="text-sm">{s.enrollments?.[0]?.section?.class?.name??'—'}</span> },
+    { key:'status', header:'Status', render:(s:Student)=><Badge variant={s.isActive?'green':'red'}>{s.isActive?'Active':'Inactive'}</Badge> },
+    { key:'date', header:'Admitted', render:(s:Student)=><span className="text-xs text-gray-400">{new Date(s.admissionDate).toLocaleDateString('en-PK')}</span> },
+  ];
+  const submit = async (e: React.FormEvent) => { e.preventDefault(); await create.mutateAsync(form); setModal(false); };
   return (
-    <div className="p-6 space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-black text-gray-900">Students</h1>
-          <p className="text-gray-500 text-sm">{total} total students enrolled</p>
-        </div>
-        <button onClick={() => setShowAdd(true)}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm flex items-center gap-2 transition-all">
-          ➕ Add Student
-        </button>
-      </div>
-
-      {/* Search */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-        <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="🔍  Search by name, roll number or email…"
-          className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-      </div>
-
-      {/* Table */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-100">
-              <tr>
-                {['Student', 'Roll #', 'Class / Section', 'Father', 'Status', 'Joined', ''].map(h => (
-                  <th key={h} className="text-left px-5 py-3 font-semibold text-gray-600 text-xs uppercase tracking-wide">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {isLoading ? (
-                <tr><td colSpan={7} className="text-center py-12 text-gray-400">Loading students…</td></tr>
-              ) : students.length === 0 ? (
-                <tr><td colSpan={7} className="text-center py-12 text-gray-400">No students found. <button onClick={() => setShowAdd(true)} className="text-indigo-600 font-semibold">Add your first →</button></td></tr>
-              ) : students.map((s: any) => (
-                <tr key={s.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-5 py-3.5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-xs font-bold text-indigo-700 flex-shrink-0">{s.name?.[0]}</div>
-                      <div>
-                        <p className="font-semibold text-gray-900">{s.name}</p>
-                        <p className="text-xs text-gray-400">{s.email}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-5 py-3.5 font-mono text-xs text-gray-700">{s.rollNumber}</td>
-                  <td className="px-5 py-3.5 text-xs text-gray-600">{s.section?.class?.name || '—'} / {s.section?.name || '—'}</td>
-                  <td className="px-5 py-3.5 text-xs text-gray-600">{s.fatherName || '—'}</td>
-                  <td className="px-5 py-3.5">
-                    <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${s.isActive !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                      {s.isActive !== false ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3.5 text-xs text-gray-400">{dayjs(s.createdAt).format('MMM D, YYYY')}</td>
-                  <td className="px-5 py-3.5">
-                    <button className="text-xs text-indigo-600 hover:underline font-medium">View</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {total > 15 && (
-          <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between">
-            <p className="text-xs text-gray-400">Showing {(page - 1) * 15 + 1}–{Math.min(page * 15, total)} of {total}</p>
-            <div className="flex gap-2">
-              <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="text-xs px-3 py-1 rounded-lg border disabled:opacity-40 hover:bg-gray-50">← Prev</button>
-              <button disabled={page * 15 >= total} onClick={() => setPage(p => p + 1)} className="text-xs px-3 py-1 rounded-lg border disabled:opacity-40 hover:bg-gray-50">Next →</button>
+    <>
+      <Topbar title="Students" subtitle="Manage enrolled students"/>
+      <div className="p-6">
+        <PageHeader title="Students" subtitle={`${data?.meta.total??0} enrolled`}
+          action={<button onClick={()=>setModal(true)} className="px-4 py-2 bg-green-600 text-white text-sm font-bold rounded-lg hover:bg-green-500 transition-colors">+ Add Student</button>}/>
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
+          <div className="p-4 border-b border-gray-50">
+            <div className="relative max-w-xs"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
+              <input value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}} placeholder="Search students..." className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-green-400"/>
             </div>
           </div>
-        )}
-      </div>
-
-      {/* Add Student Modal */}
-      {showAdd && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="text-lg font-black text-gray-900">Add New Student</h2>
-              <button onClick={() => setShowAdd(false)} className="text-gray-400 hover:text-gray-700 text-xl">✕</button>
-            </div>
-            <div className="p-6 space-y-4">
-              {error && <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">{error}</div>}
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { label: 'Full Name *', key: 'name', type: 'text', placeholder: 'Muhammad Ali' },
-                  { label: 'Roll Number *', key: 'rollNumber', type: 'text', placeholder: '2024-001' },
-                  { label: 'Email', key: 'email', type: 'email', placeholder: 'student@school.pk' },
-                  { label: 'Phone', key: 'phone', type: 'tel', placeholder: '0300-1234567' },
-                  { label: "Father's Name", key: 'fatherName', type: 'text', placeholder: 'Ali Khan' },
-                  { label: 'Date of Birth', key: 'dateOfBirth', type: 'date', placeholder: '' },
-                ].map(({ label, key, type, placeholder }) => (
-                  <div key={key}>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">{label}</label>
-                    <input type={type} value={(form as any)[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} placeholder={placeholder}
-                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
-                  </div>
-                ))}
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Gender</label>
-                  <select value={form.gender} onChange={e => setForm(f => ({ ...f, gender: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
-                    <option value="MALE">Male</option>
-                    <option value="FEMALE">Female</option>
-                    <option value="OTHER">Other</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Section *</label>
-                  <select value={form.sectionId} onChange={e => setForm(f => ({ ...f, sectionId: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
-                    <option value="">Select section…</option>
-                    {Array.isArray(sections) && (sections as any[]).map((sec: any) => (
-                      <option key={sec.id} value={sec.id}>{sec.class?.name} - {sec.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Address</label>
-                <textarea value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder="Home address…" rows={2}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none" />
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button onClick={() => setShowAdd(false)} className="flex-1 border border-gray-200 text-gray-700 font-semibold py-3 rounded-xl text-sm hover:bg-gray-50">Cancel</button>
-                <button onClick={() => { setError(''); addMutation.mutate(form); }}
-                  disabled={addMutation.isPending || !form.name || !form.rollNumber || !form.sectionId}
-                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold py-3 rounded-xl text-sm transition-all">
-                  {addMutation.isPending ? 'Adding…' : 'Add Student'}
-                </button>
+          <DataTable columns={columns} data={data?.data??[]} isLoading={isLoading} emptyMessage="No students found"/>
+          {data && data.meta.totalPages>1 && (
+            <div className="flex items-center justify-between px-4 py-3 border-t border-gray-50">
+              <span className="text-xs text-gray-400">Page {page} of {data.meta.totalPages}</span>
+              <div className="flex gap-2">
+                <button onClick={()=>setPage(p=>Math.max(1,p-1))} disabled={page===1} className="px-3 py-1 text-xs border rounded-lg disabled:opacity-40 hover:bg-gray-50">← Prev</button>
+                <button onClick={()=>setPage(p=>Math.min(data.meta.totalPages,p+1))} disabled={page===data.meta.totalPages} className="px-3 py-1 text-xs border rounded-lg disabled:opacity-40 hover:bg-gray-50">Next →</button>
               </div>
             </div>
-          </div>
+          )}
         </div>
-      )}
-    </div>
+        <Modal isOpen={modal} onClose={()=>setModal(false)} title="Add New Student" size="lg">
+          <form onSubmit={submit} className="grid grid-cols-2 gap-4">
+            {FIELDS.map(([key,label,type])=>(
+              <div key={key}><label className="block text-xs font-bold text-gray-400 uppercase mb-1">{label}</label>
+                <input type={type} value={form[key]} onChange={e=>setForm((f:any)=>({...f,[key]:e.target.value}))} required className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-green-400"/>
+              </div>
+            ))}
+            <div className="col-span-2 flex justify-end gap-3 pt-2">
+              <button type="button" onClick={()=>setModal(false)} className="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50">Cancel</button>
+              <button type="submit" disabled={create.isPending} className="px-4 py-2 text-sm bg-green-600 text-white font-bold rounded-lg hover:bg-green-500 disabled:opacity-50">{create.isPending?'Creating...':'Create Student'}</button>
+            </div>
+          </form>
+        </Modal>
+      </div>
+    </>
   );
 }
