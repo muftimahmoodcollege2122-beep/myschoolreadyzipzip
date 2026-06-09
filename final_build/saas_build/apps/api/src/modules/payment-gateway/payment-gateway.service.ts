@@ -38,7 +38,7 @@ export class PaymentGatewayService {
     const amountPKR = PLAN_PRICES_PKR[dto.plan];
     const amountUSD = PLAN_PRICES_USD[dto.plan];
     const orderId   = `${dto.tenantId.slice(0, 8)}-${Date.now()}`;
-    const frontendUrl = this.config.get('FRONTEND_URL', 'http://localhost:3000');
+    const frontendUrl = this.config.get('FRONTEND_URL', 'http://localhost:5000');
 
     this.logger.log(`Initiating ${dto.method} payment for ${dto.schoolName} — Plan: ${dto.plan}`);
 
