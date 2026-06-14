@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAuthStore } from '../../../stores/auth.store';
 
 const COPY_ICON = '📋';
@@ -21,100 +21,111 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
+function getPortalBaseUrl(port: number): string {
+  if (typeof window === 'undefined') return `http://localhost:${port}`;
+  const host = window.location.hostname;
+  // Replit dev environment: hostname is like "3005-abc123.sisko.replit.dev"
+  if (host.endsWith('.replit.dev') || host.endsWith('.repl.co')) {
+    const baseDomain = host.replace(/^\d+-/, ''); // strip leading port prefix if present
+    return `https://${port}-${baseDomain}`;
+  }
+  // Local development
+  if (host === 'localhost' || host === '127.0.0.1') {
+    return `http://localhost:${port}`;
+  }
+  // Production — caller should use slug-based URL
+  return '';
+}
+
 export default function PortalLinksPage() {
   const user = useAuthStore(s => s.user) as any;
   const slug = user?.school?.slug || user?.tenantSlug || 'your-school';
 
+  const devUrls = useMemo(() => ({
+    web:     getPortalBaseUrl(5000),
+    admin:   getPortalBaseUrl(3005),
+    teacher: getPortalBaseUrl(3002),
+    student: getPortalBaseUrl(3003),
+    parent:  getPortalBaseUrl(3004),
+  }), []);
+
+  const isProd = !devUrls.teacher; // empty string means production
+
+  const prodBase = `https://${slug}.myschool.pk`;
+
   const PORTALS = [
     {
-      icon:  '🌐',
-      label: 'School Website',
-      desc:  'Public-facing website for parents and prospective students',
-      url:   `https://${slug}.myschool.pk`,
-      color: 'border-blue-200 bg-blue-50',
-      badge: 'bg-blue-600',
+      icon:     '🌐',
+      label:    'School Website',
+      desc:     'Public-facing website for parents and prospective students',
+      url:      isProd ? prodBase : devUrls.web,
+      loginUrl: null,
+      color:    'border-blue-200 bg-blue-50',
+      badge:    'bg-blue-600',
     },
     {
-      icon:  '🏫',
-      label: 'Admin Dashboard',
-      desc:  'Full control panel for school administrators',
-      url:   `https://${slug}.myschool.pk/dashboard`,
-      color: 'border-indigo-200 bg-indigo-50',
-      badge: 'bg-indigo-600',
+      icon:     '🏫',
+      label:    'Admin Dashboard',
+      desc:     'Full control panel for school administrators',
+      url:      isProd ? `${prodBase}/dashboard` : `${devUrls.admin}/dashboard`,
+      loginUrl: isProd ? `${prodBase}/login` : `${devUrls.admin}/login`,
+      color:    'border-indigo-200 bg-indigo-50',
+      badge:    'bg-indigo-600',
     },
     {
-      icon:  '👨‍🏫',
-      label: 'Teacher Portal',
-      desc:  'Mark attendance, enter grades, manage classes and apply for leave',
-      url:   `https://${slug}.myschool.pk/t/${slug}`,
-      loginUrl: `https://${slug}.myschool.pk/t/${slug}/login`,
-      color: 'border-teal-200 bg-teal-50',
-      badge: 'bg-teal-600',
+      icon:     '👨‍🏫',
+      label:    'Teacher Portal',
+      desc:     'Mark attendance, enter grades, manage classes and apply for leave',
+      url:      isProd ? `${prodBase}/t/${slug}` : `${devUrls.teacher}/dashboard`,
+      loginUrl: isProd ? `${prodBase}/t/${slug}/login` : `${devUrls.teacher}/login`,
+      color:    'border-teal-200 bg-teal-50',
+      badge:    'bg-teal-600',
     },
     {
-      icon:  '👩‍🎓',
-      label: 'Student Portal',
-      desc:  'View grades, attendance, timetable, LMS courses and fee status',
-      url:   `https://${slug}.myschool.pk/learn/${slug}`,
-      loginUrl: `https://${slug}.myschool.pk/learn/${slug}/login`,
-      color: 'border-violet-200 bg-violet-50',
-      badge: 'bg-violet-600',
+      icon:     '👩‍🎓',
+      label:    'Student Portal',
+      desc:     'View grades, attendance, timetable, LMS courses and fee status',
+      url:      isProd ? `${prodBase}/learn/${slug}` : `${devUrls.student}/dashboard`,
+      loginUrl: isProd ? `${prodBase}/learn/${slug}/login` : `${devUrls.student}/login`,
+      color:    'border-violet-200 bg-violet-50',
+      badge:    'bg-violet-600',
     },
     {
-      icon:  '👨‍👩‍👧',
-      label: 'Parent Portal',
-      desc:  'Monitor your child\'s progress, attendance, fees and school notices',
-      url:   `https://${slug}.myschool.pk/parent/${slug}`,
-      loginUrl: `https://${slug}.myschool.pk/parent/${slug}/login`,
-      color: 'border-rose-200 bg-rose-50',
-      badge: 'bg-rose-600',
+      icon:     '👨‍👩‍👧',
+      label:    'Parent Portal',
+      desc:     "Monitor your child's progress, attendance, fees and school notices",
+      url:      isProd ? `${prodBase}/parent/${slug}` : `${devUrls.parent}/dashboard`,
+      loginUrl: isProd ? `${prodBase}/parent/${slug}/login` : `${devUrls.parent}/login`,
+      color:    'border-rose-200 bg-rose-50',
+      badge:    'bg-rose-600',
     },
   ];
 
   const [shareTab, setShareTab] = useState<'sms' | 'email' | 'whatsapp'>('whatsapp');
 
+  const teacherLogin = isProd ? `${prodBase}/t/${slug}/login` : `${devUrls.teacher}/login`;
+  const studentLogin = isProd ? `${prodBase}/learn/${slug}/login` : `${devUrls.student}/login`;
+  const parentLogin  = isProd ? `${prodBase}/parent/${slug}/login` : `${devUrls.parent}/login`;
+
   const shareMessages = {
-    whatsapp: `Dear Parents/Students,
-
-Welcome to ${slug.replace(/-/g, ' ')} School Management Portal! 🎓
-
-Your dedicated portals are now live:
-
-👩‍🎓 Student Portal: https://${slug}.myschool.pk/learn/${slug}/login
-👨‍👩‍👧 Parent Portal: https://${slug}.myschool.pk/parent/${slug}/login
-
-Login with the credentials shared by your school.
-Powered by EduOS`,
-
-    sms: `Your school portals are live! Student: ${slug}.myschool.pk/learn/${slug}/login | Parent: ${slug}.myschool.pk/parent/${slug}/login`,
-
-    email: `Subject: Your School Portal Access — ${slug.replace(/-/g, ' ')}
-
-Dear [Name],
-
-Your school management portal is now ready. Please use the links below to access your portal:
-
-TEACHER PORTAL: https://${slug}.myschool.pk/t/${slug}/login
-STUDENT PORTAL: https://${slug}.myschool.pk/learn/${slug}/login
-PARENT PORTAL:  https://${slug}.myschool.pk/parent/${slug}/login
-
-Use your registered email and the temporary password shared by your school administrator.
-Change your password immediately after first login.
-
-Best regards,
-School Administration`,
+    whatsapp: `Dear Parents/Students,\n\nWelcome to ${slug.replace(/-/g, ' ')} School Management Portal! 🎓\n\nYour dedicated portals are now live:\n\n👩‍🎓 Student Portal: ${studentLogin}\n👨‍👩‍👧 Parent Portal: ${parentLogin}\n\nLogin with the credentials shared by your school.\nPowered by EduOS`,
+    sms: `Your school portals are live! Student: ${studentLogin} | Parent: ${parentLogin}`,
+    email: `Subject: Your School Portal Access — ${slug.replace(/-/g, ' ')}\n\nDear [Name],\n\nYour school management portal is now ready. Please use the links below:\n\nTEACHER PORTAL: ${teacherLogin}\nSTUDENT PORTAL: ${studentLogin}\nPARENT PORTAL:  ${parentLogin}\n\nUse your registered email and the temporary password shared by your administrator.\n\nBest regards,\nSchool Administration`,
   };
 
   return (
     <div className="p-6 max-w-5xl">
       <div className="mb-8">
         <h1 className="text-2xl font-black text-gray-900">Your School Portals</h1>
-        <p className="text-gray-500 mt-1">
-          Share these links with your teachers, students and parents to get them started.
-        </p>
+        <p className="text-gray-500 mt-1">Share these links with your teachers, students and parents to get them started.</p>
+        {!isProd && (
+          <div className="mt-3 flex items-center gap-2 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800 w-fit">
+            <span>🔧</span>
+            <span><strong>Development mode</strong> — showing local preview URLs. Production URLs will use <code className="font-mono text-xs bg-amber-100 px-1 rounded">{slug}.myschool.pk</code></span>
+          </div>
+        )}
       </div>
 
-      {/* Portal Cards */}
       <div className="grid grid-cols-1 gap-4 mb-10">
         {PORTALS.map(portal => (
           <div key={portal.label} className={`border-2 rounded-2xl p-5 ${portal.color}`}>
@@ -148,33 +159,27 @@ School Administration`,
         ))}
       </div>
 
-      {/* Share Templates */}
       <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100">
           <h2 className="font-bold text-gray-800">Share with Staff & Parents</h2>
           <p className="text-sm text-gray-500 mt-0.5">Ready-to-send messages for different channels</p>
         </div>
-
         <div className="flex border-b border-gray-100">
           {(['whatsapp', 'sms', 'email'] as const).map(tab => (
             <button key={tab} onClick={() => setShareTab(tab)}
               className={`flex-1 py-3 text-sm font-semibold capitalize transition-all ${
-                shareTab === tab
-                  ? 'border-b-2 border-blue-600 text-blue-600 bg-blue-50'
-                  : 'text-gray-500 hover:text-gray-700'
+                shareTab === tab ? 'border-b-2 border-blue-600 text-blue-600 bg-blue-50' : 'text-gray-500 hover:text-gray-700'
               }`}>
               {tab === 'whatsapp' ? '📱 WhatsApp' : tab === 'sms' ? '💬 SMS' : '📧 Email'}
             </button>
           ))}
         </div>
-
         <div className="p-6">
           <div className="relative">
             <pre className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm text-gray-700 whitespace-pre-wrap font-sans leading-relaxed">
               {shareMessages[shareTab]}
             </pre>
-            <button
-              onClick={() => navigator.clipboard.writeText(shareMessages[shareTab])}
+            <button onClick={() => navigator.clipboard.writeText(shareMessages[shareTab])}
               className="absolute top-3 right-3 bg-white border border-gray-200 hover:border-gray-300 text-gray-600 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all">
               Copy {COPY_ICON}
             </button>
