@@ -2,6 +2,163 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CacheService } from '../../common/cache/cache.service';
 
+// ── Feature 1: Portal Nav Config ──────────────────────────────────────────────
+export interface NavItem {
+  key: string;
+  icon: string;
+  label: string;
+  href: string;
+  enabled: boolean;
+  order: number;
+}
+export interface PortalNavConfig {
+  teacher: NavItem[];
+  student: NavItem[];
+  parent:  NavItem[];
+}
+
+const DEFAULT_NAV_CONFIG: PortalNavConfig = {
+  teacher: [
+    { key: 'dashboard',     icon: '📊', label: 'Dashboard',     href: '/dashboard',               enabled: true, order: 0 },
+    { key: 'attendance',    icon: '📝', label: 'Attendance',    href: '/dashboard/attendance',    enabled: true, order: 1 },
+    { key: 'assignments',   icon: '📋', label: 'Assignments',   href: '/dashboard/assignments',   enabled: true, order: 2 },
+    { key: 'grades',        icon: '📊', label: 'Grades',        href: '/dashboard/grades',        enabled: true, order: 3 },
+    { key: 'timetable',     icon: '📅', label: 'Timetable',     href: '/dashboard/timetable',     enabled: true, order: 4 },
+    { key: 'announcements', icon: '💬', label: 'Announcements', href: '/dashboard/announcements', enabled: true, order: 5 },
+    { key: 'students',      icon: '👩‍🎓', label: 'My Students',  href: '/dashboard/students',      enabled: true, order: 6 },
+    { key: 'resources',     icon: '🗂️', label: 'Resources',     href: '/dashboard/resources',     enabled: true, order: 7 },
+  ],
+  student: [
+    { key: 'dashboard',     icon: '🏠', label: 'Dashboard',     href: '/dashboard',               enabled: true, order: 0 },
+    { key: 'timetable',     icon: '📅', label: 'Timetable',     href: '/dashboard/timetable',     enabled: true, order: 1 },
+    { key: 'assignments',   icon: '📝', label: 'Assignments',   href: '/dashboard/assignments',   enabled: true, order: 2 },
+    { key: 'grades',        icon: '📊', label: 'Grades',        href: '/dashboard/grades',        enabled: true, order: 3 },
+    { key: 'attendance',    icon: '✅', label: 'Attendance',    href: '/dashboard/attendance',    enabled: true, order: 4 },
+    { key: 'fees',          icon: '💰', label: 'Fee Status',    href: '/dashboard/fees',          enabled: true, order: 5 },
+    { key: 'announcements', icon: '💬', label: 'Announcements', href: '/dashboard/announcements', enabled: true, order: 6 },
+    { key: 'resources',     icon: '🗂️', label: 'Resources',     href: '/dashboard/resources',     enabled: true, order: 7 },
+    { key: 'results',       icon: '🏆', label: 'Results',       href: '/dashboard/results',       enabled: true, order: 8 },
+  ],
+  parent: [
+    { key: 'dashboard',     icon: '🏠', label: 'Overview',      href: '/dashboard',               enabled: true, order: 0 },
+    { key: 'attendance',    icon: '✅', label: 'Attendance',    href: '/dashboard/attendance',    enabled: true, order: 1 },
+    { key: 'grades',        icon: '📊', label: 'Grades',        href: '/dashboard/grades',        enabled: true, order: 2 },
+    { key: 'fees',          icon: '💰', label: 'Fees',          href: '/dashboard/fees',          enabled: true, order: 3 },
+    { key: 'timetable',     icon: '📅', label: 'Timetable',     href: '/dashboard/timetable',     enabled: true, order: 4 },
+    { key: 'announcements', icon: '💬', label: 'Announcements', href: '/dashboard/announcements', enabled: true, order: 5 },
+    { key: 'assignments',   icon: '📋', label: 'Assignments',   href: '/dashboard/assignments',   enabled: true, order: 6 },
+    { key: 'results',       icon: '🏆', label: 'Results',       href: '/dashboard/results',       enabled: true, order: 7 },
+    { key: 'transport',     icon: '🚌', label: 'Transport',     href: '/dashboard/transport',     enabled: true, order: 8 },
+  ],
+};
+
+// ── Feature 2: Portal Branding ─────────────────────────────────────────────────
+export interface PortalBranding {
+  teacher: { sidebarBg: string; sidebarText: string; sidebarAccent: string; logo: string };
+  student: { sidebarBg: string; sidebarText: string; sidebarAccent: string; logo: string };
+  parent:  { sidebarBg: string; sidebarText: string; sidebarAccent: string; logo: string };
+  admin:   { sidebarBg: string; sidebarText: string; sidebarAccent: string; logo: string };
+}
+
+const DEFAULT_PORTAL_BRANDING: PortalBranding = {
+  teacher: { sidebarBg: '#042f2e', sidebarText: '#99f6e4', sidebarAccent: '#0d9488', logo: '' },
+  student: { sidebarBg: '#2e1065', sidebarText: '#ddd6fe', sidebarAccent: '#7c3aed', logo: '' },
+  parent:  { sidebarBg: '#4c0519', sidebarText: '#fecdd3', sidebarAccent: '#e11d48', logo: '' },
+  admin:   { sidebarBg: '#0f172a', sidebarText: '#94a3b8', sidebarAccent: '#2563eb', logo: '' },
+};
+
+// ── Feature 3: Alert Banners ───────────────────────────────────────────────────
+export interface AlertBanner {
+  id: string;
+  message: string;
+  type: 'info' | 'warning' | 'error' | 'success';
+  portals: ('teacher' | 'student' | 'parent' | 'admin')[];
+  active: boolean;
+  expiresAt?: string;
+  createdAt: string;
+}
+
+// ── Feature 4: Page Content (sub-pages) ───────────────────────────────────────
+export interface PageBlock {
+  id: string;
+  type: 'hero' | 'text' | 'image' | 'gallery' | 'cta' | 'team' | 'faq' | 'stats';
+  content: Record<string, any>;
+  order: number;
+}
+export interface WebPage {
+  slug: string;
+  title: string;
+  metaTitle: string;
+  metaDesc: string;
+  status: 'published' | 'draft';
+  blocks: PageBlock[];
+  updatedAt: string;
+}
+
+const DEFAULT_PAGES: WebPage[] = [
+  { slug: 'home',       title: 'Home',       metaTitle: '', metaDesc: '', status: 'published', blocks: [], updatedAt: new Date().toISOString() },
+  { slug: 'about',      title: 'About Us',   metaTitle: '', metaDesc: '', status: 'published', blocks: [], updatedAt: new Date().toISOString() },
+  { slug: 'admissions', title: 'Admissions', metaTitle: '', metaDesc: '', status: 'draft',     blocks: [], updatedAt: new Date().toISOString() },
+  { slug: 'contact',    title: 'Contact',    metaTitle: '', metaDesc: '', status: 'published', blocks: [], updatedAt: new Date().toISOString() },
+  { slug: 'faculty',    title: 'Faculty',    metaTitle: '', metaDesc: '', status: 'draft',     blocks: [], updatedAt: new Date().toISOString() },
+];
+
+// ── Feature 5: Dashboard Widgets ──────────────────────────────────────────────
+export interface WidgetConfig {
+  key: string;
+  label: string;
+  enabled: boolean;
+  order: number;
+}
+export interface DashboardWidgets {
+  teacher: WidgetConfig[];
+  student: WidgetConfig[];
+  parent:  WidgetConfig[];
+}
+
+const DEFAULT_WIDGETS: DashboardWidgets = {
+  teacher: [
+    { key: 'todayClasses',    label: 'Today\'s Classes',    enabled: true, order: 0 },
+    { key: 'pendingGrading',  label: 'Pending Grading',    enabled: true, order: 1 },
+    { key: 'assignments',     label: 'Recent Assignments',  enabled: true, order: 2 },
+    { key: 'announcements',   label: 'Announcements',       enabled: true, order: 3 },
+    { key: 'studentList',     label: 'My Students',         enabled: true, order: 4 },
+    { key: 'attendanceSummary',label: 'Attendance Summary', enabled: true, order: 5 },
+  ],
+  student: [
+    { key: 'todayClasses',    label: 'Today\'s Classes',    enabled: true, order: 0 },
+    { key: 'attendance',      label: 'Attendance %',        enabled: true, order: 1 },
+    { key: 'assignments',     label: 'Pending Assignments', enabled: true, order: 2 },
+    { key: 'grades',          label: 'Recent Grades',       enabled: true, order: 3 },
+    { key: 'announcements',   label: 'Announcements',       enabled: true, order: 4 },
+    { key: 'feeStatus',       label: 'Fee Status',          enabled: true, order: 5 },
+    { key: 'results',         label: 'Latest Results',      enabled: true, order: 6 },
+  ],
+  parent: [
+    { key: 'childAttendance', label: 'Child Attendance',    enabled: true, order: 0 },
+    { key: 'childGrades',     label: 'Child Grades',        enabled: true, order: 1 },
+    { key: 'feeStatus',       label: 'Fee Status',          enabled: true, order: 2 },
+    { key: 'announcements',   label: 'Announcements',       enabled: true, order: 3 },
+    { key: 'assignments',     label: 'Child Assignments',   enabled: true, order: 4 },
+    { key: 'timetable',       label: 'Child Timetable',     enabled: true, order: 5 },
+  ],
+};
+
+// ── Feature 6: Label Overrides ─────────────────────────────────────────────────
+export interface LabelOverrides {
+  appName: string;
+  studentLabel: string;
+  teacherLabel: string;
+  parentLabel: string;
+  classLabel: string;
+  sectionLabel: string;
+  feeLabel: string;
+  attendanceLabel: string;
+  gradesLabel: string;
+  admissionsLabel: string;
+  custom: Record<string, string>;
+}
+
 export interface SchoolTheme {
   template:       'classic' | 'modern' | 'bold' | 'elegant' | 'vibrant';
   primaryColor:   string;
@@ -229,6 +386,209 @@ export class ThemesService {
     await this.cache.del(`portal-settings:${tenantId}`);
     await this.cache.del(`theme:${tenant.slug}`);
     return this.getPortalSettings(tenantId);
+  }
+
+  // ── Feature 1: Nav Config ──────────────────────────────────────────────────
+
+  async getNavConfig(tenantId: string): Promise<PortalNavConfig> {
+    const cacheKey = `nav-config:${tenantId}`;
+    const cached = await this.cache.get<PortalNavConfig>(cacheKey);
+    if (cached) return cached;
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { settings: true } });
+    const saved = ((tenant?.settings as any) || {}).navConfig || {};
+    const result: PortalNavConfig = {
+      teacher: saved.teacher || DEFAULT_NAV_CONFIG.teacher,
+      student: saved.student || DEFAULT_NAV_CONFIG.student,
+      parent:  saved.parent  || DEFAULT_NAV_CONFIG.parent,
+    };
+    await this.cache.set(cacheKey, result, 300);
+    return result;
+  }
+
+  async getNavConfigBySlug(slug: string): Promise<PortalNavConfig> {
+    const tenant = await this.prisma.tenant.findUnique({ where: { slug }, select: { id: true } });
+    if (!tenant) throw new NotFoundException('Tenant not found');
+    return this.getNavConfig(tenant.id);
+  }
+
+  async updateNavConfig(tenantId: string, config: Partial<PortalNavConfig>): Promise<PortalNavConfig> {
+    const tenant = await this.prisma.tenant.findUniqueOrThrow({ where: { id: tenantId } });
+    const current = (tenant.settings as any) || {};
+    const existing = current.navConfig || {};
+    await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: { settings: { ...current, navConfig: { ...existing, ...config } } },
+    });
+    await this.cache.del(`nav-config:${tenantId}`);
+    return this.getNavConfig(tenantId);
+  }
+
+  // ── Feature 2: Portal Branding ─────────────────────────────────────────────
+
+  async getPortalBranding(tenantId: string): Promise<PortalBranding> {
+    const cacheKey = `portal-branding:${tenantId}`;
+    const cached = await this.cache.get<PortalBranding>(cacheKey);
+    if (cached) return cached;
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { settings: true } });
+    const saved = ((tenant?.settings as any) || {}).portalBranding || {};
+    const result: PortalBranding = {
+      teacher: { ...DEFAULT_PORTAL_BRANDING.teacher, ...(saved.teacher || {}) },
+      student: { ...DEFAULT_PORTAL_BRANDING.student, ...(saved.student || {}) },
+      parent:  { ...DEFAULT_PORTAL_BRANDING.parent,  ...(saved.parent  || {}) },
+      admin:   { ...DEFAULT_PORTAL_BRANDING.admin,   ...(saved.admin   || {}) },
+    };
+    await this.cache.set(cacheKey, result, 300);
+    return result;
+  }
+
+  async getPortalBrandingBySlug(slug: string): Promise<PortalBranding> {
+    const tenant = await this.prisma.tenant.findUnique({ where: { slug }, select: { id: true } });
+    if (!tenant) throw new NotFoundException('Tenant not found');
+    return this.getPortalBranding(tenant.id);
+  }
+
+  async updatePortalBranding(tenantId: string, branding: Partial<PortalBranding>): Promise<PortalBranding> {
+    const tenant = await this.prisma.tenant.findUniqueOrThrow({ where: { id: tenantId } });
+    const current = (tenant.settings as any) || {};
+    const existing = current.portalBranding || {};
+    await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: { settings: { ...current, portalBranding: { ...existing, ...branding } } },
+    });
+    await this.cache.del(`portal-branding:${tenantId}`);
+    return this.getPortalBranding(tenantId);
+  }
+
+  // ── Feature 3: Alert Banners ───────────────────────────────────────────────
+
+  async getAlertBanners(tenantId: string): Promise<AlertBanner[]> {
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { settings: true } });
+    const banners: AlertBanner[] = ((tenant?.settings as any) || {}).alertBanners || [];
+    const now = new Date().toISOString();
+    return banners.filter(b => b.active && (!b.expiresAt || b.expiresAt > now));
+  }
+
+  async getAlertBannersBySlug(slug: string): Promise<AlertBanner[]> {
+    const tenant = await this.prisma.tenant.findUnique({ where: { slug }, select: { id: true } });
+    if (!tenant) return [];
+    return this.getAlertBanners(tenant.id);
+  }
+
+  async getAllAlertBanners(tenantId: string): Promise<AlertBanner[]> {
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { settings: true } });
+    return ((tenant?.settings as any) || {}).alertBanners || [];
+  }
+
+  async saveAlertBanners(tenantId: string, banners: AlertBanner[]): Promise<AlertBanner[]> {
+    const tenant = await this.prisma.tenant.findUniqueOrThrow({ where: { id: tenantId } });
+    const current = (tenant.settings as any) || {};
+    await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: { settings: { ...current, alertBanners: banners } },
+    });
+    return banners;
+  }
+
+  // ── Feature 4: Page Content ────────────────────────────────────────────────
+
+  async getPages(tenantId: string): Promise<WebPage[]> {
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { settings: true } });
+    const saved: WebPage[] = ((tenant?.settings as any) || {}).pages || [];
+    if (!saved.length) return DEFAULT_PAGES;
+    const slugs = new Set(saved.map(p => p.slug));
+    const merged = [...saved];
+    for (const dp of DEFAULT_PAGES) { if (!slugs.has(dp.slug)) merged.push(dp); }
+    return merged;
+  }
+
+  async getPagesBySlug(slug: string): Promise<WebPage[]> {
+    const tenant = await this.prisma.tenant.findUnique({ where: { slug }, select: { id: true } });
+    if (!tenant) return DEFAULT_PAGES;
+    return this.getPages(tenant.id);
+  }
+
+  async savePage(tenantId: string, page: WebPage): Promise<WebPage[]> {
+    const tenant = await this.prisma.tenant.findUniqueOrThrow({ where: { id: tenantId } });
+    const current = (tenant.settings as any) || {};
+    const pages: WebPage[] = current.pages || DEFAULT_PAGES;
+    const idx = pages.findIndex(p => p.slug === page.slug);
+    const updated = { ...page, updatedAt: new Date().toISOString() };
+    if (idx >= 0) pages[idx] = updated; else pages.push(updated);
+    await this.prisma.tenant.update({ where: { id: tenantId }, data: { settings: { ...current, pages } } });
+    await this.cache.del(`theme:${tenant.slug}`);
+    return pages;
+  }
+
+  // ── Feature 5: Dashboard Widgets ──────────────────────────────────────────
+
+  async getDashboardWidgets(tenantId: string): Promise<DashboardWidgets> {
+    const cacheKey = `dashboard-widgets:${tenantId}`;
+    const cached = await this.cache.get<DashboardWidgets>(cacheKey);
+    if (cached) return cached;
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { settings: true } });
+    const saved = ((tenant?.settings as any) || {}).dashboardWidgets || {};
+    const result: DashboardWidgets = {
+      teacher: saved.teacher || DEFAULT_WIDGETS.teacher,
+      student: saved.student || DEFAULT_WIDGETS.student,
+      parent:  saved.parent  || DEFAULT_WIDGETS.parent,
+    };
+    await this.cache.set(cacheKey, result, 300);
+    return result;
+  }
+
+  async getDashboardWidgetsBySlug(slug: string): Promise<DashboardWidgets> {
+    const tenant = await this.prisma.tenant.findUnique({ where: { slug }, select: { id: true } });
+    if (!tenant) return DEFAULT_WIDGETS;
+    return this.getDashboardWidgets(tenant.id);
+  }
+
+  async updateDashboardWidgets(tenantId: string, widgets: Partial<DashboardWidgets>): Promise<DashboardWidgets> {
+    const tenant = await this.prisma.tenant.findUniqueOrThrow({ where: { id: tenantId } });
+    const current = (tenant.settings as any) || {};
+    const existing = current.dashboardWidgets || {};
+    await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: { settings: { ...current, dashboardWidgets: { ...existing, ...widgets } } },
+    });
+    await this.cache.del(`dashboard-widgets:${tenantId}`);
+    return this.getDashboardWidgets(tenantId);
+  }
+
+  // ── Feature 6: Label Overrides ─────────────────────────────────────────────
+
+  async getLabelOverrides(tenantId: string): Promise<LabelOverrides> {
+    const cacheKey = `labels:${tenantId}`;
+    const cached = await this.cache.get<LabelOverrides>(cacheKey);
+    if (cached) return cached;
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { settings: true } });
+    const saved = ((tenant?.settings as any) || {}).labelOverrides || {};
+    const defaults: LabelOverrides = {
+      appName: 'MySchool', studentLabel: 'Student', teacherLabel: 'Teacher',
+      parentLabel: 'Parent', classLabel: 'Class', sectionLabel: 'Section',
+      feeLabel: 'Fee', attendanceLabel: 'Attendance', gradesLabel: 'Grades',
+      admissionsLabel: 'Admissions', custom: {},
+    };
+    const result = { ...defaults, ...saved, custom: { ...(defaults.custom), ...(saved.custom || {}) } };
+    await this.cache.set(cacheKey, result, 300);
+    return result;
+  }
+
+  async getLabelOverridesBySlug(slug: string): Promise<LabelOverrides> {
+    const tenant = await this.prisma.tenant.findUnique({ where: { slug }, select: { id: true } });
+    if (!tenant) return { appName: 'MySchool', studentLabel: 'Student', teacherLabel: 'Teacher', parentLabel: 'Parent', classLabel: 'Class', sectionLabel: 'Section', feeLabel: 'Fee', attendanceLabel: 'Attendance', gradesLabel: 'Grades', admissionsLabel: 'Admissions', custom: {} };
+    return this.getLabelOverrides(tenant.id);
+  }
+
+  async updateLabelOverrides(tenantId: string, labels: Partial<LabelOverrides>): Promise<LabelOverrides> {
+    const tenant = await this.prisma.tenant.findUniqueOrThrow({ where: { id: tenantId } });
+    const current = (tenant.settings as any) || {};
+    const existing = current.labelOverrides || {};
+    await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: { settings: { ...current, labelOverrides: { ...existing, ...labels, custom: { ...(existing.custom || {}), ...(labels.custom || {}) } } } },
+    });
+    await this.cache.del(`labels:${tenantId}`);
+    return this.getLabelOverrides(tenantId);
   }
 
   // ── Custom Domain ──────────────────────────────────────────────────────────

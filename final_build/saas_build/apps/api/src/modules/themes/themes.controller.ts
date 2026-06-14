@@ -51,4 +51,64 @@ export class ThemesController {
   setDomain(@TenantId() tid: string, @Body() dto: { customDomain: string | null }) {
     return this.svc.setCustomDomain(tid, dto.customDomain);
   }
+
+  // ── Feature 1: Nav Config ──────────────────────────────────────────────────
+  @Get('nav-config/slug/:slug') @Public()
+  getNavConfigBySlug(@Param('slug') slug: string) { return this.svc.getNavConfigBySlug(slug); }
+
+  @Get('nav-config') @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SCHOOL_ADMIN')
+  getNavConfig(@TenantId() tid: string) { return this.svc.getNavConfig(tid); }
+
+  @Put('nav-config') @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SCHOOL_ADMIN')
+  updateNavConfig(@TenantId() tid: string, @Body() dto: any) { return this.svc.updateNavConfig(tid, dto); }
+
+  // ── Feature 2: Portal Branding ─────────────────────────────────────────────
+  @Get('portal-branding/slug/:slug') @Public()
+  getPortalBrandingBySlug(@Param('slug') slug: string) { return this.svc.getPortalBrandingBySlug(slug); }
+
+  @Get('portal-branding') @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SCHOOL_ADMIN')
+  getPortalBranding(@TenantId() tid: string) { return this.svc.getPortalBranding(tid); }
+
+  @Put('portal-branding') @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SCHOOL_ADMIN')
+  updatePortalBranding(@TenantId() tid: string, @Body() dto: any) { return this.svc.updatePortalBranding(tid, dto); }
+
+  // ── Feature 3: Alert Banners ───────────────────────────────────────────────
+  @Get('alert-banners/slug/:slug') @Public()
+  getAlertBannersBySlug(@Param('slug') slug: string) { return this.svc.getAlertBannersBySlug(slug); }
+
+  @Get('alert-banners') @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SCHOOL_ADMIN')
+  getAllAlertBanners(@TenantId() tid: string) { return this.svc.getAllAlertBanners(tid); }
+
+  @Put('alert-banners') @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SCHOOL_ADMIN')
+  saveAlertBanners(@TenantId() tid: string, @Body() dto: { banners: any[] }) { return this.svc.saveAlertBanners(tid, dto.banners); }
+
+  // ── Feature 4: Pages ───────────────────────────────────────────────────────
+  @Get('pages/slug/:slug') @Public()
+  getPagesBySlug(@Param('slug') slug: string) { return this.svc.getPagesBySlug(slug); }
+
+  @Get('pages') @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SCHOOL_ADMIN')
+  getPages(@TenantId() tid: string) { return this.svc.getPages(tid); }
+
+  @Put('pages') @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SCHOOL_ADMIN')
+  savePage(@TenantId() tid: string, @Body() dto: any) { return this.svc.savePage(tid, dto); }
+
+  // ── Feature 5: Dashboard Widgets ──────────────────────────────────────────
+  @Get('dashboard-widgets/slug/:slug') @Public()
+  getDashboardWidgetsBySlug(@Param('slug') slug: string) { return this.svc.getDashboardWidgetsBySlug(slug); }
+
+  @Get('dashboard-widgets') @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SCHOOL_ADMIN', 'TEACHER', 'STUDENT', 'PARENT')
+  getDashboardWidgets(@TenantId() tid: string) { return this.svc.getDashboardWidgets(tid); }
+
+  @Put('dashboard-widgets') @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SCHOOL_ADMIN')
+  updateDashboardWidgets(@TenantId() tid: string, @Body() dto: any) { return this.svc.updateDashboardWidgets(tid, dto); }
+
+  // ── Feature 6: Label Overrides ─────────────────────────────────────────────
+  @Get('labels/slug/:slug') @Public()
+  getLabelOverridesBySlug(@Param('slug') slug: string) { return this.svc.getLabelOverridesBySlug(slug); }
+
+  @Get('labels') @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SCHOOL_ADMIN', 'TEACHER', 'STUDENT', 'PARENT')
+  getLabelOverrides(@TenantId() tid: string) { return this.svc.getLabelOverrides(tid); }
+
+  @Put('labels') @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles('SCHOOL_ADMIN')
+  updateLabelOverrides(@TenantId() tid: string, @Body() dto: any) { return this.svc.updateLabelOverrides(tid, dto); }
 }
