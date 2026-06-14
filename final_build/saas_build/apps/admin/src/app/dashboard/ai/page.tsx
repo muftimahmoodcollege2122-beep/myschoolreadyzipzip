@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Topbar } from '../../../components/layout/topbar';
 import { PageHeader } from '../../../components/shared/page-header';
 import { useAiAnalytics, useAiPrediction } from '../../../hooks/use-api';
+import { useToast } from '../../../components/shared/toast';
 
 const INSIGHT_CARDS = [
   { type: 'attendance', title: 'Attendance Analytics', icon: '📊', desc: 'AI-powered attendance trend analysis' },
@@ -12,6 +13,7 @@ const INSIGHT_CARDS = [
 ];
 
 export default function AiPage() {
+  const { toast } = useToast();
   const [activeType, setActiveType] = useState('attendance');
   const [predModal, setPredModal] = useState(false);
   const [predForm, setPredForm] = useState({ type: 'performance', studentId: '', params: {} });
@@ -128,6 +130,7 @@ export default function AiPage() {
                 <p>The AI will analyze current school data to generate predictions for the selected metric.</p>
               </div>
               <button onClick={async () => {
+                try {
                 await predict.mutateAsync(predForm);
                 setPredModal(false);
                 setActiveType(predForm.type);
@@ -141,3 +144,7 @@ export default function AiPage() {
     </>
   );
 }
+                  toast('Done successfully', 'success');
+                } catch (e: any) {
+                  toast(e?.message || e?.error || 'Operation failed', 'error');
+                }

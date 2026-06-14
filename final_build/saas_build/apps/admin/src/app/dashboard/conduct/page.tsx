@@ -5,12 +5,14 @@ import { PageHeader } from '../../../components/shared/page-header';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
 import { useStudentBehaviors, useCreateBehavior, useStudents } from '../../../hooks/use-api';
+import { useToast } from '../../../components/shared/toast';
 
 const TYPE_COLOR: Record<string, string> = { POSITIVE: 'green', NEGATIVE: 'red', NEUTRAL: 'gray' };
 const SEVERITY_COLOR: Record<string, string> = { LOW: 'green', MEDIUM: 'yellow', HIGH: 'red', CRITICAL: 'red' };
 const EMPTY = { studentId: '', type: 'NEGATIVE', category: 'DISCIPLINE', description: '', severity: 'MEDIUM', actionTaken: '' };
 
 export default function ConductPage() {
+  const { toast } = useToast();
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [typeFilter, setTypeFilter] = useState('');
@@ -31,8 +33,13 @@ export default function ConductPage() {
 
   const handleCreate = async () => {
     if (!form.studentId || !form.description) return;
+    try {
     await create.mutateAsync(form);
     setForm(EMPTY); setModal(false);
+      toast('Done successfully', 'success');
+    } catch (e: any) {
+      toast(e?.message || e?.error || 'Operation failed', 'error');
+    }
   };
 
   return (

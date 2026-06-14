@@ -5,11 +5,13 @@ import { PageHeader } from '../../../components/shared/page-header';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
 import { useTransportRoutes, useSchoolSection, useCreateSchoolItem, useDeleteSchoolItem } from '../../../hooks/use-api';
+import { useToast } from '../../../components/shared/toast';
 
 const EMPTY_VEHICLE = { number: '', type: 'Bus', driver: '', phone: '', capacity: '', route: '', status: 'ACTIVE' };
 const EMPTY_ROUTE = { name: '', from: '', to: '', stops: '', departure: '', arrival: '', distance: '' };
 
 export default function VehicleTrackingPage() {
+  const { toast } = useToast();
   const [tab, setTab] = useState<'vehicles' | 'routes'>('vehicles');
   const [modal, setModal] = useState(false);
 
@@ -25,8 +27,13 @@ export default function VehicleTrackingPage() {
 
   const handleCreateVehicle = async () => {
     if (!vehicleForm.number) return;
+    try {
     await createVehicle.mutateAsync({ ...vehicleForm, capacity: Number(vehicleForm.capacity) });
     setVehicleForm(EMPTY_VEHICLE); setModal(false);
+      toast('Done successfully', 'success');
+    } catch (e: any) {
+      toast(e?.message || e?.error || 'Operation failed', 'error');
+    }
   };
 
   const activeVehicles = vehicleList.filter(v => v.status === 'ACTIVE');

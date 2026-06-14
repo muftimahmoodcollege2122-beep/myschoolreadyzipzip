@@ -5,11 +5,13 @@ import { PageHeader } from '../../../components/shared/page-header';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
 import { useSchoolSection, useCreateSchoolItem, useDeleteSchoolItem } from '../../../hooks/use-api';
+import { useToast } from '../../../components/shared/toast';
 
 const CLUB_ICONS: Record<string, string> = { Science: '🔬', Arts: '🎨', Drama: '🎭', Debate: '🎙️', Music: '🎵', Environment: '🌱', Technology: '💻', Literature: '📚', Math: '🔢', Photography: '📷', Other: '🏛️' };
 const EMPTY = { name: '', type: 'Science', president: '', advisor: '', members: '', meetingDay: 'Monday', description: '', status: 'Active' };
 
 export default function ClubsPage() {
+  const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
@@ -25,8 +27,13 @@ export default function ClubsPage() {
 
   const handleCreate = async () => {
     if (!form.name) return;
+    try {
     await create.mutateAsync({ ...form, members: Number(form.members) || 0 });
     setForm(EMPTY); setModal(false);
+      toast('Done successfully', 'success');
+    } catch (e: any) {
+      toast(e?.message || e?.error || 'Operation failed', 'error');
+    }
   };
 
   return (

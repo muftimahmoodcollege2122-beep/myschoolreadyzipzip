@@ -5,11 +5,13 @@ import { PageHeader } from '../../../components/shared/page-header';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
 import { useSchoolSection, useCreateSchoolItem, useDeleteSchoolItem } from '../../../hooks/use-api';
+import { useToast } from '../../../components/shared/toast';
 
 const SPORT_ICONS: Record<string, string> = { Cricket: '🏏', Football: '⚽', Basketball: '🏀', Volleyball: '🏐', Athletics: '🏃', Swimming: '🏊', Badminton: '🏸', Table_Tennis: '🏓', Chess: '♟️', Other: '🏅' };
 const EMPTY = { name: '', sport: 'Cricket', coach: '', members: '', wins: '0', losses: '0', nextMatch: '', status: 'Active' };
 
 export default function SportsPage() {
+  const { toast } = useToast();
   const [tab, setTab] = useState<'teams' | 'schedule'>('teams');
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
@@ -27,8 +29,13 @@ export default function SportsPage() {
 
   const handleCreate = async () => {
     if (!form.name) return;
+    try {
     await create.mutateAsync({ ...form, wins: Number(form.wins), losses: Number(form.losses) });
     setForm(EMPTY); setModal(false);
+      toast('Done successfully', 'success');
+    } catch (e: any) {
+      toast(e?.message || e?.error || 'Operation failed', 'error');
+    }
   };
 
   return (

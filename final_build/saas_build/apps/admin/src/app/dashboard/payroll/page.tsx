@@ -5,10 +5,12 @@ import { PageHeader } from '../../../components/shared/page-header';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
 import { useSchoolSection, useCreateSchoolItem, useDeleteSchoolItem, useUpdateSchoolItem } from '../../../hooks/use-api';
+import { useToast } from '../../../components/shared/toast';
 
 const EMPTY = { name: '', designation: '', department: '', basicSalary: '', allowances: '0', deductions: '0', month: new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' }), status: 'PENDING', bankAccount: '' };
 
 export default function PayrollPage() {
+  const { toast } = useToast();
   const [month, setMonth] = useState('');
   const [search, setSearch] = useState('');
   const [modal, setModal] = useState(false);
@@ -37,12 +39,22 @@ export default function PayrollPage() {
 
   const handleCreate = async () => {
     if (!form.name || !form.basicSalary) return;
+    try {
     await create.mutateAsync({ ...form, basicSalary: Number(form.basicSalary), allowances: Number(form.allowances), deductions: Number(form.deductions) });
     setForm(EMPTY); setModal(false);
+      toast('Done successfully', 'success');
+    } catch (e: any) {
+      toast(e?.message || e?.error || 'Operation failed', 'error');
+    }
   };
 
   const markPaid = async (r: any) => {
+    try {
     await update.mutateAsync({ id: r.id, status: 'PAID', paidAt: new Date().toISOString() });
+      toast('Done successfully', 'success');
+    } catch (e: any) {
+      toast(e?.message || e?.error || 'Operation failed', 'error');
+    }
   };
 
   return (

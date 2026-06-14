@@ -5,6 +5,7 @@ import { PageHeader } from '../../../components/shared/page-header';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
 import { useLmsCourses, useCreateLmsCourse, useUpdateLmsCourse, useDeleteLmsCourse } from '../../../hooks/use-api';
+import { useToast } from '../../../components/shared/toast';
 
 const QUIZ_QUESTIONS = [
   { q:'What is the value of π (pi)?', opts:['3.14159','2.71828','1.41421','1.61803'], correct:0 },
@@ -15,6 +16,7 @@ const SUBJECTS = ['Mathematics','Physics','Chemistry','Biology','English','Urdu'
 const INIT_FORM = { title:'', subject:'', description:'' };
 
 export default function LMSPage() {
+  const { toast } = useToast();
   const [view, setView] = useState<'courses'|'quizzes'|'progress'>('courses');
   const [selectedCourse, setSelectedCourse] = useState<any>(null);
   const [createModal, setCreateModal] = useState(false);
@@ -55,8 +57,13 @@ export default function LMSPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this course? This cannot be undone.')) return;
+    try {
     await deleteCourse.mutateAsync(id);
     if (selectedCourse?.id === id) setSelectedCourse(null);
+      toast('Done successfully', 'success');
+    } catch (e: any) {
+      toast(e?.message || e?.error || 'Operation failed', 'error');
+    }
   };
 
   return (
