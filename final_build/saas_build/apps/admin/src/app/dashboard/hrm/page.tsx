@@ -5,11 +5,13 @@ import { PageHeader } from '../../../components/shared/page-header';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
 import { useStaff, useLessonPlans, useSubstitutions, useCreateLessonPlan, useCreateSubstitution, useSchoolSection, useCreateSchoolItem } from '../../../hooks/use-api';
+import { useToast } from '../../../components/shared/toast';
 
 const TABS = ['Overview', 'Leave Requests', 'Lesson Plans', 'Substitutions', 'Payroll'];
 const LEAVE_EMPTY = { staffName: '', department: '', leaveType: 'Sick Leave', fromDate: '', toDate: '', reason: '' };
 
 export default function HrmPage() {
+  const { toast } = useToast();
   const [tab, setTab] = useState(0);
   const [leaveModal, setLeaveModal] = useState(false);
   const [leaveForm, setLeaveForm] = useState(LEAVE_EMPTY);
@@ -34,7 +36,12 @@ export default function HrmPage() {
   const handleCreateLeave = async () => {
     if (!leaveForm.staffName || !leaveForm.fromDate) return;
     const days = Math.ceil((new Date(leaveForm.toDate || leaveForm.fromDate).getTime() - new Date(leaveForm.fromDate).getTime()) / (1000*60*60*24)) + 1;
+    try {
     await createLeave.mutateAsync({ ...leaveForm, days, status: 'PENDING' });
+      toast('Done successfully', 'success');
+    } catch (e: any) {
+      toast(e?.message || e?.error || 'Operation failed', 'error');
+    }
     setLeaveForm(LEAVE_EMPTY); setLeaveModal(false);
   };
 

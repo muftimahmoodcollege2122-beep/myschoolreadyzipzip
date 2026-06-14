@@ -5,6 +5,7 @@ import { PageHeader } from '../../../components/shared/page-header';
 import { Topbar } from '../../../components/layout/topbar';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
+import { useToast } from '../../../components/shared/toast';
 
 const EVENT_EMPTY = { title: '', description: '', startAt: '', endAt: '', venue: '', isPublic: false };
 const ANN_EMPTY = { title: '', content: '', isPinned: false };
@@ -15,6 +16,8 @@ export default function EventsPage() {
   const [annModal, setAnnModal] = useState(false);
   const [eventForm, setEventForm] = useState(EVENT_EMPTY);
   const [annForm, setAnnForm] = useState(ANN_EMPTY);
+  const [eventErr, setEventErr] = useState('');
+  const [annErr, setAnnErr] = useState('');
 
   const { data: events, isLoading: evLoading } = useEvents();
   const { data: upcomingEvents } = useEvents(true);
@@ -22,29 +25,44 @@ export default function EventsPage() {
   const createEvent = useCreateEvent();
   const deleteEvent = useDeleteEvent();
   const createAnn = useCreateAnnouncement();
+  const { toast } = useToast();
 
   const eventList: any[] = Array.isArray(events) ? events : [];
   const upcomingList: any[] = Array.isArray(upcomingEvents) ? upcomingEvents : [];
   const annList: any[] = (announcements as any)?.data ?? [];
 
   const handleCreateEvent = async () => {
-    await createEvent.mutateAsync(eventForm);
-    setEventForm(EVENT_EMPTY);
-    setEventModal(false);
+    setEventErr('');
+    try {
+      await createEvent.mutateAsync(eventForm);
+      setEventForm(EVENT_EMPTY);
+      setEventModal(false);
+      toast('Event created successfully', 'success');
+    } catch (e: any) {
+      const msg = e?.message || e?.error || 'Failed to create event';
+      setEventErr(msg);
+      toast(msg, 'error');
+    }
   };
 
   const handleCreateAnn = async () => {
-    await createAnn.mutateAsync(annForm);
-    setAnnForm(ANN_EMPTY);
-    setAnnModal(false);
+    setAnnErr('');
+    try {
+      await createAnn.mutateAsync(annForm);
+      setAnnForm(ANN_EMPTY);
+      setAnnModal(false);
+      toast('Announcement published', 'success');
+    } catch (e: any) {
+      const msg = e?.message || e?.error || 'Failed to publish announcement';
+      setAnnErr(msg);
+      toast(msg, 'error');
+    }
   };
 
   const eventColor = (ev: any) => {
     const now = new Date();
-    const start = new Date(ev.startAt);
-    const end = new Date(ev.endAt);
-    if (end < now) return 'gray';
-    if (start <= now && end >= now) return 'green';
+    if (new Date(ev.endAt) < now) return 'gray';
+    if (new Date(ev.startAt) <= now && new Date(ev.endAt) >= now) return 'green';
     return 'blue';
   };
 
@@ -69,7 +87,6 @@ export default function EventsPage() {
           }
         />
 
-        {/* Upcoming Events highlight */}
         {upcomingList.length > 0 && tab === 'events' && (
           <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-xl p-5 mb-6 text-white">
             <p className="text-xs font-bold uppercase tracking-wider opacity-75 mb-2">🔔 Next Upcoming Event</p>
@@ -82,7 +99,6 @@ export default function EventsPage() {
           </div>
         )}
 
-        {/* Tabs */}
         <div className="flex gap-1 mb-5 bg-gray-100 rounded-lg p-1 w-fit">
           {(['events','announcements'] as const).map(t => (
             <button key={t} onClick={() => setTab(t)} className={`px-4 py-1.5 text-sm font-bold rounded-md transition-all ${tab===t?'bg-white shadow text-gray-900':'text-gray-500'}`}>
@@ -153,8 +169,7 @@ export default function EventsPage() {
         )}
       </div>
 
-      {/* Create Event Modal */}
-      <Modal isOpen={eventModal} onClose={() => setEventModal(false)} title="Create School Event">
+      <Modal isOpen={eventModal} onClose={() => { setEventModal(false); setEventErr(''); }} title="Create School Event">
         <div className="space-y-3">
           <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Title *</label>
             <input value={eventForm.title} onChange={e=>setEventForm(f=>({...f,title:e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-green-400" /></div>
@@ -172,14 +187,14 @@ export default function EventsPage() {
             <input type="checkbox" checked={eventForm.isPublic} onChange={e=>setEventForm(f=>({...f,isPublic:e.target.checked}))} className="w-4 h-4 accent-green-600" />
             <span className="text-sm text-gray-700">Publish to school website</span>
           </label>
+          {eventErr && <div className="px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{eventErr}</div>}
           <button onClick={handleCreateEvent} disabled={createEvent.isPending||!eventForm.title||!eventForm.startAt||!eventForm.endAt} className="w-full py-2.5 bg-green-600 text-white font-bold rounded-lg hover:bg-green-500 disabled:opacity-50">
             {createEvent.isPending ? 'Creating...' : 'Create Event'}
           </button>
         </div>
       </Modal>
 
-      {/* Create Announcement Modal */}
-      <Modal isOpen={annModal} onClose={() => setAnnModal(false)} title="Create Announcement">
+      <Modal isOpen={annModal} onClose={() => { setAnnModal(false); setAnnErr(''); }} title="Create Announcement">
         <div className="space-y-3">
           <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Title *</label>
             <input value={annForm.title} onChange={e=>setAnnForm(f=>({...f,title:e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-green-400" /></div>
@@ -189,6 +204,7 @@ export default function EventsPage() {
             <input type="checkbox" checked={annForm.isPinned} onChange={e=>setAnnForm(f=>({...f,isPinned:e.target.checked}))} className="w-4 h-4 accent-green-600" />
             <span className="text-sm text-gray-700">Pin this announcement</span>
           </label>
+          {annErr && <div className="px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{annErr}</div>}
           <button onClick={handleCreateAnn} disabled={createAnn.isPending||!annForm.title||!annForm.content} className="w-full py-2.5 bg-green-600 text-white font-bold rounded-lg hover:bg-green-500 disabled:opacity-50">
             {createAnn.isPending ? 'Publishing...' : 'Publish Announcement'}
           </button>

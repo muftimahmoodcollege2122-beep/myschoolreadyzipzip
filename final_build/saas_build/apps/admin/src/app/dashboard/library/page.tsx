@@ -6,6 +6,7 @@ import { Topbar } from '../../../components/layout/topbar';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
 import { DataTable } from '../../../components/shared/data-table';
+import { useToast } from '../../../components/shared/toast';
 
 export default function LibraryPage() {
   const [tab, setTab] = useState<'catalog'|'issued'>('catalog');
@@ -23,21 +24,40 @@ export default function LibraryPage() {
   const createBook = useCreateBook();
   const issueBook = useIssueBook();
   const returnBook = useReturnBook();
+  const { toast } = useToast();
+  const [addErr, setAddErr] = React.useState('');
+  const [issueErr, setIssueErr] = React.useState('');
 
   const books: any[] = (booksData as any)?.data ?? [];
   const issues: any[] = (issuesData as any)?.data ?? [];
   const catList: string[] = Array.isArray(categories) ? categories : ['General', 'Science', 'Mathematics', 'History', 'Literature', 'Fiction', 'Reference'];
 
   const handleAddBook = async () => {
-    await createBook.mutateAsync(bookForm);
-    setBookForm({ title: '', author: '', isbn: '', publisher: '', category: 'General', totalCopies: '1', shelfLocation: '', publishYear: '' });
-    setAddModal(false);
+    setAddErr('');
+    try {
+      await createBook.mutateAsync(bookForm);
+      setBookForm({ title: '', author: '', isbn: '', publisher: '', category: 'General', totalCopies: '1', shelfLocation: '', publishYear: '' });
+      setAddModal(false);
+      toast('Book added successfully', 'success');
+    } catch (e: any) {
+      const msg = e?.message || e?.error || 'Failed to add book';
+      setAddErr(msg);
+      toast(msg, 'error');
+    }
   };
 
   const handleIssue = async () => {
-    await issueBook.mutateAsync({ bookId: issueModal?.id, ...issueForm, dueDays: Number(issueForm.dueDays) });
-    setIssueForm({ userId: '', dueDays: '14' });
-    setIssueModal(null);
+    setIssueErr('');
+    try {
+      await issueBook.mutateAsync({ bookId: issueModal?.id, ...issueForm, dueDays: Number(issueForm.dueDays) });
+      setIssueForm({ userId: '', dueDays: '14' });
+      setIssueModal(null);
+      toast('Book issued successfully', 'success');
+    } catch (e: any) {
+      const msg = e?.message || e?.error || 'Failed to issue book';
+      setIssueErr(msg);
+      toast(msg, 'error');
+    }
   };
 
   const columns = [

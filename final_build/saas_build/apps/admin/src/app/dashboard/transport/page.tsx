@@ -5,6 +5,7 @@ import { PageHeader } from '../../../components/shared/page-header';
 import { Topbar } from '../../../components/layout/topbar';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
+import { useToast } from '../../../components/shared/toast';
 
 const DEFAULT_FORM = { name: '', routeNo: '', vehicleNo: '', driverName: '', driverPhone: '', capacity: '40', fee: '' };
 
@@ -17,6 +18,8 @@ export default function TransportPage() {
   const [modal, setModal] = useState<null|'create'|any>(null);
   const [form, setForm] = useState(DEFAULT_FORM);
   const [editId, setEditId] = useState<string|null>(null);
+  const { toast } = useToast();
+  const [err, setErr] = useState('');
 
   const routes: any[] = (routesData as any)?.data ?? [];
 
@@ -27,13 +30,28 @@ export default function TransportPage() {
   };
 
   const handleSave = async () => {
-    if (editId) await updateRoute.mutateAsync({ id: editId, ...form });
-    else await createRoute.mutateAsync(form);
-    setModal(null); setEditId(null); setForm(DEFAULT_FORM);
+    setErr('');
+    try {
+      if (editId) await updateRoute.mutateAsync({ id: editId, ...form });
+      else await createRoute.mutateAsync(form);
+      setModal(null); setEditId(null); setForm(DEFAULT_FORM);
+      toast(editId ? 'Route updated successfully' : 'Route created successfully', 'success');
+    } catch (e: any) {
+      const msg = e?.message || e?.error || 'Failed to save route';
+      setErr(msg);
+      toast(msg, 'error');
+    }
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('Delete this route?')) await deleteRoute.mutateAsync(id);
+    if (confirm('Delete this route?')) {
+      try {
+        await deleteRoute.mutateAsync(id);
+        toast('Route deleted', 'success');
+      } catch (e: any) {
+        toast(e?.message || 'Failed to delete route', 'error');
+      }
+    }
   };
 
   const statusColor: Record<string,any> = { ACTIVE: 'green', INACTIVE: 'gray', MAINTENANCE: 'yellow' };

@@ -5,11 +5,13 @@ import { PageHeader } from '../../../components/shared/page-header';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
 import { useSchoolSection, useCreateSchoolItem, useDeleteSchoolItem, useUpdateSchoolItem } from '../../../hooks/use-api';
+import { useToast } from '../../../components/shared/toast';
 
 const CATS = ['Main Course', 'Snacks', 'Beverages', 'Desserts', 'Breakfast'];
 const EMPTY = { name: '', category: 'Main Course', price: '', available: true, description: '' };
 
 export default function CanteenPage() {
+  const { toast } = useToast();
   const [catFilter, setCatFilter] = useState('');
   const [search, setSearch] = useState('');
   const [modal, setModal] = useState(false);
@@ -32,13 +34,23 @@ export default function CanteenPage() {
   const handleSave = async () => {
     if (!form.name || !form.price) return;
     if (editItem) {
+      try {
       await update.mutateAsync({ id: editItem.id, ...form, price: Number(form.price) });
+        toast('Done successfully', 'success');
+      } catch (e: any) {
+        toast(e?.message || e?.error || 'Operation failed', 'error');
+      }
       setEditItem(null);
     } else {
+      try {
       await create.mutateAsync({ ...form, price: Number(form.price) });
     }
     setForm(EMPTY); setModal(false);
   };
+        toast('Done successfully', 'success');
+      } catch (e: any) {
+        toast(e?.message || e?.error || 'Operation failed', 'error');
+      }
 
   const openEdit = (item: any) => {
     setForm({ name: item.name, category: item.category, price: String(item.price), available: item.available, description: item.description || '' });

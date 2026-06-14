@@ -5,11 +5,13 @@ import { PageHeader } from '../../../components/shared/page-header';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
 import { useSchoolSection, useCreateSchoolItem, useDeleteSchoolItem } from '../../../hooks/use-api';
+import { useToast } from '../../../components/shared/toast';
 
 const EMPTY_ROOM = { roomNo: '', floor: '1', type: 'Double', capacity: '2', occupied: '0', status: 'AVAILABLE' };
 const EMPTY_RESIDENT = { studentName: '', rollNo: '', roomNo: '', fromDate: new Date().toISOString().split('T')[0], toDate: '', feePerMonth: '', status: 'ACTIVE' };
 
 export default function HostelPage() {
+  const { toast } = useToast();
   const [tab, setTab] = useState<'rooms' | 'residents'>('rooms');
   const [modal, setModal] = useState(false);
 
@@ -31,13 +33,23 @@ export default function HostelPage() {
 
   const handleCreateRoom = async () => {
     if (!roomForm.roomNo) return;
+    try {
     await createRoom.mutateAsync({ ...roomForm, capacity: Number(roomForm.capacity), occupied: Number(roomForm.occupied) });
+      toast('Done successfully', 'success');
+    } catch (e: any) {
+      toast(e?.message || e?.error || 'Operation failed', 'error');
+    }
     setRoomForm(EMPTY_ROOM); setModal(false);
   };
 
   const handleCreateResident = async () => {
     if (!residentForm.studentName) return;
+    try {
     await createResident.mutateAsync({ ...residentForm, feePerMonth: Number(residentForm.feePerMonth) });
+      toast('Done successfully', 'success');
+    } catch (e: any) {
+      toast(e?.message || e?.error || 'Operation failed', 'error');
+    }
     setResidentForm(EMPTY_RESIDENT); setModal(false);
   };
 

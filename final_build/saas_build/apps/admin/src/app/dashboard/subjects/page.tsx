@@ -5,23 +5,34 @@ import { PageHeader } from '../../../components/shared/page-header';
 import { Topbar } from '../../../components/layout/topbar';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
+import { useToast } from '../../../components/shared/toast';
 
 const EMPTY = { name: '', code: '', description: '', isElective: false, creditHours: '1' };
 
 export default function SubjectsPage() {
   const { data: subjects, isLoading } = useSubjects();
   const createSubject = useCreateSubject();
+  const { toast } = useToast();
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [search, setSearch] = useState('');
+  const [err, setErr] = useState('');
 
   const list: any[] = Array.isArray(subjects) ? subjects : [];
   const filtered = search ? list.filter(s => s.name.toLowerCase().includes(search.toLowerCase()) || s.code.toLowerCase().includes(search.toLowerCase())) : list;
 
   const handleCreate = async () => {
-    await createSubject.mutateAsync(form);
-    setForm(EMPTY);
-    setModal(false);
+    setErr('');
+    try {
+      await createSubject.mutateAsync(form);
+      setForm(EMPTY);
+      setModal(false);
+      toast('Subject added successfully', 'success');
+    } catch (e: any) {
+      const msg = e?.message || e?.error || 'Failed to add subject';
+      setErr(msg);
+      toast(msg, 'error');
+    }
   };
 
   const coreCount = list.filter(s => !s.isElective).length;
@@ -71,7 +82,7 @@ export default function SubjectsPage() {
         )}
       </div>
 
-      <Modal isOpen={modal} onClose={() => { setModal(false); setForm(EMPTY); }} title="Add Subject">
+      <Modal isOpen={modal} onClose={() => { setModal(false); setForm(EMPTY); setErr(''); }} title="Add Subject">
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Subject Name *</label>
@@ -87,6 +98,7 @@ export default function SubjectsPage() {
             <input type="checkbox" checked={form.isElective} onChange={e=>setForm(f=>({...f,isElective:e.target.checked}))} className="w-4 h-4 accent-green-600" />
             <span className="text-sm text-gray-700">This is an elective subject</span>
           </label>
+          {err && <div className="px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{err}</div>}
           <button onClick={handleCreate} disabled={createSubject.isPending||!form.name||!form.code} className="w-full py-2.5 bg-green-600 text-white font-bold rounded-lg hover:bg-green-500 disabled:opacity-50">
             {createSubject.isPending ? 'Adding...' : 'Add Subject'}
           </button>

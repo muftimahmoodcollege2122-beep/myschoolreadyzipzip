@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useAttendance, useMarkAttendance, useClasses, useSections } from '../../../hooks/use-api';
+import { useToast } from '../../../components/shared/toast';
 import { PageHeader } from '../../../components/shared/page-header';
 import { Topbar } from '../../../components/layout/topbar';
 import { Badge } from '../../../components/shared/badge';
@@ -35,6 +36,7 @@ export default function AttendancePage() {
   const { data: allSections } = useSections();
   const { data: records, isLoading } = useAttendance(sectionId, date);
   const mark = useMarkAttendance();
+  const { toast } = useToast();
 
   const classList: any[] = Array.isArray(classes) ? classes : [];
   const sectionList: any[] = Array.isArray(allSections) ? allSections : [];
@@ -58,6 +60,7 @@ export default function AttendancePage() {
   }, [records]);
 
   const save = async () => {
+    try {
     await mark.mutateAsync({
       sectionId, date,
       records: Object.entries(local).map(([studentId, status]) => ({ studentId, status, date, sectionId })),

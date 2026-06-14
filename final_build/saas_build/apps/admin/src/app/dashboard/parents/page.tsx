@@ -5,10 +5,12 @@ import { PageHeader } from '../../../components/shared/page-header';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
 import { useSchoolSection, useCreateSchoolItem, useDeleteSchoolItem } from '../../../hooks/use-api';
+import { useToast } from '../../../components/shared/toast';
 
 const EMPTY = { name: '', phone: '', email: '', cnic: '', occupation: '', address: '', children: '', feeStatus: 'CURRENT' };
 
 export default function ParentsPage() {
+  const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
@@ -23,9 +25,14 @@ export default function ParentsPage() {
 
   const handleCreate = async () => {
     if (!form.name || !form.phone) return;
+    try {
     await create.mutateAsync({ ...form, meetings: 0 });
     setForm(EMPTY); setModal(false);
   };
+      toast('Done successfully', 'success');
+    } catch (e: any) {
+      toast(e?.message || e?.error || 'Operation failed', 'error');
+    }
 
   return (
     <>
