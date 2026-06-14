@@ -558,9 +558,6 @@ export const useSubmitLeaveRequest = () => {
   return useMutation({ mutationFn: (dto: any) => apiClient.post('/hr-extended/leave-requests', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['my-leave-requests'] }) });
 };
 
-export const useStudentFees = (studentId: string) =>
-  useQuery({ queryKey: ['student-fees', studentId], queryFn: () => apiClient.get(`/fees/student/${studentId}`), enabled: !!studentId, staleTime: 5 * 60 * 1000 });
-
 export const useTeacherStats = (slug: string) =>
   useQuery({ queryKey: ['teacher-stats', slug], queryFn: () => apiClient.get(`/dashboard/stats?tenantSlug=${slug}`), enabled: !!slug, staleTime: 5 * 60 * 1000 });
 
