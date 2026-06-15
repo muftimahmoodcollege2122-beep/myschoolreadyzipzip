@@ -44,7 +44,15 @@ export class AttendanceController {
     @Query('endDate') endDate: string,
     @TenantId() tid: string,
   ) {
-    return this.svc.getStudentAttendance(studentId, tid, new Date(startDate), new Date(endDate));
+    const start = startDate ? new Date(startDate) : new Date(new Date().setMonth(new Date().getMonth() - 1));
+    const end   = endDate ? new Date(endDate) : new Date();
+    return this.svc.getStudentAttendance(studentId, tid, start, end);
+  }
+
+  @Get('today/summary') @Roles('SCHOOL_ADMIN', 'TEACHER')
+  @ApiOperation({ summary: "Today's attendance summary" })
+  todaySummary(@TenantId() tid: string, @Query('schoolId') schoolId?: string) {
+    return this.svc.getTodayAttendanceSummary(tid, schoolId);
   }
 
   @Get('chronic-absentees') @Roles('SCHOOL_ADMIN', 'TEACHER')
@@ -55,6 +63,6 @@ export class AttendanceController {
     @Query('academicYear') academicYear: string,
     @TenantId() tid: string,
   ) {
-    return this.svc.getChronicAbsentees(schoolId, tid, threshold ?? 75, academicYear);
+    return this.svc.getChronicAbsentees(schoolId, tid, threshold ?? 75, academicYear || new Date().getFullYear() + '-' + (new Date().getFullYear() + 1));
   }
 }
