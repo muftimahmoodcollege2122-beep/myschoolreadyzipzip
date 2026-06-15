@@ -50,49 +50,49 @@ waitForPort = 5000
 name = "Admin Portal"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "bash -c \"until curl -sf http://localhost:3001/api/v1/health/live >/dev/null 2>&1; do sleep 3; done && cd /home/runner/workspace/final_build/saas_build/apps/admin && NEXT_PUBLIC_API_URL=http://localhost:3001 /home/runner/workspace/final_build/saas_build/node_modules/.bin/next dev -p 8080\""
-waitForPort = 8080
-
 [workflows.workflow.metadata]
 outputType = "console"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "bash -c \"fuser -k -9 8080/tcp 2>/dev/null; sleep 1; until curl -sf http://localhost:3001/api/v1/health/live >/dev/null 2>&1; do sleep 3; done && cd /home/runner/workspace/final_build/saas_build/apps/admin && NEXT_PUBLIC_API_URL=http://localhost:3001 /home/runner/workspace/final_build/saas_build/node_modules/.bin/next dev -p 8080\""
+waitForPort = 8080
 
 [[workflows.workflow]]
 name = "Teacher Portal"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "bash -c \"until curl -sf http://localhost:3001/api/v1/health/live >/dev/null 2>&1; do sleep 3; done && cd /home/runner/workspace/final_build/saas_build/apps/teacher && NEXT_PUBLIC_API_URL=http://localhost:3001 /home/runner/workspace/final_build/saas_build/node_modules/.bin/next dev -p 3002\""
-waitForPort = 3002
-
 [workflows.workflow.metadata]
 outputType = "console"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "bash -c \"fuser -k -9 3002/tcp 2>/dev/null; sleep 1; until curl -sf http://localhost:3001/api/v1/health/live >/dev/null 2>&1; do sleep 3; done && cd /home/runner/workspace/final_build/saas_build/apps/teacher && NEXT_PUBLIC_API_URL=http://localhost:3001 /home/runner/workspace/final_build/saas_build/node_modules/.bin/next dev -p 3002\""
+waitForPort = 3002
 
 [[workflows.workflow]]
 name = "Student Portal"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "bash -c \"until curl -sf http://localhost:3001/api/v1/health/live >/dev/null 2>&1; do sleep 3; done && cd /home/runner/workspace/final_build/saas_build/apps/student && NEXT_PUBLIC_API_URL=http://localhost:3001 /home/runner/workspace/final_build/saas_build/node_modules/.bin/next dev -p 3003\""
-waitForPort = 3003
-
 [workflows.workflow.metadata]
 outputType = "console"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "bash -c \"fuser -k -9 3003/tcp 2>/dev/null; sleep 1; until curl -sf http://localhost:3001/api/v1/health/live >/dev/null 2>&1; do sleep 3; done && cd /home/runner/workspace/final_build/saas_build/apps/student && NEXT_PUBLIC_API_URL=http://localhost:3001 /home/runner/workspace/final_build/saas_build/node_modules/.bin/next dev -p 3003\""
+waitForPort = 3003
 
 [[workflows.workflow]]
 name = "Parent Portal"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "bash -c \"until curl -sf http://localhost:3001/api/v1/health/live >/dev/null 2>&1; do sleep 3; done && cd /home/runner/workspace/final_build/saas_build/apps/parent && NEXT_PUBLIC_API_URL=http://localhost:3001 /home/runner/workspace/final_build/saas_build/node_modules/.bin/next dev -p 4200\""
-waitForPort = 4200
-
 [workflows.workflow.metadata]
 outputType = "console"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "bash -c \"fuser -k -9 4200/tcp 2>/dev/null; sleep 1; until curl -sf http://localhost:3001/api/v1/health/live >/dev/null 2>&1; do sleep 3; done && cd /home/runner/workspace/final_build/saas_build/apps/parent && NEXT_PUBLIC_API_URL=http://localhost:3001 /home/runner/workspace/final_build/saas_build/node_modules/.bin/next dev -p 4200\""
+waitForPort = 4200
 
 [[ports]]
 localPort = 3001
@@ -101,10 +101,6 @@ externalPort = 3001
 [[ports]]
 localPort = 3002
 externalPort = 3002
-
-[[ports]]
-localPort = 3003
-externalPort = 3003
 
 [[ports]]
 localPort = 3004
@@ -119,16 +115,16 @@ localPort = 4200
 externalPort = 4200
 
 [[ports]]
-localPort = 5000
-externalPort = 80
-
-[[ports]]
 localPort = 6379
 externalPort = 3000
 
 [[ports]]
 localPort = 8080
 externalPort = 8080
+
+[[ports]]
+localPort = 3003
+externalPort = 3003
 
 [userenv]
 
