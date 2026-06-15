@@ -4,10 +4,6 @@ set -e
 SAAS_DIR="$(pwd)/final_build/saas_build"
 API_DIR="$SAAS_DIR/apps/api"
 WEB_DIR="$SAAS_DIR/apps/web"
-ADMIN_DIR="$SAAS_DIR/apps/admin"
-TEACHER_DIR="$SAAS_DIR/apps/teacher"
-STUDENT_DIR="$SAAS_DIR/apps/student"
-PARENT_DIR="$SAAS_DIR/apps/parent"
 BIN="$SAAS_DIR/node_modules/.bin"
 
 echo "==> Starting Redis..."
@@ -16,7 +12,7 @@ sleep 1
 echo "==> Redis started"
 
 REPLIT_DOMAIN="${REPLIT_DEV_DOMAIN:-localhost}"
-export CORS_ORIGINS="http://localhost:5000,http://localhost:3002,http://localhost:3003,http://localhost:3004,http://localhost:3005,https://${REPLIT_DOMAIN},http://${REPLIT_DOMAIN}"
+export CORS_ORIGINS="http://localhost:5000,http://localhost:3002,http://localhost:3003,http://localhost:4200,http://localhost:8080,https://${REPLIT_DOMAIN},http://${REPLIT_DOMAIN}"
 
 echo "==> Installing all dependencies (workspace root)..."
 cd "$SAAS_DIR"
@@ -72,30 +68,6 @@ for i in $(seq 1 40); do
   fi
   sleep 2
 done
-
-echo "==> Starting Admin portal on port 3005 (background)..."
-cd "$ADMIN_DIR"
-NEXT_PUBLIC_API_URL=http://localhost:3001 \
-  "$BIN/next" dev -p 3005 > /tmp/admin.log 2>&1 &
-echo "Admin started"
-
-echo "==> Starting Teacher portal on port 3002 (background)..."
-cd "$TEACHER_DIR"
-NEXT_PUBLIC_API_URL=http://localhost:3001 \
-  "$BIN/next" dev -p 3002 > /tmp/teacher.log 2>&1 &
-echo "Teacher started"
-
-echo "==> Starting Student portal on port 3003 (background)..."
-cd "$STUDENT_DIR"
-NEXT_PUBLIC_API_URL=http://localhost:3001 \
-  "$BIN/next" dev -p 3003 > /tmp/student.log 2>&1 &
-echo "Student started"
-
-echo "==> Starting Parent portal on port 3004 (background)..."
-cd "$PARENT_DIR"
-NEXT_PUBLIC_API_URL=http://localhost:3001 \
-  "$BIN/next" dev -p 3004 > /tmp/parent.log 2>&1 &
-echo "Parent started"
 
 echo "==> Starting Web portal on port 5000..."
 cd "$WEB_DIR"

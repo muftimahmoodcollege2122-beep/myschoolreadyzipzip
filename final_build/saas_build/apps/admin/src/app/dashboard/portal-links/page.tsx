@@ -37,12 +37,6 @@ export default function PortalLinksPage() {
   const schoolSlug = slug || 'your-school';
 
   const devUrls = useMemo(() => {
-    // Use EXTERNAL ports as configured in Replit's port mapping:
-    // localPort 5000 → externalPort 80  (web: base URL, no port prefix)
-    // localPort 3005 → externalPort 3002 (admin)
-    // localPort 3002 → externalPort 3003 (teacher)
-    // localPort 3003 → externalPort 4200 (student)
-    // localPort 3004 → externalPort 5000 (parent)
     const base = typeof window !== 'undefined'
       ? window.location.hostname.replace(/^\d+-/, '')
       : 'localhost';
@@ -50,18 +44,18 @@ export default function PortalLinksPage() {
     if (isReplit) {
       return {
         web:     `https://${base}`,
-        admin:   `https://3002-${base}`,
-        teacher: `https://3003-${base}`,
-        student: `https://4200-${base}`,
-        parent:  `https://5000-${base}`,
+        admin:   `https://8080-${base}`,
+        teacher: `https://3002-${base}`,
+        student: `https://3003-${base}`,
+        parent:  `https://4200-${base}`,
       };
     }
     return {
       web:     'http://localhost:5000',
-      admin:   'http://localhost:3005',
+      admin:   'http://localhost:8080',
       teacher: 'http://localhost:3002',
       student: 'http://localhost:3003',
-      parent:  'http://localhost:3004',
+      parent:  'http://localhost:4200',
     };
   }, []);
 
