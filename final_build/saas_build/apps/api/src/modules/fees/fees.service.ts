@@ -17,6 +17,48 @@ export class FeesService {
     return this.bulkGenerateInvoices(dto.feeStructureId, dto.studentIds, tenantId);
   }
 
+  async createDirectInvoice(dto: { studentId: string; description: string; amount: number; dueDate: string; category?: string }, tenantId: string): Promise<any> {
+    const school = await this.prisma.school.findFirst({ where: { tenantId } });
+    if (!school) throw new NotFoundException('School not found');
+
+    const student = await this.prisma.student.findFirst({ where: { id: dto.studentId, tenantId } });
+    if (!student) throw new NotFoundException('Student not found');
+
+    return this.prisma.$transaction(async tx => {
+      const structure = await tx.feeStructure.create({
+        data: {
+          tenantId,
+          schoolId: school.id,
+          name: dto.description || (dto.category ?? 'Direct Invoice'),
+          academicYear: new Date().getFullYear().toString(),
+          classIds: [],
+          components: [{ name: dto.description || 'Fee', amount: dto.amount, isOptional: false, dueDay: 15 }],
+          frequency: 'one-time',
+          isActive: false,
+        },
+      });
+
+      const invoiceNo = `INV-${Date.now()}-${randomUUID().slice(0, 8).toUpperCase()}`;
+      const invoice = await tx.feeInvoice.create({
+        data: {
+          studentId: dto.studentId,
+          feeStructureId: structure.id,
+          tenantId,
+          invoiceNo,
+          amount: dto.amount,
+          dueDate: new Date(dto.dueDate),
+          status: FeeStatus.PENDING,
+        },
+      });
+
+      await tx.outboxEvent.create({
+        data: { tenantId, topic: 'fees.invoice.created', key: invoice.id, payload: { invoiceId: invoice.id }, headers: {} },
+      });
+
+      return invoice;
+    });
+  }
+
   async bulkGenerateInvoices(feeStructureId: string, studentIds: string[], tenantId: string): Promise<{ created: number; skipped: number }> {
     const structure = await this.prisma.feeStructure.findFirst({ where: { id: feeStructureId, tenantId, isActive: true } });
     if (!structure) throw new NotFoundException('Fee structure not found');
@@ -69,23 +111,26 @@ export class FeesService {
 
   async getOutstandingInvoices(schoolId: string, tenantId: string): Promise<any[]> {
     return this.prisma.feeInvoice.findMany({
-      where: { tenantId, status: { in: [FeeStatus.PENDING, 'OVERDUE' as any] }, student: { schoolId } },
-      include: { student: { include: { user: { include: { profile: true } } } } },
+      where: { tenantId, status: { in: [FeeStatus.PENDING, 'OVERDUE' as any] } },
+      include: { student: { include: { user: { include: { profile: true } }, enrollments: { include: { section: { include: { class: true } } } } } } },
       orderBy: { dueDate: 'asc' },
     });
   }
 
   async getRevenueReport(schoolId: string, tenantId: string, month: number, year: number): Promise<any> {
-    return this.prisma.$queryRaw`
-      SELECT TO_CHAR(fi.created_at,'YYYY-MM') as month,
-        SUM(fi.amount) as total_billed, SUM(fi.amount_paid) as total_collected,
-        SUM(fi.amount - COALESCE(fi.amount_paid,0)) as outstanding
-      FROM fee_invoices fi
-      JOIN students s ON s.id = fi.student_id
-      WHERE fi.tenant_id = ${tenantId}::uuid AND s.school_id = ${schoolId}::uuid
-        AND EXTRACT(YEAR FROM fi.created_at) = ${year}
-        AND EXTRACT(MONTH FROM fi.created_at) = ${month}
-      GROUP BY TO_CHAR(fi.created_at,'YYYY-MM')
-    `;
+    const allInvoices = await this.prisma.feeInvoice.findMany({ where: { tenantId } });
+    const collected = allInvoices.reduce((s, i) => s + Number(i.amountPaid ?? 0), 0);
+    const outstanding = allInvoices.reduce((s, i) => s + Math.max(0, Number(i.amount) - Number(i.amountPaid ?? 0)), 0);
+    const total = allInvoices.reduce((s, i) => s + Number(i.amount), 0);
+    return {
+      collected,
+      outstanding,
+      collectionRate: total > 0 ? Math.round((collected / total) * 100) : 0,
+      totalInvoices: allInvoices.length,
+      paid: allInvoices.filter(i => i.status === FeeStatus.PAID).length,
+      partial: allInvoices.filter(i => (i.status as string) === 'PARTIAL').length,
+      pending: allInvoices.filter(i => i.status === FeeStatus.PENDING).length,
+      overdue: allInvoices.filter(i => (i.status as string) === 'OVERDUE').length,
+    };
   }
 }

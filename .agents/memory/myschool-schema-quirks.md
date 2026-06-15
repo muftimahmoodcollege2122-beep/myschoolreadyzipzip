@@ -21,4 +21,10 @@ description: Non-obvious field names and missing relations in the Prisma schema 
 **SchoolEvent model (if exists):**
 - Check schema before assuming field names
 
-**How to apply:** Always grep the schema before assuming field names or relations. Use `grep -A 20 "^model ModelName"` in prisma/schema.prisma.
+**DateTime fields:** Prisma rejects date-only strings like `"2025-01-15"` for `DateTime` fields — must wrap with `new Date(dto.dateField)` in the service. Affects `admissionDate` on Student, `joiningDate` on Teacher.
+
+**schoolId resolution:** Student, Teacher (and Exam) services require `schoolId` but the controller passes `undefined` (from `req.query.schoolId`). Each service must resolve schoolId via `prisma.school.findFirst({ where: { tenantId } })` if not provided.
+
+**FeeInvoice requires feeStructureId (NOT NULL):** Cannot create a direct invoice without creating a fee structure row first. The `createDirectInvoice` method auto-creates a one-time inactive fee structure then links the invoice to it.
+
+**How to apply:** Always grep the schema before assuming field names or relations. Use `grep -A 20 "^model ModelName"` in prisma/schema.prisma. Wrap any DateTime create fields in `new Date()` in services.

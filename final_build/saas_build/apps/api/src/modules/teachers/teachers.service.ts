@@ -17,7 +17,10 @@ export class TeachersService {
     return school?.id;
   }
 
-  async create(dto: CreateTeacherDto, tenantId: string, schoolId: string, createdById: string) {
+  async create(dto: CreateTeacherDto, tenantId: string, schoolId: string | undefined, createdById: string) {
+    const resolvedSchoolId = await this.resolveSchoolId(tenantId, schoolId);
+    if (!resolvedSchoolId) throw new Error('School not found for this tenant');
+    schoolId = resolvedSchoolId;
     await this.planGuard.assertTeacherLimit(tenantId);
     const existing = await this.prisma.user.findFirst({ where: { tenantId, email: dto.email } });
     if (existing) throw new ConflictException('Email already registered');

@@ -21,7 +21,8 @@ export default function ClassesPage() {
   const totalStudents = classList.reduce((s: number, c: any) => s + (c.sections?.reduce((ss: number, sec: any) => ss + (sec._count?.students ?? 0), 0) ?? 0), 0);
 
   const handleCreateClass = async () => {
-    await createClass.mutateAsync(classForm);
+    if (!classForm.name || !classForm.level) return;
+    await createClass.mutateAsync({ name: classForm.name, level: Number(classForm.level) });
     setClassForm({ name: '', level: '' });
     setShowClassModal(false);
   };

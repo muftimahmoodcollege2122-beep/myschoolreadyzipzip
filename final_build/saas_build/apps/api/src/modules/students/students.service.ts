@@ -36,9 +36,14 @@ export class StudentsService {
   async create(
     dto: CreateStudentDto,
     tenantId: string,
-    schoolId: string,
+    schoolId: string | undefined,
     createdById: string,
   ): Promise<Student> {
+    if (!schoolId) {
+      const school = await this.prisma.school.findFirst({ where: { tenantId } });
+      if (!school) throw new Error('School not found for this tenant');
+      schoolId = school.id;
+    }
     // Enforce plan limits
     await this.planGuard.assertStudentLimit(tenantId);
 
@@ -78,7 +83,7 @@ export class StudentsService {
           schoolId,
           rollNumber: dto.rollNumber,
           admissionNo: dto.admissionNo,
-          admissionDate: dto.admissionDate,
+          admissionDate: new Date(dto.admissionDate),
           bloodGroup: dto.bloodGroup,
           transportId: dto.transportId,
           hostelId: dto.hostelId,

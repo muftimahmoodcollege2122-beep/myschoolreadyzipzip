@@ -7,20 +7,26 @@ export class ExamsService {
   constructor(private prisma: PrismaService) {}
 
   async create(dto: any, tenantId: string, createdById: string) {
+    let schoolId = dto.schoolId;
+    if (!schoolId) {
+      const school = await this.prisma.school.findFirst({ where: { tenantId } });
+      if (!school) throw new NotFoundException('School not found for this tenant');
+      schoolId = school.id;
+    }
     return this.prisma.$transaction(async tx => {
       const exam = await tx.exam.create({
         data: {
           tenantId,
-          schoolId: dto.schoolId,
+          schoolId,
           subjectId: dto.subjectId,
           name: dto.name || dto.title,
-          examType: dto.examType,
-          academicYear: dto.academicYear,
-          term: dto.term,
-          scheduledAt: new Date(dto.scheduledAt || dto.startDate),
+          examType: dto.examType || 'MIDTERM',
+          academicYear: dto.academicYear || new Date().getFullYear().toString(),
+          term: dto.term || 'Term 1',
+          scheduledAt: new Date(dto.scheduledAt || dto.startDate || Date.now()),
           duration: dto.duration || 60,
-          maxMarks: dto.maxMarks,
-          passingMarks: dto.passingMarks || dto.passMarks,
+          maxMarks: dto.maxMarks || 100,
+          passingMarks: dto.passingMarks || dto.passMarks || Math.floor((dto.maxMarks || 100) * 0.4),
           venue: dto.venue,
           instructions: dto.instructions,
         },
@@ -32,7 +38,7 @@ export class ExamsService {
 
   async findAll(tenantId: string, schoolId?: string, academicYear?: string) {
     return this.prisma.exam.findMany({
-      where: { tenantId, ...(schoolId && { schoolId }), ...(academicYear && { academicYear }) },
+      where: { tenantId, ...(academicYear && { academicYear }) },
       include: { subject: true },
       orderBy: { scheduledAt: 'asc' },
     });

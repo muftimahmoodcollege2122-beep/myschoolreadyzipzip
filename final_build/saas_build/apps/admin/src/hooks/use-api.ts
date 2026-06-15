@@ -88,7 +88,7 @@ export const useRecordPayment = () => {
 
 export const useCreateInvoice = () => {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (dto: any) => apiClient.post('/fees/invoices', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['fees'] }) });
+  return useMutation({ mutationFn: (dto: any) => apiClient.post('/fees/direct-invoice', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['fees'] }) });
 };
 
 export const useFeeRevenue = () =>
@@ -132,6 +132,25 @@ export const useNotifications = (page = 1) =>
 
 export const useUnreadCount = () =>
   useQuery({ queryKey: ['notifications-unread'], queryFn: () => apiClient.get('/notifications/unread-count'), refetchInterval: 30000, enabled: hasAuthToken(), retry: false });
+
+// ── School Section Items (generic settings store) ─────────────────────────────
+export const useSchoolSection = (section: string) =>
+  useQuery({ queryKey: ['school-section', section], queryFn: () => apiClient.get(`/school/section/${section}`), staleTime: 2*60*1000 });
+
+export const useCreateSchoolItem = (section: string) => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (dto: any) => apiClient.post(`/school/section/${section}`, dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['school-section', section] }) });
+};
+
+export const useUpdateSchoolItem = (section: string) => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: ({ id, ...dto }: any) => apiClient.put(`/school/section/${section}/${id}`, dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['school-section', section] }) });
+};
+
+export const useDeleteSchoolItem = (section: string) => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (id: string) => apiClient.delete(`/school/section/${section}/${id}`), onSuccess: () => qc.invalidateQueries({ queryKey: ['school-section', section] }) });
+};
 
 // ── School Data ───────────────────────────────────────────────────────────────
 export const useClasses = () =>

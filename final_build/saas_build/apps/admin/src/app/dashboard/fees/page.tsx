@@ -111,13 +111,14 @@ export default function FeesPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!payModal) return;
-    await pay.mutateAsync({ invoiceId: payModal.id, amount: parseFloat(amount), paymentMethod: method });
+    await pay.mutateAsync({ invoiceId: payModal.id, amount: parseFloat(amount), method });
     setPayModal(null);
     setAmount('');
   };
 
   const submitInvoice = async () => {
-    await createInvoice.mutateAsync({ ...invForm, amount: parseFloat(invForm.amount) });
+    if (!invForm.studentId || !invForm.amount || !invForm.dueDate) return;
+    await createInvoice.mutateAsync({ studentId: invForm.studentId, description: invForm.description || invForm.category, amount: parseFloat(invForm.amount), dueDate: invForm.dueDate, category: invForm.category });
     setInvForm({ studentId: '', description: '', amount: '', dueDate: '', category: 'TUITION' });
     setInvoiceModal(false);
   };

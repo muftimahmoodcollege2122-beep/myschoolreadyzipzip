@@ -15,6 +15,9 @@ export class FeesController {
   @Post('invoices') @Roles('SCHOOL_ADMIN','ACCOUNTANT')
   createInvoice(@Body() dto: CreateInvoiceDto, @TenantId() tid: string) { return this.svc.createInvoice(dto, tid); }
 
+  @Post('direct-invoice') @Roles('SCHOOL_ADMIN','ACCOUNTANT')
+  createDirectInvoice(@Body() dto: any, @TenantId() tid: string) { return this.svc.createDirectInvoice(dto, tid); }
+
   @Post('payments') @Roles('SCHOOL_ADMIN','ACCOUNTANT')
   recordPayment(@Body() dto: RecordPaymentDto & { invoiceId: string }, @TenantId() tid: string, @CurrentUser() u: any) {
     return this.svc.recordPayment(dto, tid, u.sub);
