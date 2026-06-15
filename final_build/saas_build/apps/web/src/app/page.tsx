@@ -672,19 +672,28 @@ export default function MarketingPage() {
             {[
               { title: 'Product', links: ['Features', 'Pricing', 'Security', 'API Docs', 'Changelog'] },
               { title: 'Solutions', links: ['Schools', 'Colleges', 'Universities', 'Madrassas', 'Academies'] },
-              { title: 'Company', links: ['About', 'Blog', 'Careers', 'Privacy Policy', 'Terms of Service'] },
+              { title: 'Company', links: ['About', 'Blog', 'Careers', 'Privacy Policy|/privacy-policy', 'Terms of Service|/terms'] },
             ].map(col => (
               <div key={col.title}>
                 <p className="font-bold text-white mb-4 text-sm">{col.title}</p>
                 <ul className="space-y-2.5">
-                  {col.links.map(l => <li key={l}><a href="#" className="text-gray-500 hover:text-white text-sm transition-colors">{l}</a></li>)}
+                  {col.links.map(l => {
+                    const [label, href] = l.includes('|') ? l.split('|') : [l, '#'];
+                    return <li key={label}><Link href={href} className="text-gray-500 hover:text-white text-sm transition-colors">{label}</Link></li>;
+                  })}
                 </ul>
               </div>
             ))}
           </div>
           <div className="border-t border-gray-800 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-gray-600 text-sm">© 2026 MySchool Technologies. All rights reserved. Built in Pakistan.</p>
-            <p className="text-gray-700 text-xs">99.9% uptime SLA · AES-256 encryption · GDPR-ready infrastructure</p>
+            <div className="flex items-center gap-4 text-xs text-gray-600">
+              <Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>
+              <span className="text-gray-700">·</span>
+              <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
+              <span className="text-gray-700">·</span>
+              <span>99.9% uptime · AES-256 encryption</span>
+            </div>
           </div>
         </div>
       </footer>
