@@ -58,7 +58,8 @@ export class CreateStudentDto {
   @IsUUID()
   sectionId?: string;
 
-  @ApiProperty({ example: '2024-2025' })
+  @ApiPropertyOptional({ example: '2024-2025' })
+  @IsOptional()
   @IsString()
   academicYear: string;
 

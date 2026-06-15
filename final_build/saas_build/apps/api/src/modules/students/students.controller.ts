@@ -31,6 +31,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { TenantId } from '../../common/decorators/tenant-id.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { PrismaService } from '../../database/prisma.service';
 import type { JwtPayload } from '../auth/auth.service';
 
 @ApiTags('Students')
@@ -38,7 +39,10 @@ import type { JwtPayload } from '../auth/auth.service';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('students')
 export class StudentsController {
-  constructor(private readonly studentsService: StudentsService) {}
+  constructor(
+    private readonly studentsService: StudentsService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   @Post()
   @Roles('SCHOOL_ADMIN')
@@ -52,8 +56,24 @@ export class StudentsController {
     @CurrentUser() user: JwtPayload,
     @Req() req: Request,
   ) {
-    const schoolId = req.tenantContext?.planLimits?.['defaultSchoolId'] as string ||
-      (req.body as any).schoolId;
+    // Resolve schoolId: try body → planLimits → auto-lookup first active school
+    let schoolId: string = (req.body as any).schoolId
+      || req.tenantContext?.planLimits?.['defaultSchoolId'] as string;
+
+    if (!schoolId) {
+      const school = await this.prisma.school.findFirst({
+        where: { tenantId, isActive: true },
+        select: { id: true },
+      });
+      schoolId = school?.id ?? '';
+    }
+
+    // Default academicYear if not provided
+    if (!dto.academicYear) {
+      const now = new Date();
+      const year = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+      (dto as any).academicYear = `${year}-${year + 1}`;
+    }
 
     return this.studentsService.create(dto, tenantId, schoolId, user.sub);
   }
