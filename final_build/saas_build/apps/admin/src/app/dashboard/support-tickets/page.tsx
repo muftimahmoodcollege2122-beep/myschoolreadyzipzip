@@ -5,14 +5,12 @@ import { PageHeader } from '../../../components/shared/page-header';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
 import { useSupportTickets, useCreateTicket, useTicketStats, useUpdateTicketStatus } from '../../../hooks/use-api';
-import { useToast } from '../../../components/shared/toast';
 
 const EMPTY = { title: '', description: '', category: 'TECHNICAL', priority: 'MEDIUM' };
 const STATUS_COLOR: Record<string, string> = { OPEN: 'blue', IN_PROGRESS: 'yellow', RESOLVED: 'green', CLOSED: 'gray' };
 const PRIORITY_COLOR: Record<string, string> = { LOW: 'green', MEDIUM: 'yellow', HIGH: 'red', URGENT: 'red' };
 
 export default function SupportTicketsPage() {
-  const { toast } = useToast();
   const [status, setStatus] = useState('');
   const [priority, setPriority] = useState('');
   const [modal, setModal] = useState(false);
@@ -29,13 +27,8 @@ export default function SupportTicketsPage() {
 
   const handleCreate = async () => {
     if (!form.title || !form.description) return;
-    try {
     await create.mutateAsync(form);
     setForm(EMPTY); setModal(false);
-      toast('Done successfully', 'success');
-    } catch (e: any) {
-      toast(e?.message || e?.error || 'Operation failed', 'error');
-    }
   };
 
   const formatDate = (d: string) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -140,8 +133,8 @@ export default function SupportTicketsPage() {
             <p className="text-xs text-gray-400 mb-4">Created: {formatDate(selected.createdAt)}</p>
             {selected.status === 'OPEN' && (
               <div className="flex gap-2">
-                <button onClick={async () => { try { await updateStatus.mutateAsync({ id: selected.id, status: 'IN_PROGRESS' }); toast('Done', 'success'); } catch(e: any) { toast(e?.message || 'Operation failed', 'error'); } setSelected(null); }} className="flex-1 py-2 bg-yellow-50 text-yellow-700 text-sm rounded-lg hover:bg-yellow-100">Mark In Progress</button>
-                <button onClick={async () => { try { await updateStatus.mutateAsync({ id: selected.id, status: 'RESOLVED' }); toast('Ticket resolved', 'success'); } catch(e: any) { toast(e?.message || 'Operation failed', 'error'); } setSelected(null); }} className="flex-1 py-2 bg-green-50 text-green-700 text-sm rounded-lg hover:bg-green-100">Resolve</button>
+                <button onClick={async () => { await updateStatus.mutateAsync({ id: selected.id, status: 'IN_PROGRESS' }); setSelected(null); }} className="flex-1 py-2 bg-yellow-50 text-yellow-700 text-sm rounded-lg hover:bg-yellow-100">Mark In Progress</button>
+                <button onClick={async () => { await updateStatus.mutateAsync({ id: selected.id, status: 'RESOLVED' }); setSelected(null); }} className="flex-1 py-2 bg-green-50 text-green-700 text-sm rounded-lg hover:bg-green-100">Resolve</button>
               </div>
             )}
           </div>

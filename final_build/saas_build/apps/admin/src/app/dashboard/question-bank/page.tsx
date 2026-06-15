@@ -5,13 +5,11 @@ import { PageHeader } from '../../../components/shared/page-header';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
 import { useQuestionBanks, useQuestions, useCreateQuestionBank, useCreateQuestion, useSubjects } from '../../../hooks/use-api';
-import { useToast } from '../../../components/shared/toast';
 
 const DIFFICULTY_COLOR: Record<string, string> = { EASY: 'green', MEDIUM: 'yellow', HARD: 'red' };
 const TYPE_ICON: Record<string, string> = { MCQ: '🔘', SHORT: '✏️', LONG: '📝', TRUE_FALSE: '✅' };
 
 export default function QuestionBankPage() {
-  const { toast } = useToast();
   const [selectedBank, setSelectedBank] = useState<any>(null);
   const [bankModal, setBankModal] = useState(false);
   const [questionModal, setQuestionModal] = useState(false);
@@ -29,25 +27,15 @@ export default function QuestionBankPage() {
 
   const handleCreateBank = async () => {
     if (!bankForm.name) return;
-    try {
     await createBank.mutateAsync(bankForm);
     setBankForm({ name: '', subjectId: '', description: '' }); setBankModal(false);
-      toast('Done successfully', 'success');
-    } catch (e: any) {
-      toast(e?.message || e?.error || 'Operation failed', 'error');
-    }
   };
 
   const handleCreateQuestion = async () => {
     if (!qForm.question || !selectedBank) return;
-    try {
     await createQuestion.mutateAsync({ ...qForm, bankId: selectedBank.id, marks: Number(qForm.marks), options: qForm.type === 'MCQ' || qForm.type === 'TRUE_FALSE' ? qForm.options.filter(Boolean) : [] });
     setQForm({ question: '', type: 'MCQ', difficulty: 'MEDIUM', options: ['','','',''], correctAnswer: '', marks: '1', explanation: '' });
     setQuestionModal(false);
-      toast('Done successfully', 'success');
-    } catch (e: any) {
-      toast(e?.message || e?.error || 'Operation failed', 'error');
-    }
   };
 
   return (

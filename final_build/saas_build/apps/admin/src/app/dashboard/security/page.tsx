@@ -5,7 +5,6 @@ import { PageHeader } from '../../../components/shared/page-header';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
 import { useLoginHistory, useIpRestrictions, useSuspiciousActivities, useSecurityDashboard, useAddIpRestriction } from '../../../hooks/use-api';
-import { useToast } from '../../../components/shared/toast';
 
 const AUDIT_CATEGORIES = ['All', 'Fee', 'Attendance', 'Grades', 'Students', 'Auth', 'Settings'] as const;
 type AuditCategory = typeof AUDIT_CATEGORIES[number];
@@ -41,7 +40,6 @@ function exportAuditCSV(logs: typeof MOCK_AUDIT_LOGS) {
 }
 
 export default function SecurityPage() {
-  const { toast } = useToast();
   const [view, setView] = useState<'overview' | 'logins' | 'ip' | 'alerts' | 'audit'>('overview');
   const [ipModal, setIpModal] = useState(false);
   const [ipForm, setIpForm] = useState({ ipAddress: '', description: '', type: 'WHITELIST' });
@@ -71,13 +69,8 @@ export default function SecurityPage() {
 
   const handleAddIp = async () => {
     if (!ipForm.ipAddress) return;
-    try {
     await addIp.mutateAsync(ipForm);
     setIpForm({ ipAddress: '', description: '', type: 'WHITELIST' }); setIpModal(false);
-      toast('Done successfully', 'success');
-    } catch (e: any) {
-      toast(e?.message || e?.error || 'Operation failed', 'error');
-    }
   };
 
   const stats = dashboard || {};

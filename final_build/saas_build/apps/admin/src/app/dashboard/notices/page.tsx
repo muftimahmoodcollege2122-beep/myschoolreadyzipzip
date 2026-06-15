@@ -5,13 +5,11 @@ import { PageHeader } from '../../../components/shared/page-header';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
 import { useSchoolSection, useCreateSchoolItem, useDeleteSchoolItem } from '../../../hooks/use-api';
-import { useToast } from '../../../components/shared/toast';
 
 const NOTICE_TYPES = ['General','Academic','Fee','Examination','Holiday','Meeting','Sports','Other'];
 const EMPTY = { title: '', type: 'General', content: '', issuedDate: new Date().toISOString().split('T')[0], expiresDate: '', issuedBy: '', priority: 'NORMAL', audience: 'All' };
 
 export default function NoticesPage() {
-  const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [modal, setModal] = useState(false);
@@ -36,13 +34,8 @@ export default function NoticesPage() {
 
   const handleCreate = async () => {
     if (!form.title || !form.content) return;
-    try {
     await create.mutateAsync(form);
     setForm(EMPTY); setModal(false);
-      toast('Done successfully', 'success');
-    } catch (e: any) {
-      toast(e?.message || e?.error || 'Operation failed', 'error');
-    }
   };
 
   const formatDate = (d: string) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';

@@ -5,13 +5,11 @@ import { PageHeader } from '../../../components/shared/page-header';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
 import { useBlogPosts, useCreateBlogPost, usePublishBlogPost } from '../../../hooks/use-api';
-import { useToast } from '../../../components/shared/toast';
 
 const CAT_COLOR: Record<string, string> = { news: 'blue', academic: 'purple', sports: 'green', events: 'orange', announcements: 'yellow' };
 const EMPTY = { title: '', content: '', category: 'news', excerpt: '' };
 
 export default function BlogPage() {
-  const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [cat, setCat] = useState('');
   const [modal, setModal] = useState(false);
@@ -27,14 +25,9 @@ export default function BlogPage() {
 
   const handleCreate = async () => {
     if (!form.title || !form.content) return;
-    try {
     await create.mutateAsync(form);
     setForm(EMPTY); setModal(false);
   };
-      toast('Done successfully', 'success');
-    } catch (e: any) {
-      toast(e?.message || e?.error || 'Operation failed', 'error');
-    }
 
   return (
     <>

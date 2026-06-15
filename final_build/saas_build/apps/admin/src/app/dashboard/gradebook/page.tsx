@@ -5,13 +5,11 @@ import { PageHeader } from '../../../components/shared/page-header';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
 import { useGradebook, useSections, useSubmitGrade, useExams } from '../../../hooks/use-api';
-import { useToast } from '../../../components/shared/toast';
 
 const getGrade = (pct: number) => pct >= 90 ? 'A+' : pct >= 80 ? 'A' : pct >= 70 ? 'B' : pct >= 60 ? 'C' : pct >= 50 ? 'D' : 'F';
 const getGradeColor = (g: string) => g === 'A+' ? 'text-green-700 bg-green-50' : g === 'A' ? 'text-blue-700 bg-blue-50' : g === 'B' ? 'text-purple-700 bg-purple-50' : g === 'C' ? 'text-yellow-700 bg-yellow-50' : g === 'D' ? 'text-orange-700 bg-orange-50' : 'text-red-700 bg-red-50';
 
 export default function GradebookPage() {
-  const { toast } = useToast();
   const [view, setView] = useState<'gradebook' | 'summary'>('gradebook');
   const [selectedSection, setSelectedSection] = useState('');
   const [gradeModal, setGradeModal] = useState<any>(null);
@@ -41,13 +39,8 @@ export default function GradebookPage() {
 
   const handleSubmitGrade = async () => {
     if (!gradeModal || !gradeForm.marks) return;
-    try {
     await submitGrade.mutateAsync({ studentId: gradeModal.studentId, examId: gradeModal.examId, subjectId: gradeModal.subjectId, marksObtained: Number(gradeForm.marks), maxMarks: Number(gradeForm.maxMarks) });
     setGradeModal(null);
-      toast('Done successfully', 'success');
-    } catch (e: any) {
-      toast(e?.message || e?.error || 'Operation failed', 'error');
-    }
   };
 
   return (

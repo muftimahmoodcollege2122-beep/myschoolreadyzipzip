@@ -1,7 +1,6 @@
 'use client';
 import React, { useState } from 'react';
 import { useClasses, useSections, useGradebook, useReportCard, useSubmitGrade, useStudents } from '../../../hooks/use-api';
-import { useToast } from '../../../components/shared/toast';
 import { PageHeader } from '../../../components/shared/page-header';
 import { Topbar } from '../../../components/layout/topbar';
 import { Badge } from '../../../components/shared/badge';
@@ -88,8 +87,6 @@ export default function GradesPage() {
   const { data: reportCard, isLoading: rcLoading } = useReportCard(selectedStudent);
   const { data: students } = useStudents({ sectionId: selectedSection });
   const submitGrade = useSubmitGrade();
-  const { toast } = useToast();
-  const [gradeErr, setGradeErr] = useState('');
 
   const classList: any[] = Array.isArray(classes) ? classes : [];
   const sectionList: any[] = Array.isArray(sections) ? sections : [];
@@ -98,16 +95,7 @@ export default function GradesPage() {
   const rcData: any = reportCard ?? {};
 
   const handleSubmitGrade = async () => {
-    setGradeErr('');
-    try {
     await submitGrade.mutateAsync({ ...gradeForm, marks: Number(gradeForm.marks), maxMarks: Number(gradeForm.maxMarks) });
-    toast('Grade submitted successfully', 'success');
-    } catch (e: any) {
-      const msg = e?.message || e?.error || 'Failed to submit grade';
-      setGradeErr(msg);
-      toast(msg, 'error');
-      return;
-    }
     setGradeForm({ studentId: '', subjectName: '', marks: '', maxMarks: '100', examTitle: '' });
     setGradeModal(false);
   };

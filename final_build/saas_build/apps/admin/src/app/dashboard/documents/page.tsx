@@ -5,13 +5,11 @@ import { PageHeader } from '../../../components/shared/page-header';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
 import { useSchoolSection, useCreateSchoolItem, useDeleteSchoolItem } from '../../../hooks/use-api';
-import { useToast } from '../../../components/shared/toast';
 
 const DOC_TYPES = ['Policy','Circular','Form','Template','Report','Minutes','Certificate','Other'];
 const EMPTY = { title: '', type: 'Policy', description: '', uploadedBy: '', fileUrl: '', accessLevel: 'All Staff' };
 
 export default function DocumentsPage() {
-  const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [modal, setModal] = useState(false);
@@ -29,13 +27,8 @@ export default function DocumentsPage() {
 
   const handleCreate = async () => {
     if (!form.title) return;
-    try {
     await create.mutateAsync({ ...form, uploadedAt: new Date().toISOString() });
     setForm(EMPTY); setModal(false);
-      toast('Done successfully', 'success');
-    } catch (e: any) {
-      toast(e?.message || e?.error || 'Operation failed', 'error');
-    }
   };
 
   const formatDate = (d: string) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';

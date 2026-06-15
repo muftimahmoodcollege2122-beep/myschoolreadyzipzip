@@ -5,14 +5,12 @@ import { PageHeader } from '../../../components/shared/page-header';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
 import { useSchoolSection, useCreateSchoolItem, useDeleteSchoolItem } from '../../../hooks/use-api';
-import { useToast } from '../../../components/shared/toast';
 
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const DUTIES = ['Gate Duty','Library','Lab Supervision','Assembly','Playground','Exam Hall','Cafeteria','Office'];
 const EMPTY = { staffName: '', duty: 'Gate Duty', day: 'Monday', shift: 'Morning', from: '07:00', to: '14:00', location: '' };
 
 export default function DutyRosterPage() {
-  const { toast } = useToast();
   const [dayFilter, setDayFilter] = useState('');
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
@@ -26,13 +24,8 @@ export default function DutyRosterPage() {
 
   const handleCreate = async () => {
     if (!form.staffName || !form.duty) return;
-    try {
     await create.mutateAsync(form);
     setForm(EMPTY); setModal(false);
-      toast('Done successfully', 'success');
-    } catch (e: any) {
-      toast(e?.message || e?.error || 'Operation failed', 'error');
-    }
   };
 
   return (

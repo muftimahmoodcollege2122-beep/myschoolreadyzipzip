@@ -5,14 +5,12 @@ import { PageHeader } from '../../../components/shared/page-header';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
 import { useSchoolSection, useCreateSchoolItem, useDeleteSchoolItem } from '../../../hooks/use-api';
-import { useToast } from '../../../components/shared/toast';
 
 const RECORD_TYPES = ['Sick Visit','Injury','Vaccination','Checkup','Allergy','Medication','First Aid','Other'];
 const SEVERITY_COLOR: Record<string, string> = { LOW: 'green', MEDIUM: 'yellow', HIGH: 'red', CRITICAL: 'red' };
 const EMPTY = { studentName: '', className: '', date: new Date().toISOString().split('T')[0], type: 'Sick Visit', complaint: '', treatment: '', medication: '', severity: 'LOW', parentNotified: false, followUp: '' };
 
 export default function MedicalPage() {
-  const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [modal, setModal] = useState(false);
@@ -37,13 +35,8 @@ export default function MedicalPage() {
 
   const handleCreate = async () => {
     if (!form.studentName || !form.complaint) return;
-    try {
     await create.mutateAsync(form);
     setForm(EMPTY); setModal(false);
-      toast('Done successfully', 'success');
-    } catch (e: any) {
-      toast(e?.message || e?.error || 'Operation failed', 'error');
-    }
   };
 
   const formatDate = (d: string) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';

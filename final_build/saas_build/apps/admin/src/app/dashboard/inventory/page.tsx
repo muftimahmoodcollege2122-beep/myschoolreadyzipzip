@@ -5,13 +5,11 @@ import { PageHeader } from '../../../components/shared/page-header';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
 import { useSchoolSection, useCreateSchoolItem, useDeleteSchoolItem, useUpdateSchoolItem } from '../../../hooks/use-api';
-import { useToast } from '../../../components/shared/toast';
 
 const CATS = ['Furniture','Electronics','Stationery','Sports Equipment','Lab Equipment','Books','Cleaning','Other'];
 const EMPTY = { name: '', category: 'Furniture', quantity: '', minStock: '', unitCost: '', location: '', condition: 'Good', supplier: '' };
 
 export default function InventoryPage() {
-  const { toast } = useToast();
   const [catFilter, setCatFilter] = useState('');
   const [search, setSearch] = useState('');
   const [modal, setModal] = useState(false);
@@ -32,14 +30,9 @@ export default function InventoryPage() {
 
   const handleCreate = async () => {
     if (!form.name) return;
-    try {
     await create.mutateAsync({ ...form, quantity: Number(form.quantity), minStock: Number(form.minStock || 5), unitCost: Number(form.unitCost) });
     setForm(EMPTY); setModal(false);
   };
-      toast('Done successfully', 'success');
-    } catch (e: any) {
-      toast(e?.message || e?.error || 'Operation failed', 'error');
-    }
 
   return (
     <>

@@ -6,7 +6,6 @@ import { PageHeader } from '../../../components/shared/page-header';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
 import { Topbar } from '../../../components/layout/topbar';
-import { useToast } from '../../../components/shared/toast';
 
 const SV: Record<string,string> = { PAID:'green', PENDING:'yellow', OVERDUE:'red', PARTIAL:'blue', CANCELLED:'gray' };
 
@@ -75,9 +74,6 @@ export default function FeesPage() {
   const { data: studentsData } = useStudents({ limit: 100 });
   const pay = useRecordPayment();
   const createInvoice = useCreateInvoice();
-  const { toast } = useToast();
-  const [payErr, setPayErr] = React.useState('');
-  const [invErr, setInvErr] = React.useState('');
 
   const inv: any[] = Array.isArray(invoices) ? invoices : [];
   const rev = revenue as any;
@@ -115,31 +111,15 @@ export default function FeesPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!payModal) return;
-    setPayErr('');
-    try {
-      await pay.mutateAsync({ invoiceId: payModal.id, amount: parseFloat(amount), paymentMethod: method });
-      setPayModal(null);
-      setAmount('');
-      toast('Payment recorded successfully', 'success');
-    } catch (e: any) {
-      const msg = e?.message || e?.error || 'Failed to record payment';
-      setPayErr(msg);
-      toast(msg, 'error');
-    }
+    await pay.mutateAsync({ invoiceId: payModal.id, amount: parseFloat(amount), paymentMethod: method });
+    setPayModal(null);
+    setAmount('');
   };
 
   const submitInvoice = async () => {
-    setInvErr('');
-    try {
-      await createInvoice.mutateAsync({ ...invForm, amount: parseFloat(invForm.amount) });
-      setInvForm({ studentId: '', description: '', amount: '', dueDate: '', category: 'TUITION' });
-      setInvoiceModal(false);
-      toast('Invoice created successfully', 'success');
-    } catch (e: any) {
-      const msg = e?.message || e?.error || 'Failed to create invoice';
-      setInvErr(msg);
-      toast(msg, 'error');
-    }
+    await createInvoice.mutateAsync({ ...invForm, amount: parseFloat(invForm.amount) });
+    setInvForm({ studentId: '', description: '', amount: '', dueDate: '', category: 'TUITION' });
+    setInvoiceModal(false);
   };
 
   const sendReminders = async () => {

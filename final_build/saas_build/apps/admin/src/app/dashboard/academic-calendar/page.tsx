@@ -5,14 +5,12 @@ import { PageHeader } from '../../../components/shared/page-header';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
 import { useSchoolSection, useCreateSchoolItem, useDeleteSchoolItem } from '../../../hooks/use-api';
-import { useToast } from '../../../components/shared/toast';
 
 const EVENT_TYPE_COLOR: Record<string, string> = { exam: 'red', holiday: 'green', event: 'blue', meeting: 'purple', sports: 'orange' };
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const EMPTY = { title: '', date: '', endDate: '', type: 'event', description: '' };
 
 export default function AcademicCalendarPage() {
-  const { toast } = useToast();
   const [view, setView] = useState<'list' | 'upcoming'>('list');
   const [typeFilter, setTypeFilter] = useState('');
   const [modal, setModal] = useState(false);
@@ -35,13 +33,8 @@ export default function AcademicCalendarPage() {
 
   const handleCreate = async () => {
     if (!form.title || !form.date) return;
-    try {
     await create.mutateAsync(form);
     setForm(EMPTY); setModal(false);
-      toast('Done successfully', 'success');
-    } catch (e: any) {
-      toast(e?.message || e?.error || 'Operation failed', 'error');
-    }
   };
 
   return (

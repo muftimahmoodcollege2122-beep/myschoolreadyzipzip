@@ -5,14 +5,12 @@ import { PageHeader } from '../../../components/shared/page-header';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
 import { useStudents, useCreateStudent, useClasses, useSections, useSchoolSection, useCreateSchoolItem } from '../../../hooks/use-api';
-import { useToast } from '../../../components/shared/toast';
 
 const STATUS_COLOR: Record<string, string> = { ACTIVE: 'green', INACTIVE: 'gray', GRADUATED: 'blue', TRANSFERRED: 'yellow', EXPELLED: 'red' };
 const APP_EMPTY = { studentName: '', fatherName: '', phone: '', email: '', dob: '', classApplied: '', address: '', status: 'PENDING', appliedAt: new Date().toISOString().split('T')[0] };
 const STUDENT_EMPTY = { firstName: '', lastName: '', fatherName: '', dob: '', gender: 'MALE', phone: '', email: '', address: '', classId: '', sectionId: '', admissionNo: '', bloodGroup: '' };
 
 export default function AdmissionsPage() {
-  const { toast } = useToast();
   const [view, setView] = useState<'students' | 'applications'>('students');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -42,7 +40,6 @@ export default function AdmissionsPage() {
 
   const handleCreateStudent = async () => {
     if (!form.firstName || !form.lastName) return;
-    try {
     await createStudent.mutateAsync({
       firstName: form.firstName, lastName: form.lastName, dob: form.dob, gender: form.gender,
       fatherName: form.fatherName, phone: form.phone, email: form.email, address: form.address,
@@ -50,19 +47,10 @@ export default function AdmissionsPage() {
     });
     setForm(STUDENT_EMPTY); setModal(false);
   };
-      toast('Done successfully', 'success');
-    } catch (e: any) {
-      toast(e?.message || e?.error || 'Operation failed', 'error');
-    }
 
   const handleCreateApp = async () => {
     if (!appForm.studentName) return;
-    try {
     await createApp.mutateAsync(appForm);
-      toast('Done successfully', 'success');
-    } catch (e: any) {
-      toast(e?.message || e?.error || 'Operation failed', 'error');
-    }
     setAppForm(APP_EMPTY); setAppModal(false);
   };
 

@@ -6,7 +6,6 @@ import { Topbar } from '../../../components/layout/topbar';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
 import { DataTable } from '../../../components/shared/data-table';
-import { useToast } from '../../../components/shared/toast';
 
 const DEPARTMENTS = ['Administration','Academic','Finance','IT','Library','Transport','Sports','Counseling','Security','Housekeeping'];
 const DESIGNATIONS = ['Principal','Vice Principal','Head of Department','Senior Teacher','Teacher','Assistant Teacher','Counselor','Librarian','Accountant','IT Technician','Driver','Security Guard','Administrative Officer'];
@@ -20,25 +19,15 @@ export default function StaffPage() {
 
   const { data: staffData, isLoading } = useStaff({ search, limit: 50 });
   const createStaff = useCreateStaff();
-  const { toast } = useToast();
-  const [err, setErr] = React.useState('');
 
   const staff: any[] = (staffData as any)?.data ?? [];
 
   const deptCounts = staff.reduce((acc: any, s: any) => { const d = s.department ?? 'Unknown'; acc[d] = (acc[d]??0)+1; return acc; }, {});
 
   const handleCreate = async () => {
-    setErr('');
-    try {
-      await createStaff.mutateAsync(form);
-      setForm(EMPTY);
-      setModal(false);
-      toast('Staff member added successfully', 'success');
-    } catch (e: any) {
-      const msg = e?.message || e?.error || 'Failed to add staff member';
-      setErr(msg);
-      toast(msg, 'error');
-    }
+    await createStaff.mutateAsync(form);
+    setForm(EMPTY);
+    setModal(false);
   };
 
   const columns = [

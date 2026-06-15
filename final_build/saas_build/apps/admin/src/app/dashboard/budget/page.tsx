@@ -5,7 +5,6 @@ import { PageHeader } from '../../../components/shared/page-header';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
 import { useBudgets, useExpenses, useCreateBudget, useCreateExpense } from '../../../hooks/use-api';
-import { useToast } from '../../../components/shared/toast';
 
 const CATEGORIES = ['Salaries','Utilities','Maintenance','Equipment','Stationery','Events','Transport','Food','Other'];
 const CAT_COLOR: Record<string, string> = { Salaries: 'bg-blue-500', Utilities: 'bg-yellow-500', Maintenance: 'bg-red-500', Equipment: 'bg-purple-500', Stationery: 'bg-green-500', Events: 'bg-pink-500', Transport: 'bg-orange-500', Food: 'bg-teal-500', Other: 'bg-gray-500' };
@@ -13,7 +12,6 @@ const EXPENSE_EMPTY = { title: '', category: 'Stationery', amount: '', descripti
 const BUDGET_EMPTY = { title: '', category: 'Other', amount: '', fiscalYear: new Date().getFullYear(), description: '' };
 
 export default function BudgetPage() {
-  const { toast } = useToast();
   const [tab, setTab] = useState<'overview' | 'expenses' | 'budgets'>('overview');
   const [expenseModal, setExpenseModal] = useState(false);
   const [budgetModal, setBudgetModal] = useState(false);
@@ -40,23 +38,13 @@ export default function BudgetPage() {
 
   const handleCreateExpense = async () => {
     if (!expenseForm.title || !expenseForm.amount) return;
-    try {
     await createExpense.mutateAsync({ ...expenseForm, amount: Number(expenseForm.amount) });
-      toast('Done successfully', 'success');
-    } catch (e: any) {
-      toast(e?.message || e?.error || 'Operation failed', 'error');
-    }
     setExpenseForm(EXPENSE_EMPTY); setExpenseModal(false);
   };
 
   const handleCreateBudget = async () => {
     if (!budgetForm.title || !budgetForm.amount) return;
-    try {
     await createBudget.mutateAsync({ ...budgetForm, amount: Number(budgetForm.amount) });
-      toast('Done successfully', 'success');
-    } catch (e: any) {
-      toast(e?.message || e?.error || 'Operation failed', 'error');
-    }
     setBudgetForm(BUDGET_EMPTY); setBudgetModal(false);
   };
 

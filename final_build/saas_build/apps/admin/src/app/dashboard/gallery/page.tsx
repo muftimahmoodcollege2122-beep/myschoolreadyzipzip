@@ -4,13 +4,11 @@ import { Topbar } from '../../../components/layout/topbar';
 import { PageHeader } from '../../../components/shared/page-header';
 import { Modal } from '../../../components/shared/modal';
 import { useGalleryAlbums, useCreateGalleryAlbum } from '../../../hooks/use-api';
-import { useToast } from '../../../components/shared/toast';
 
 const EMPTY = { title: '', description: '', category: 'events' };
 const ALBUM_EMOJIS = ['🖼️','📸','🎭','⚽','🎓','🏫','🎨','🔬','📚','🎪'];
 
 export default function GalleryPage() {
-  const { toast } = useToast();
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [selected, setSelected] = useState<any>(null);
@@ -23,13 +21,8 @@ export default function GalleryPage() {
 
   const handleCreate = async () => {
     if (!form.title) return;
-    try {
     await create.mutateAsync(form);
     setForm(EMPTY); setModal(false);
-      toast('Done successfully', 'success');
-    } catch (e: any) {
-      toast(e?.message || e?.error || 'Operation failed', 'error');
-    }
   };
 
   return (

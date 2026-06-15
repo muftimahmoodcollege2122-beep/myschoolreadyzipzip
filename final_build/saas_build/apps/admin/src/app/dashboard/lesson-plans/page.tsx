@@ -5,13 +5,11 @@ import { PageHeader } from '../../../components/shared/page-header';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
 import { useLessonPlans, useCreateLessonPlan, useSubmitLessonPlan, useSubjects, useSections } from '../../../hooks/use-api';
-import { useToast } from '../../../components/shared/toast';
 
 const STATUS_COLOR: Record<string, string> = { DRAFT: 'gray', SUBMITTED: 'blue', APPROVED: 'green', REJECTED: 'red' };
 const EMPTY = { title: '', subjectId: '', sectionId: '', week: new Date().toISOString().split('T')[0].substring(0, 7), objectives: '', content: '', resources: '', activities: '', assessment: '' };
 
 export default function LessonPlansPage() {
-  const { toast } = useToast();
   const [statusFilter, setStatusFilter] = useState('');
   const [search, setSearch] = useState('');
   const [modal, setModal] = useState(false);
@@ -32,22 +30,12 @@ export default function LessonPlansPage() {
 
   const handleCreate = async () => {
     if (!form.title) return;
-    try {
     await create.mutateAsync(form);
     setForm(EMPTY); setModal(false);
-      toast('Done successfully', 'success');
-    } catch (e: any) {
-      toast(e?.message || e?.error || 'Operation failed', 'error');
-    }
   };
 
   const handleSubmit = async (id: string) => {
-    try {
     await submit.mutateAsync(id);
-      toast('Done successfully', 'success');
-    } catch (e: any) {
-      toast(e?.message || e?.error || 'Operation failed', 'error');
-    }
   };
 
   const formatDate = (d: string) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';

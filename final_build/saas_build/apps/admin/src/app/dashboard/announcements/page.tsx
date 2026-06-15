@@ -5,12 +5,10 @@ import { PageHeader } from '../../../components/shared/page-header';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
 import { useAnnouncements, useCreateAnnouncement, useDeleteAnnouncement } from '../../../hooks/use-api';
-import { useToast } from '../../../components/shared/toast';
 
 const CAT_ICON: Record<string, string> = { Academic: '📚', Sports: '⚽', Holiday: '🎉', General: '📢', Event: '🎖️', Health: '🏥' };
 
 export default function AnnouncementsPage() {
-  const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [selectedAnn, setSelectedAnn] = useState<any>(null);
   const [createModal, setCreateModal] = useState(false);
@@ -27,14 +25,9 @@ export default function AnnouncementsPage() {
 
   const handleCreate = async () => {
     if (!form.title || !form.body) return;
-    try {
     await createAnn.mutateAsync({ title: form.title, body: form.body, isPinned: form.isPinned });
     setForm({ title: '', body: '', category: 'General', isPinned: false });
     setCreateModal(false);
-      toast('Done successfully', 'success');
-    } catch (e: any) {
-      toast(e?.message || e?.error || 'Operation failed', 'error');
-    }
   };
 
   const formatDate = (d: string) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -132,7 +125,7 @@ export default function AnnouncementsPage() {
               <p className="text-xs text-gray-400 mb-4">Audience: {selectedAnn.targetRoles.join(', ')}</p>
             )}
             <div className="flex gap-2 mt-4">
-              <button onClick={async () => { try { await deleteAnn.mutateAsync(selectedAnn.id); toast('Announcement deleted', 'success'); } catch(e: any) { toast(e?.message || 'Operation failed', 'error'); } setSelectedAnn(null); }}
+              <button onClick={async () => { await deleteAnn.mutateAsync(selectedAnn.id); setSelectedAnn(null); }}
                 className="flex-1 py-2 bg-red-50 text-red-600 text-sm rounded-lg hover:bg-red-100">Delete</button>
               <button onClick={() => setSelectedAnn(null)} className="flex-1 py-2 border border-gray-200 text-sm rounded-lg">Close</button>
             </div>

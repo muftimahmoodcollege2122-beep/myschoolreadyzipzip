@@ -5,12 +5,10 @@ import { PageHeader } from '../../../components/shared/page-header';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
 import { useAlumni, useCreateAlumni, useAlumniStats } from '../../../hooks/use-api';
-import { useToast } from '../../../components/shared/toast';
 
 const EMPTY = { firstName: '', lastName: '', email: '', phone: '', graduationYear: new Date().getFullYear(), degree: '', currentOccupation: '', company: '', city: '', country: 'Pakistan' };
 
 export default function AlumniPage() {
-  const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [year, setYear] = useState('');
   const [modal, setModal] = useState(false);
@@ -26,14 +24,9 @@ export default function AlumniPage() {
 
   const handleCreate = async () => {
     if (!form.firstName || !form.lastName) return;
-    try {
     await create.mutateAsync(form);
     setForm(EMPTY); setModal(false);
   };
-      toast('Done successfully', 'success');
-    } catch (e: any) {
-      toast(e?.message || e?.error || 'Operation failed', 'error');
-    }
 
   return (
     <>

@@ -6,7 +6,6 @@ import { PageHeader } from '../../../components/shared/page-header';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
 import { Topbar } from '../../../components/layout/topbar';
-import { useToast } from '../../../components/shared/toast';
 import type { Student } from '../../../types';
 const FIELDS = [['firstName','First Name','text'],['lastName','Last Name','text'],['email','Email','email'],['admissionNo','Admission No','text'],['rollNumber','Roll Number','text'],['phone','Phone','tel'],['admissionDate','Admission Date','date']];
 export default function StudentsPage() {
@@ -14,10 +13,8 @@ export default function StudentsPage() {
   const [search, setSearch] = useState('');
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState<any>({ email:'', firstName:'', lastName:'', rollNumber:'', phone:'', gender:'MALE', admissionDate:'' });
-  const [err, setErr] = useState('');
   const { data, isLoading } = useStudents({ page, limit: 20, search: search||undefined });
   const create = useCreateStudent();
-  const { toast } = useToast();
   const columns = [
     { key:'rollNumber', header:'Roll No', render:(s:Student)=><span className="font-mono font-bold text-sm">{s.rollNumber}</span> },
     { key:'name', header:'Student', render:(s:Student)=>(
@@ -30,19 +27,7 @@ export default function StudentsPage() {
     { key:'status', header:'Status', render:(s:Student)=><Badge variant={s.isActive?'green':'red'}>{s.isActive?'Active':'Inactive'}</Badge> },
     { key:'date', header:'Admitted', render:(s:Student)=><span className="text-xs text-gray-400">{new Date(s.admissionDate).toLocaleDateString('en-PK')}</span> },
   ];
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErr('');
-    try {
-      await create.mutateAsync(form);
-      setModal(false);
-      toast('Student added successfully', 'success');
-    } catch (e: any) {
-      const msg = e?.message || e?.error || 'Failed to add student';
-      setErr(msg);
-      toast(msg, 'error');
-    }
-  };
+  const submit = async (e: React.FormEvent) => { e.preventDefault(); await create.mutateAsync(form); setModal(false); };
   return (
     <>
       <Topbar title="Students" subtitle="Manage enrolled students"/>
@@ -66,16 +51,15 @@ export default function StudentsPage() {
             </div>
           )}
         </div>
-        <Modal isOpen={modal} onClose={()=>{setModal(false);setErr('');}} title="Add New Student" size="lg">
+        <Modal isOpen={modal} onClose={()=>setModal(false)} title="Add New Student" size="lg">
           <form onSubmit={submit} className="grid grid-cols-2 gap-4">
             {FIELDS.map(([key,label,type])=>(
               <div key={key}><label className="block text-xs font-bold text-gray-400 uppercase mb-1">{label}</label>
                 <input type={type} value={form[key]} onChange={e=>setForm((f:any)=>({...f,[key]:e.target.value}))} required className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-green-400"/>
               </div>
             ))}
-            {err && <div className="col-span-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{err}</div>}
             <div className="col-span-2 flex justify-end gap-3 pt-2">
-              <button type="button" onClick={()=>{setModal(false);setErr('');}} className="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50">Cancel</button>
+              <button type="button" onClick={()=>setModal(false)} className="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50">Cancel</button>
               <button type="submit" disabled={create.isPending} className="px-4 py-2 text-sm bg-green-600 text-white font-bold rounded-lg hover:bg-green-500 disabled:opacity-50">{create.isPending?'Creating...':'Create Student'}</button>
             </div>
           </form>

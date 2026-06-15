@@ -6,12 +6,10 @@ import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
 import { useSchoolSection, useCreateSchoolItem, useDeleteSchoolItem } from '../../../hooks/use-api';
 import { useStudents } from '../../../hooks/use-api';
-import { useToast } from '../../../components/shared/toast';
 
 const EMPTY = { studentName: '', className: '', rollNo: '', bloodGroup: '', fatherName: '', address: '', emergencyContact: '', status: 'ISSUED', validUntil: `${new Date().getFullYear() + 1}-12-31` };
 
 export default function IdCardsPage() {
-  const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY);
@@ -25,13 +23,8 @@ export default function IdCardsPage() {
 
   const handleCreate = async () => {
     if (!form.studentName) return;
-    try {
     await create.mutateAsync({ ...form, issuedDate: new Date().toISOString().split('T')[0] });
     setForm(EMPTY); setModal(false);
-      toast('Done successfully', 'success');
-    } catch (e: any) {
-      toast(e?.message || e?.error || 'Operation failed', 'error');
-    }
   };
 
   const formatDate = (d: string) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
