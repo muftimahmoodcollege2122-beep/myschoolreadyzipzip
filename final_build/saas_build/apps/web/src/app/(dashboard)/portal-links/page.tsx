@@ -41,13 +41,34 @@ export default function PortalLinksPage() {
   const user = useAuthStore(s => s.user) as any;
   const slug = user?.school?.slug || user?.tenantSlug || 'your-school';
 
-  const devUrls = useMemo(() => ({
-    web:     getPortalBaseUrl(5000),
-    admin:   getPortalBaseUrl(3005),
-    teacher: getPortalBaseUrl(3002),
-    student: getPortalBaseUrl(3003),
-    parent:  getPortalBaseUrl(3004),
-  }), []);
+  const devUrls = useMemo(() => {
+    // Use EXTERNAL ports as configured in Replit's port mapping:
+    // localPort 5000 → externalPort 80  (web: base URL, no port prefix)
+    // localPort 3005 → externalPort 3002 (admin)
+    // localPort 3002 → externalPort 3003 (teacher)
+    // localPort 3003 → externalPort 4200 (student)
+    // localPort 3004 → externalPort 5000 (parent)
+    const base = typeof window !== 'undefined'
+      ? window.location.hostname.replace(/^\d+-/, '')
+      : 'localhost';
+    const isReplit = base.endsWith('.replit.dev') || base.endsWith('.repl.co');
+    if (isReplit) {
+      return {
+        web:     `https://${base}`,
+        admin:   `https://3002-${base}`,
+        teacher: `https://3003-${base}`,
+        student: `https://4200-${base}`,
+        parent:  `https://5000-${base}`,
+      };
+    }
+    return {
+      web:     'http://localhost:5000',
+      admin:   'http://localhost:3005',
+      teacher: 'http://localhost:3002',
+      student: 'http://localhost:3003',
+      parent:  'http://localhost:3004',
+    };
+  }, []);
 
   const isProd = !devUrls.teacher; // empty string means production
 
