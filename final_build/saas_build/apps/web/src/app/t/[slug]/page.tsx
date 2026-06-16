@@ -254,13 +254,11 @@ export default function TeacherPortal() {
       case 'grades':      return <GradesView slug={slug} />;
       case 'timetable':   return <TimetableView slug={slug} />;
       case 'leave':       return <LeaveView />;
-      default:
-        return (
-          <div className="flex items-center justify-center h-48 text-gray-400">
-            <div className="text-center"><div className="text-4xl mb-3">{NAV.find(n => n.id === active)?.icon}</div>
-            <p className="font-medium">{NAV.find(n => n.id === active)?.label} coming soon</p></div>
-          </div>
-        );
+      case 'classes':     return <MyClasses teacher={t} slug={slug} />;
+      case 'assignments': return <TeacherAssignments teacher={t} />;
+      case 'lms':         return <TeacherLMS teacher={t} />;
+      case 'notices':     return <TeacherNotices slug={slug} />;
+      default:            return null;
     }
   };
 
@@ -368,6 +366,134 @@ function Dashboard({ teacher, slug }: { teacher: any; slug: string }) {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── Missing Teacher Portal Components ──────────────────────────────────────────
+
+function MyClasses({ teacher, slug }: { teacher: any; slug: string }) {
+  const { data } = useQuery({ queryKey: ['teacher-classes', teacher?.id], queryFn: () => apiClient.get(`/timetable?teacherId=${teacher?.id}`), enabled: !!teacher?.id });
+  const slots: any[] = Array.isArray(data) ? data : (data as any)?.data ?? [];
+  const sections = [...new Map(slots.map(s => [s.sectionId, s.section])).entries()].map(([,v]) => v).filter(Boolean);
+  return (
+    <div className="p-4 space-y-4">
+      <h2 className="font-black text-gray-900 text-lg">🏫 My Classes</h2>
+      {sections.length === 0 ? <div className="text-center py-12 text-gray-400"><div className="text-4xl mb-2">🏫</div><p>No classes assigned</p></div> :
+        <div className="grid grid-cols-2 gap-3">
+          {sections.map((sec: any) => {
+            const secSlots = slots.filter(s => s.sectionId === sec?.id);
+            const subjects = [...new Set(secSlots.map(s => s.subject?.name).filter(Boolean))];
+            return (
+              <div key={sec?.id} className="bg-white rounded-xl border border-gray-100 p-4">
+                <h3 className="font-black text-gray-900">{sec?.class?.name}</h3>
+                <p className="text-sm text-gray-500">{sec?.name}</p>
+                <div className="mt-2 flex flex-wrap gap-1">{subjects.map(s => <span key={s} className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full font-medium">{s}</span>)}</div>
+                <p className="text-xs text-gray-400 mt-2">{secSlots.length} period{secSlots.length!==1?'s':''}/week</p>
+              </div>
+            );
+          })}
+        </div>
+      }
+    </div>
+  );
+}
+
+function TeacherAssignments({ teacher }: { teacher: any }) {
+  const [modal, setModal] = React.useState(false);
+  const [form, setForm] = React.useState({ title:'', description:'', dueDate:'', sectionId:'' });
+  const { data: sections } = useQuery({ queryKey:['my-sections', teacher?.id], queryFn:()=>apiClient.get(`/timetable?teacherId=${teacher?.id}`) });
+  const { data, refetch } = useQuery({ queryKey:['teacher-assignments', teacher?.id], queryFn:()=>apiClient.get(`/content/assignments?teacherId=${teacher?.id}`), enabled:!!teacher?.id });
+  const assignments: any[] = Array.isArray(data) ? data : (data as any)?.data ?? [];
+  const mySections = [...new Map((Array.isArray(sections)?(sections as any[]):(sections as any)?.data??[]).map((s:any)=>[s.sectionId, s.section])).entries()].map(([,v])=>v).filter(Boolean);
+
+  const create = async () => {
+    await apiClient.post('/content/assignments', { ...form, teacherId: teacher?.id });
+    setModal(false); setForm({ title:'', description:'', dueDate:'', sectionId:'' }); refetch();
+  };
+
+  return (
+    <div className="p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="font-black text-gray-900 text-lg">📝 Assignments</h2>
+        <button onClick={() => setModal(true)} className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700">+ New Assignment</button>
+      </div>
+      {assignments.length === 0 ? <div className="text-center py-12 text-gray-400"><div className="text-4xl mb-2">📝</div><p>No assignments created yet</p></div> :
+        <div className="space-y-3">
+          {assignments.map((a: any) => (
+            <div key={a.id} className="bg-white rounded-xl border border-gray-100 p-4">
+              <div className="flex justify-between items-start">
+                <div><h3 className="font-bold text-sm">{a.title}</h3><p className="text-xs text-gray-400 mt-0.5">{a.section?.class?.name} {a.section?.name}</p></div>
+                <span className="text-xs text-gray-500">Due: {new Date(a.dueDate).toLocaleDateString('en-PK',{day:'numeric',month:'short'})}</span>
+              </div>
+              {a.description && <p className="text-sm text-gray-500 mt-2 line-clamp-2">{a.description}</p>}
+              <p className="text-xs text-blue-600 font-bold mt-2">{a.submissionCount ?? 0} submissions</p>
+            </div>
+          ))}
+        </div>
+      }
+      {modal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md space-y-4">
+            <h3 className="font-black text-gray-900">New Assignment</h3>
+            <input value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))} placeholder="Assignment title *" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400"/>
+            <textarea value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} rows={3} placeholder="Description / instructions" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 resize-none"/>
+            <select value={form.sectionId} onChange={e=>setForm(f=>({...f,sectionId:e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white">
+              <option value="">Select class section *</option>
+              {mySections.map((s:any)=><option key={s?.id} value={s?.id}>{s?.class?.name} — {s?.name}</option>)}
+            </select>
+            <input type="date" value={form.dueDate} onChange={e=>setForm(f=>({...f,dueDate:e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400"/>
+            <div className="flex gap-3">
+              <button onClick={()=>setModal(false)} className="flex-1 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-600">Cancel</button>
+              <button onClick={create} disabled={!form.title||!form.sectionId||!form.dueDate} className="flex-1 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-bold disabled:opacity-40">Create</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TeacherLMS({ teacher }: { teacher: any }) {
+  const { data } = useQuery({ queryKey:['teacher-courses', teacher?.id], queryFn:()=>apiClient.get(`/content/courses?teacherId=${teacher?.id}`), enabled:!!teacher?.id });
+  const courses: any[] = Array.isArray(data) ? data : (data as any)?.data ?? [];
+  return (
+    <div className="p-4 space-y-3">
+      <h2 className="font-black text-gray-900 text-lg">🎓 LMS / Courses</h2>
+      {courses.length === 0 ? <div className="text-center py-12 text-gray-400"><div className="text-4xl mb-2">🎓</div><p>No courses assigned</p></div> :
+        <div className="grid grid-cols-2 gap-3">
+          {courses.map((c: any) => (
+            <div key={c.id} className="bg-white rounded-xl border border-gray-100 p-4">
+              <div className="text-2xl mb-2">{c.icon || '📖'}</div>
+              <h3 className="font-bold text-sm">{c.title}</h3>
+              <p className="text-xs text-gray-400 mt-1">{c.subject?.name}</p>
+              <p className="text-xs text-blue-600 font-bold mt-2">{c.enrollmentCount ?? 0} students</p>
+            </div>
+          ))}
+        </div>
+      }
+    </div>
+  );
+}
+
+function TeacherNotices({ slug }: { slug: string }) {
+  const { data } = useQuery({ queryKey:['teacher-notices', slug], queryFn:()=>apiClient.get(`/announcements?tenantSlug=${slug}&limit=20`) });
+  const notices: any[] = (data as any)?.data ?? [];
+  return (
+    <div className="p-4 space-y-3">
+      <h2 className="font-black text-gray-900 text-lg">📢 Notices</h2>
+      {notices.length === 0 ? <div className="text-center py-12 text-gray-400"><div className="text-4xl mb-2">📢</div><p>No notices</p></div> :
+        <div className="space-y-3">
+          {notices.map((n: any) => (
+            <div key={n.id} className={`bg-white rounded-xl border p-4 ${n.isPinned?'border-blue-200':'border-gray-100'}`}>
+              {n.isPinned && <span className="text-xs bg-blue-100 text-blue-700 font-bold px-1.5 py-0.5 rounded">📌 Pinned</span>}
+              <h3 className="font-bold text-sm mt-1">{n.title}</h3>
+              <p className="text-sm text-gray-600 mt-1">{n.content ?? n.body}</p>
+              <p className="text-xs text-gray-400 mt-2">{new Date(n.createdAt).toLocaleDateString('en-PK',{day:'numeric',month:'long'})}</p>
+            </div>
+          ))}
+        </div>
+      }
     </div>
   );
 }

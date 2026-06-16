@@ -211,19 +211,17 @@ export default function StudentPortal() {
 
   const renderContent = () => {
     switch (active) {
-      case 'dashboard':  return <StudentDashboard student={s} slug={slug} />;
-      case 'attendance': return <AttendanceSummary studentId={s?.id} />;
-      case 'grades':     return <GradesSummary studentId={s?.id} />;
-      case 'fees':       return <FeeStatus studentId={s?.id} />;
-      default:
-        return (
-          <div className="flex items-center justify-center h-48 text-gray-400">
-            <div className="text-center">
-              <div className="text-4xl mb-3">{NAV.find(n => n.id === active)?.icon}</div>
-              <p className="font-medium">{NAV.find(n => n.id === active)?.label} coming soon</p>
-            </div>
-          </div>
-        );
+      case 'dashboard':    return <StudentDashboard student={s} slug={slug} />;
+      case 'attendance':   return <AttendanceSummary studentId={s?.id} />;
+      case 'grades':       return <GradesSummary studentId={s?.id} />;
+      case 'fees':         return <FeeStatus studentId={s?.id} />;
+      case 'timetable':    return <StudentTimetable studentId={s?.id} slug={slug} />;
+      case 'lms':          return <StudentCourses studentId={s?.id} slug={slug} />;
+      case 'assignments':  return <StudentAssignments studentId={s?.id} />;
+      case 'library':      return <StudentLibrary userId={s?.userId} />;
+      case 'transport':    return <StudentTransport studentId={s?.id} />;
+      case 'notices':      return <StudentNotices slug={slug} />;
+      default:             return null;
     }
   };
 
@@ -336,6 +334,168 @@ function StudentDashboard({ student, slug }: { student: any; slug: string }) {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── Missing Student Portal Components ─────────────────────────────────────────
+
+function StudentTimetable({ studentId, slug }: { studentId?: string; slug: string }) {
+  const { data } = useQuery({ queryKey: ['student-timetable', studentId], queryFn: () => apiClient.get(`/timetable?studentId=${studentId}`), enabled: !!studentId });
+  const slots: any[] = Array.isArray(data) ? data : (data as any)?.data ?? [];
+  const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat'];
+  const byDay: Record<number, any[]> = {};
+  slots.forEach(s => { if (!byDay[s.dayOfWeek]) byDay[s.dayOfWeek] = []; byDay[s.dayOfWeek].push(s); });
+  return (
+    <div className="p-4 space-y-3">
+      <h2 className="font-black text-gray-900 text-lg">🗓️ My Timetable</h2>
+      {DAYS.map((day, i) => byDay[i+1]?.length ? (
+        <div key={day} className="bg-white rounded-xl border border-gray-100 p-4">
+          <h3 className="font-bold text-sm text-gray-500 uppercase mb-3">{day}</h3>
+          <div className="space-y-2">
+            {byDay[i+1].sort((a,b) => a.period - b.period).map((s: any) => (
+              <div key={s.id} className="flex items-center gap-3 p-2 bg-violet-50 rounded-lg">
+                <span className="text-xs font-black text-violet-600 w-14">{s.startTime}–{s.endTime}</span>
+                <div className="flex-1"><p className="font-semibold text-sm">{s.subject?.name}</p><p className="text-xs text-gray-400">{s.teacher?.user?.profile?.firstName} {s.teacher?.user?.profile?.lastName}{s.room ? ` · Room ${s.room}` : ''}</p></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null)}
+      {slots.length === 0 && <div className="text-center py-12 text-gray-400"><div className="text-4xl mb-2">🗓️</div><p>No timetable assigned yet</p></div>}
+    </div>
+  );
+}
+
+function StudentCourses({ studentId, slug }: { studentId?: string; slug: string }) {
+  const { data } = useQuery({ queryKey: ['student-courses', studentId], queryFn: () => apiClient.get(`/content/courses?studentId=${studentId}`), enabled: !!studentId });
+  const courses: any[] = Array.isArray(data) ? data : (data as any)?.data ?? [];
+  return (
+    <div className="p-4 space-y-3">
+      <h2 className="font-black text-gray-900 text-lg">🎓 My Courses</h2>
+      {courses.length === 0 ? <div className="text-center py-12 text-gray-400"><div className="text-4xl mb-2">🎓</div><p>No courses assigned yet</p></div> :
+        <div className="grid grid-cols-2 gap-3">
+          {courses.map((c: any) => (
+            <div key={c.id} className="bg-white rounded-xl border border-gray-100 p-4">
+              <div className="text-2xl mb-2">{c.icon || '📖'}</div>
+              <h3 className="font-bold text-sm">{c.title}</h3>
+              <p className="text-xs text-gray-400 mt-1">{c.subject?.name}</p>
+              <div className="mt-2 h-1.5 bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-violet-500 rounded-full" style={{width:`${c.progress ?? 0}%`}}/></div>
+              <p className="text-xs text-gray-400 mt-1">{c.progress ?? 0}% complete</p>
+            </div>
+          ))}
+        </div>
+      }
+    </div>
+  );
+}
+
+function StudentAssignments({ studentId }: { studentId?: string }) {
+  const { data } = useQuery({ queryKey: ['student-assignments', studentId], queryFn: () => apiClient.get(`/content/assignments?studentId=${studentId}`), enabled: !!studentId });
+  const assignments: any[] = Array.isArray(data) ? data : (data as any)?.data ?? [];
+  return (
+    <div className="p-4 space-y-3">
+      <h2 className="font-black text-gray-900 text-lg">📝 My Assignments</h2>
+      {assignments.length === 0 ? <div className="text-center py-12 text-gray-400"><div className="text-4xl mb-2">📝</div><p>No assignments yet</p></div> :
+        <div className="space-y-3">
+          {assignments.map((a: any) => {
+            const due = new Date(a.dueDate);
+            const isOverdue = due < new Date() && a.status !== 'SUBMITTED';
+            return (
+              <div key={a.id} className={`bg-white rounded-xl border p-4 ${isOverdue ? 'border-red-200' : 'border-gray-100'}`}>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1"><h3 className="font-bold text-sm">{a.title}</h3><p className="text-xs text-gray-400 mt-0.5">{a.subject?.name} · {a.section?.name}</p></div>
+                  <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${a.status==='SUBMITTED'?'bg-green-100 text-green-700':isOverdue?'bg-red-100 text-red-700':'bg-amber-100 text-amber-700'}`}>{a.status==='SUBMITTED'?'✅ Submitted':isOverdue?'⚠️ Overdue':'⏳ Pending'}</span>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">Due: {due.toLocaleDateString('en-PK',{day:'numeric',month:'short',year:'numeric'})}</p>
+                {a.description && <p className="text-xs text-gray-400 mt-1 line-clamp-2">{a.description}</p>}
+              </div>
+            );
+          })}
+        </div>
+      }
+    </div>
+  );
+}
+
+function StudentLibrary({ userId }: { userId?: string }) {
+  const { data } = useQuery({ queryKey: ['student-library', userId], queryFn: () => apiClient.get(`/library/issues?userId=${userId}`), enabled: !!userId });
+  const issues: any[] = Array.isArray(data) ? data : (data as any)?.data ?? [];
+  return (
+    <div className="p-4 space-y-3">
+      <h2 className="font-black text-gray-900 text-lg">📚 My Library Books</h2>
+      {issues.length === 0 ? <div className="text-center py-12 text-gray-400"><div className="text-4xl mb-2">📚</div><p>No books issued to you</p></div> :
+        <div className="space-y-3">
+          {issues.map((i: any) => {
+            const isOverdue = new Date(i.dueDate) < new Date() && !i.returnedAt;
+            const daysLeft = Math.ceil((new Date(i.dueDate).getTime() - Date.now()) / 86400000);
+            return (
+              <div key={i.id} className={`bg-white rounded-xl border p-4 ${isOverdue?'border-red-200':'border-gray-100'}`}>
+                <h3 className="font-bold text-sm">{i.book?.title}</h3>
+                <p className="text-xs text-gray-400 mt-0.5">by {i.book?.author}</p>
+                <div className="flex items-center justify-between mt-2">
+                  <span className="text-xs text-gray-500">Due: {new Date(i.dueDate).toLocaleDateString('en-PK',{day:'numeric',month:'short'})}</span>
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${i.returnedAt?'bg-green-100 text-green-700':isOverdue?'bg-red-100 text-red-700':'bg-blue-100 text-blue-700'}`}>{i.returnedAt?'Returned':isOverdue?`Overdue ${Math.abs(daysLeft)}d`:`${daysLeft}d left`}</span>
+                </div>
+                {isOverdue && <p className="text-xs text-red-600 mt-1">Fine: Rs. {Math.abs(daysLeft) * 5} (Rs. 5/day)</p>}
+              </div>
+            );
+          })}
+        </div>
+      }
+    </div>
+  );
+}
+
+function StudentTransport({ studentId }: { studentId?: string }) {
+  const { data } = useQuery({ queryKey: ['student-transport', studentId], queryFn: () => apiClient.get(`/transport/assignments?studentId=${studentId}`), enabled: !!studentId });
+  const assignment: any = Array.isArray(data) ? data[0] : (data as any)?.data?.[0];
+  return (
+    <div className="p-4">
+      <h2 className="font-black text-gray-900 text-lg mb-4">🚌 My Transport</h2>
+      {!assignment ? <div className="text-center py-12 text-gray-400"><div className="text-4xl mb-2">🚌</div><p>No transport assigned</p></div> :
+        <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center text-3xl">🚌</div>
+            <div><h3 className="font-black text-gray-900 text-lg">{assignment.route?.name}</h3><p className="text-gray-500 text-sm">Route #{assignment.route?.routeNo}</p></div>
+          </div>
+          {[
+            ['Vehicle No', assignment.route?.vehicleNo],
+            ['Driver', assignment.route?.driverName],
+            ['Driver Phone', assignment.route?.driverPhone],
+            ['Your Stop', assignment.stopName],
+            ['Pickup Time', assignment.pickupTime],
+            ['Monthly Fee', assignment.route?.fee ? `Rs. ${Number(assignment.route.fee).toLocaleString()}` : '—'],
+          ].map(([k,v]) => v ? (
+            <div key={k} className="flex justify-between border-b border-gray-50 pb-2">
+              <span className="text-sm text-gray-500">{k}</span>
+              <span className="text-sm font-bold text-gray-900">{v}</span>
+            </div>
+          ) : null)}
+        </div>
+      }
+    </div>
+  );
+}
+
+function StudentNotices({ slug }: { slug: string }) {
+  const { data } = useQuery({ queryKey: ['notices', slug], queryFn: () => apiClient.get(`/announcements?tenantSlug=${slug}&limit=20`) });
+  const notices: any[] = (data as any)?.data ?? [];
+  return (
+    <div className="p-4 space-y-3">
+      <h2 className="font-black text-gray-900 text-lg">📢 Notices & Announcements</h2>
+      {notices.length === 0 ? <div className="text-center py-12 text-gray-400"><div className="text-4xl mb-2">📢</div><p>No notices yet</p></div> :
+        <div className="space-y-3">
+          {notices.map((n: any) => (
+            <div key={n.id} className={`bg-white rounded-xl border p-4 ${n.isPinned?'border-violet-200 bg-violet-50/30':'border-gray-100'}`}>
+              <div className="flex items-start gap-2">
+                {n.isPinned && <span className="text-xs bg-violet-100 text-violet-700 font-bold px-1.5 py-0.5 rounded flex-shrink-0">📌 Pinned</span>}
+                <div className="flex-1"><h3 className="font-bold text-sm text-gray-900">{n.title}</h3><p className="text-sm text-gray-600 mt-1">{n.content ?? n.body}</p><p className="text-xs text-gray-400 mt-2">{new Date(n.createdAt).toLocaleDateString('en-PK',{day:'numeric',month:'long',year:'numeric'})}</p></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      }
     </div>
   );
 }

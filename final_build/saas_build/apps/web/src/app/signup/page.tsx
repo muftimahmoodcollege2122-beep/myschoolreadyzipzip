@@ -120,8 +120,17 @@ export default function SignupPage() {
   };
 
   const next = () => {
-    if (step < 4) { setStep(s => s + 1); setError(''); }
-    else handleSubmit();
+    if (step < 4) { setStep(s => s + 1); setError(''); return; }
+    // Step 4 complete — redirect to payment page with signup data encoded
+    const domain = form.domain || suggestedDomain;
+    const signupPayload = encodeURIComponent(JSON.stringify({ ...form, domain }));
+    const params = new URLSearchParams({
+      plan: form.plan,
+      email: form.email,
+      school: form.schoolName,
+      signupData: signupPayload,
+    });
+    window.location.href = `/payment?${params.toString()}`;
   };
 
   /* ── Success Screen ── */

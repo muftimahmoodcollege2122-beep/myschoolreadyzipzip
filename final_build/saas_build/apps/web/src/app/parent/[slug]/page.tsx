@@ -301,15 +301,12 @@ export default function ParentPortal() {
       case 'attendance': return <AttendanceTracker children={children} />;
       case 'grades':     return <ReportCard children={children} />;
       case 'fees':       return <FeePayments children={children} />;
-      default:
-        return (
-          <div className="flex items-center justify-center h-48 text-gray-400">
-            <div className="text-center">
-              <div className="text-4xl mb-3">{NAV.find(n => n.id === active)?.icon}</div>
-              <p className="font-medium">{NAV.find(n => n.id === active)?.label} coming soon</p>
-            </div>
-          </div>
-        );
+      case 'timetable':  return <ParentTimetable children={children} />;
+      case 'notices':    return <ParentNotices slug={slug} />;
+      case 'transport':  return <ParentTransport children={children} />;
+      case 'messages':   return <ParentMessages slug={slug} />;
+      case 'events':     return <ParentEvents slug={slug} />;
+      default:           return null;
     }
   };
 
@@ -428,6 +425,215 @@ function ParentDashboard({ children, slug }: { children: any[]; slug: string }) 
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── Missing Parent Portal Components ──────────────────────────────────────────
+
+function ParentTimetable({ children }: { children: any[] }) {
+  const [selectedChild, setSelectedChild] = React.useState(children[0]?.id ?? '');
+  const { data } = useQuery({
+    queryKey: ['parent-timetable', selectedChild],
+    queryFn: () => apiClient.get(`/timetable?studentId=${selectedChild}`),
+    enabled: !!selectedChild,
+  });
+  const slots: any[] = Array.isArray(data) ? data : (data as any)?.data ?? [];
+  const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat'];
+  const byDay: Record<number, any[]> = {};
+  slots.forEach(s => { if (!byDay[s.dayOfWeek]) byDay[s.dayOfWeek] = []; byDay[s.dayOfWeek].push(s); });
+
+  return (
+    <div className="p-4 space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="font-black text-gray-900 text-lg">🗓️ Timetable</h2>
+        {children.length > 1 && (
+          <select value={selectedChild} onChange={e => setSelectedChild(e.target.value)} className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-white">
+            {children.map((c: any) => <option key={c.id} value={c.id}>{c.user?.profile?.firstName}</option>)}
+          </select>
+        )}
+      </div>
+      {DAYS.map((day, i) => byDay[i+1]?.length ? (
+        <div key={day} className="bg-white rounded-xl border border-gray-100 p-4">
+          <h3 className="font-bold text-sm text-gray-500 uppercase mb-3">{day}</h3>
+          <div className="space-y-2">
+            {byDay[i+1].sort((a, b) => a.period - b.period).map((s: any) => (
+              <div key={s.id} className="flex items-center gap-3 p-2 bg-rose-50 rounded-lg">
+                <span className="text-xs font-black text-rose-600 w-14">{s.startTime}–{s.endTime}</span>
+                <div className="flex-1">
+                  <p className="font-semibold text-sm">{s.subject?.name}</p>
+                  <p className="text-xs text-gray-400">{s.teacher?.user?.profile?.firstName} {s.teacher?.user?.profile?.lastName}{s.room ? ` · Room ${s.room}` : ''}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null)}
+      {slots.length === 0 && <div className="text-center py-12 text-gray-400"><div className="text-4xl mb-2">🗓️</div><p>No timetable available</p></div>}
+    </div>
+  );
+}
+
+function ParentNotices({ slug }: { slug: string }) {
+  const { data } = useQuery({ queryKey: ['parent-notices', slug], queryFn: () => apiClient.get(`/announcements?tenantSlug=${slug}&limit=30`) });
+  const notices: any[] = (data as any)?.data ?? [];
+  return (
+    <div className="p-4 space-y-3">
+      <h2 className="font-black text-gray-900 text-lg">📢 Notices & Announcements</h2>
+      {notices.length === 0 ? (
+        <div className="text-center py-12 text-gray-400"><div className="text-4xl mb-2">📢</div><p>No notices yet</p></div>
+      ) : (
+        <div className="space-y-3">
+          {notices.map((n: any) => (
+            <div key={n.id} className={`bg-white rounded-xl border p-4 ${n.isPinned ? 'border-rose-200 bg-rose-50/20' : 'border-gray-100'}`}>
+              {n.isPinned && <span className="text-xs bg-rose-100 text-rose-700 font-bold px-1.5 py-0.5 rounded">📌 Pinned</span>}
+              <h3 className="font-bold text-sm text-gray-900 mt-1">{n.title}</h3>
+              <p className="text-sm text-gray-600 mt-1">{n.content ?? n.body}</p>
+              <p className="text-xs text-gray-400 mt-2">{new Date(n.createdAt).toLocaleDateString('en-PK', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ParentTransport({ children }: { children: any[] }) {
+  const [selectedChild, setSelectedChild] = React.useState(children[0]?.id ?? '');
+  const { data } = useQuery({
+    queryKey: ['parent-transport', selectedChild],
+    queryFn: () => apiClient.get(`/transport/assignments?studentId=${selectedChild}`),
+    enabled: !!selectedChild,
+  });
+  const assignments: any[] = Array.isArray(data) ? data : (data as any)?.data ?? [];
+  const assignment = assignments[0];
+
+  return (
+    <div className="p-4 space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="font-black text-gray-900 text-lg">🚌 Transport</h2>
+        {children.length > 1 && (
+          <select value={selectedChild} onChange={e => setSelectedChild(e.target.value)} className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-white">
+            {children.map((c: any) => <option key={c.id} value={c.id}>{c.user?.profile?.firstName}</option>)}
+          </select>
+        )}
+      </div>
+      {!assignment ? (
+        <div className="text-center py-12 text-gray-400"><div className="text-4xl mb-2">🚌</div><p>No transport assigned for this child</p></div>
+      ) : (
+        <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 bg-rose-100 rounded-2xl flex items-center justify-center text-3xl">🚌</div>
+            <div><h3 className="font-black text-gray-900 text-lg">{assignment.route?.name}</h3><p className="text-gray-500 text-sm">Route #{assignment.route?.routeNo}</p></div>
+          </div>
+          {[
+            ['Vehicle No', assignment.route?.vehicleNo],
+            ['Driver Name', assignment.route?.driverName],
+            ['Driver Phone', assignment.route?.driverPhone],
+            ['Bus Stop', assignment.stopName],
+            ['Pickup Time', assignment.pickupTime],
+            ['Monthly Fee', assignment.route?.fee ? `Rs. ${Number(assignment.route.fee).toLocaleString()}` : '—'],
+          ].map(([k, v]) => v ? (
+            <div key={k} className="flex justify-between border-b border-gray-50 pb-2">
+              <span className="text-sm text-gray-500">{k}</span>
+              <span className="text-sm font-bold text-gray-900">{v}</span>
+            </div>
+          ) : null)}
+          {assignment.route?.driverPhone && (
+            <a href={`tel:${assignment.route.driverPhone}`} className="flex items-center justify-center gap-2 w-full py-3 bg-green-600 text-white rounded-xl font-bold text-sm hover:bg-green-700">
+              📞 Call Driver
+            </a>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ParentMessages({ slug }: { slug: string }) {
+  const [message, setMessage] = React.useState('');
+  const { data, refetch } = useQuery({ queryKey: ['parent-messages', slug], queryFn: () => apiClient.get(`/communication/threads?tenantSlug=${slug}`) });
+  const threads: any[] = Array.isArray(data) ? data : (data as any)?.data ?? [];
+
+  const sendMessage = async () => {
+    if (!message.trim()) return;
+    await apiClient.post('/communication/messages', { content: message, tenantSlug: slug });
+    setMessage('');
+    refetch();
+  };
+
+  return (
+    <div className="p-4 space-y-4">
+      <h2 className="font-black text-gray-900 text-lg">💬 Messages</h2>
+      <div className="bg-white rounded-xl border border-gray-100 p-4">
+        <p className="text-xs text-gray-500 font-bold uppercase mb-2">Send Message to School</p>
+        <textarea
+          value={message}
+          onChange={e => setMessage(e.target.value)}
+          rows={3}
+          placeholder="Type your message to the school administration..."
+          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-rose-400 resize-none"
+        />
+        <button
+          onClick={sendMessage}
+          disabled={!message.trim()}
+          className="mt-2 w-full py-2.5 bg-rose-600 text-white rounded-lg text-sm font-bold hover:bg-rose-700 disabled:opacity-40"
+        >Send Message</button>
+      </div>
+      {threads.length === 0 ? (
+        <div className="text-center py-8 text-gray-400"><div className="text-4xl mb-2">💬</div><p>No message history</p></div>
+      ) : (
+        <div className="space-y-3">
+          {threads.map((t: any) => (
+            <div key={t.id} className="bg-white rounded-xl border border-gray-100 p-4">
+              <div className="flex justify-between items-start">
+                <h3 className="font-bold text-sm">{t.subject || 'General Enquiry'}</h3>
+                <span className="text-xs text-gray-400">{new Date(t.updatedAt ?? t.createdAt).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })}</span>
+              </div>
+              <p className="text-sm text-gray-600 mt-1 line-clamp-2">{t.lastMessage ?? t.content}</p>
+              {t.unreadCount > 0 && <span className="mt-2 inline-block px-2 py-0.5 bg-rose-100 text-rose-700 text-xs font-bold rounded-full">{t.unreadCount} new</span>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ParentEvents({ slug }: { slug: string }) {
+  const { data } = useQuery({ queryKey: ['parent-events', slug], queryFn: () => apiClient.get(`/events?tenantSlug=${slug}&upcoming=true`) });
+  const events: any[] = Array.isArray(data) ? data : (data as any)?.data ?? [];
+
+  return (
+    <div className="p-4 space-y-3">
+      <h2 className="font-black text-gray-900 text-lg">🎉 School Events</h2>
+      {events.length === 0 ? (
+        <div className="text-center py-12 text-gray-400"><div className="text-4xl mb-2">🎉</div><p>No upcoming events</p></div>
+      ) : (
+        <div className="space-y-3">
+          {events.map((ev: any) => {
+            const start = new Date(ev.startAt);
+            const isPast = start < new Date();
+            return (
+              <div key={ev.id} className={`bg-white rounded-xl border p-4 flex gap-4 ${isPast ? 'opacity-60 border-gray-100' : 'border-rose-200'}`}>
+                <div className="w-14 h-14 bg-rose-50 rounded-xl flex flex-col items-center justify-center flex-shrink-0">
+                  <p className="text-xl font-black text-rose-700">{start.getDate()}</p>
+                  <p className="text-xs text-rose-600 font-bold">{start.toLocaleDateString('en', { month: 'short' })}</p>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-gray-900 text-sm">{ev.title}</h3>
+                  {ev.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{ev.description}</p>}
+                  <div className="flex gap-3 mt-1.5 text-xs text-gray-400">
+                    <span>🕐 {start.toLocaleTimeString('en-PK', { hour: '2-digit', minute: '2-digit' })}</span>
+                    {ev.venue && <span>📍 {ev.venue}</span>}
+                  </div>
+                </div>
+                {!isPast && <span className="text-xs bg-rose-100 text-rose-700 font-bold px-2 py-1 rounded-full h-fit">Upcoming</span>}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

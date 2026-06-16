@@ -31,8 +31,34 @@ export default function ScholarshipsPage() {
   const students: any[] = (studentsData as any)?.data ?? [];
 
   const createSch = useMutation({ mutationFn:(d:any)=>apiClient.post('/discounts/scholarships',d), onSuccess:()=>{qc.invalidateQueries({queryKey:['scholarships']});setSchModal(false);setSchForm({name:'',type:'MERIT',amount:'',isPercentage:false,description:'',maxRecipients:''});} });
-  const grantSch = useMutation({ mutationFn:(d:any)=>apiClient.post('/discounts/scholarships/grant',d), onSuccess:()=>{qc.invalidateQueries({queryKey:['grants']});setGrantModal(false);} });
-  const revokeSch = useMutation({ mutationFn:(id:string)=>apiClient.put(`/discounts/scholarships/grants/${id}/revoke`,{}), onSuccess:()=>qc.invalidateQueries({queryKey:['grants']}) });
+  const grantSch = useMutation({
+    mutationFn: (d: any) => apiClient.post('/discounts/scholarships/grant', d),
+    onSuccess: async (_res, vars) => {
+      qc.invalidateQueries({ queryKey: ['grants'] });
+      setGrantModal(false);
+      const student = students.find((s: any) => s.id === vars.studentId);
+      const sch = schList.find((s: any) => s.id === vars.scholarshipId);
+      const name = `${student?.user?.profile?.firstName || ''} ${student?.user?.profile?.lastName || ''}`.trim();
+      if (name && sch) {
+        await apiClient.post('/notifications/broadcast', {
+          title: '🎓 Scholarship Awarded',
+          body: `Congratulations ${name}! You have been awarded the "${sch.name}" scholarship${sch.isPercentage ? ` (${sch.amount}% discount)` : ` of Rs. ${Number(sch.amount).toLocaleString()}`}. This will be applied to your fee invoice.`,
+          audience: 'ALL_STUDENTS', channels: ['IN_APP', 'SMS'],
+        }).catch(() => {});
+      }
+    },
+  });
+  const revokeSch = useMutation({
+    mutationFn: (id: string) => apiClient.put(`/discounts/scholarships/grants/${id}/revoke`, {}),
+    onSuccess: async () => {
+      qc.invalidateQueries({ queryKey: ['grants'] });
+      await apiClient.post('/notifications/broadcast', {
+        title: '⚠️ Scholarship Update',
+        body: 'Your scholarship status has been updated. Please contact the accounts department for more information.',
+        audience: 'ALL_STUDENTS', channels: ['IN_APP'],
+      }).catch(() => {});
+    },
+  });
   const createDisc = useMutation({ mutationFn:(d:any)=>apiClient.post('/discounts',d), onSuccess:()=>{qc.invalidateQueries({queryKey:['discounts']});setDiscModal(false);} });
   const createInst = useMutation({ mutationFn:(d:any)=>apiClient.post('/discounts/installment-plans',d), onSuccess:()=>{qc.invalidateQueries({queryKey:['installment-plans']});setInstModal(false);} });
 

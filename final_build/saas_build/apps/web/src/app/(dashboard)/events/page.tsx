@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { useEvents, useCreateEvent, useDeleteEvent, useAnnouncements, useCreateAnnouncement } from '../../../hooks/use-api';
+import { apiClient } from '../../../lib/api-client';
 import { PageHeader } from '../../../components/shared/page-header';
 import { Topbar } from '../../../components/layout/topbar';
 import { Badge } from '../../../components/shared/badge';
@@ -31,12 +32,27 @@ export default function EventsPage() {
     await createEvent.mutateAsync(eventForm);
     setEventForm(EVENT_EMPTY);
     setEventModal(false);
+    // Notify entire school about the new event
+    const date = new Date(eventForm.startAt).toLocaleDateString('en-PK', { day: 'numeric', month: 'long', year: 'numeric' });
+    await apiClient.post('/notifications/broadcast', {
+      title: `🎉 New Event: ${eventForm.title}`,
+      body: `A new school event has been scheduled: "${eventForm.title}" on ${date}${eventForm.venue ? ` at ${eventForm.venue}` : ''}. Please mark your calendars.`,
+      audience: 'ENTIRE_SCHOOL',
+      channels: ['IN_APP'],
+    }).catch(() => {});
   };
 
   const handleCreateAnn = async () => {
     await createAnn.mutateAsync(annForm);
     setAnnForm(ANN_EMPTY);
     setAnnModal(false);
+    // Notify entire school about the announcement
+    await apiClient.post('/notifications/broadcast', {
+      title: `📢 ${annForm.isPinned ? '[Important] ' : ''}${annForm.title}`,
+      body: annForm.content,
+      audience: 'ENTIRE_SCHOOL',
+      channels: ['IN_APP'],
+    }).catch(() => {});
   };
 
   const eventColor = (ev: any) => {

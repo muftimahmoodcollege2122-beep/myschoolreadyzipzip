@@ -23,19 +23,32 @@ export default function PaymentPage() {
   const params   = useSearchParams();
   const router   = useRouter();
   const planKey  = (params.get('plan') || 'PROFESSIONAL').toUpperCase() as keyof typeof PLANS;
-  const tenantId = params.get('tenantId') || '';
   const email    = params.get('email') || '';
   const school   = params.get('school') || '';
+  const signupDataRaw = params.get('signupData') || '';
 
   const plan = PLANS[planKey] || PLANS.PROFESSIONAL;
 
   const [method,      setMethod]      = useState<Method | null>(null);
-  const [step,        setStep]        = useState<'select' | 'details' | 'verify' | 'done'>('select');
+  const [step,        setStep]        = useState<'select' | 'details' | 'verify' | 'provisioning' | 'done'>('select');
   const [loading,     setLoading]     = useState(false);
   const [error,       setError]       = useState('');
   const [phone,       setPhone]       = useState('');
-  const [txnId,       setTxnId]       = useState('');
-  const [paymentData, setPaymentData] = useState<any>(null);
+  const [txnId,           setTxnId]           = useState('');
+  const [paymentData,     setPaymentData]     = useState<any>(null);
+  const [provisionResult, setProvisionResult] = useState<any>(null);
+  const [provStep,        setProvStep]        = useState(0);
+
+  const PROV_STEPS = [
+    'Verifying payment...',
+    'Creating your school account...',
+    'Setting up admin dashboard...',
+    'Provisioning student portal...',
+    'Provisioning teacher portal...',
+    'Provisioning parent portal...',
+    'Launching your school website...',
+    'Sending login credentials...',
+  ];
 
   const initiate = async () => {
     if (!method) return;
@@ -75,9 +88,36 @@ export default function PaymentPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Verification failed');
+
+      // Auto-provision school immediately after payment verified
+      setStep('provisioning');
+      setProvStep(1);
+      await new Promise(r => setTimeout(r, 600));
+
+      let signupData: any = {};
+      try { signupData = JSON.parse(decodeURIComponent(signupDataRaw)); } catch {}
+
+      setProvStep(2);
+      let regData: any = {};
+      try {
+        const regRes = await fetch('/api/v1/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...signupData, paymentVerified: true, transactionId: txnId }),
+        });
+        regData = await regRes.json();
+      } catch {}
+
+      for (let i = 3; i <= PROV_STEPS.length; i++) {
+        await new Promise(r => setTimeout(r, 400 + Math.random() * 200));
+        setProvStep(i);
+      }
+
+      setProvisionResult(regData);
       setStep('done');
     } catch (e: any) {
       setError(e.message);
+      setStep('verify');
     } finally {
       setLoading(false);
     }
@@ -274,29 +314,73 @@ export default function PaymentPage() {
           )}
 
           {/* Step: Done */}
+          {step === 'provisioning' && (
+            <div className="p-10 text-center">
+              <div className="text-5xl mb-4 animate-bounce">⚡</div>
+              <h2 className="text-2xl font-black text-white mb-2">Setting Up Your School</h2>
+              <p className="text-white/60 mb-8">Please wait — this takes about 30 seconds</p>
+              <div className="space-y-3 text-left mb-8">
+                {PROV_STEPS.map((s, i) => (
+                  <div key={i} className={`flex items-center gap-3 text-sm transition-all ${i < provStep ? 'text-emerald-400' : i === provStep ? 'text-blue-300' : 'text-white/20'}`}>
+                    <span className="w-5 h-5 flex-shrink-0 flex items-center justify-center">
+                      {i < provStep ? '✅' : i === provStep ? <span className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin inline-block"/> : '○'}
+                    </span>
+                    <span>{s}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full transition-all duration-500"
+                  style={{ width: `${(provStep / PROV_STEPS.length) * 100}%` }}/>
+              </div>
+              <p className="text-white/30 text-xs mt-2">{Math.round((provStep / PROV_STEPS.length) * 100)}% complete</p>
+            </div>
+          )}
+
           {step === 'done' && (
             <div className="p-8 text-center">
               <div className="text-6xl mb-4">🎉</div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">Payment Submitted!</h2>
-              <p className="text-gray-600 mb-6">
-                Your payment proof has been received. Your school account will be activated within{' '}
-                <span className="font-semibold text-blue-600">2-4 business hours</span>.
-                We'll send login credentials to <span className="font-semibold">{email}</span>.
+              <h2 className="text-2xl font-black text-gray-900 mb-1">Your School is Live!</h2>
+              <p className="text-gray-500 mb-6 text-sm">
+                Everything is ready. Login credentials have been sent to <strong>{email}</strong>.
               </p>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 mb-6 text-left">
-                <p className="text-sm font-semibold text-blue-800 mb-2">What happens next?</p>
-                <ul className="space-y-2 text-sm text-blue-700">
-                  <li>✅ Our team verifies your payment (within 2-4 hrs)</li>
-                  <li>✅ Your school portals are auto-created</li>
-                  <li>✅ Admin credentials are emailed to you</li>
-                  <li>✅ Your school website goes live instantly</li>
-                </ul>
-              </div>
+              {provisionResult?.slug && (
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-5 mb-6 text-left space-y-3">
+                  <p className="text-sm font-black text-blue-900 mb-3">🚀 Your Live Portals</p>
+                  {[
+                    { label: '🏫 School Website',   url: `/s/${provisionResult.slug}` },
+                    { label: '⚙️ Admin Dashboard',  url: `/login?slug=${provisionResult.slug}` },
+                    { label: '🎓 Student Portal',   url: `/learn/${provisionResult.slug}` },
+                    { label: '👩‍🏫 Teacher Portal',  url: `/t/${provisionResult.slug}` },
+                    { label: '👪 Parent Portal',    url: `/parent/${provisionResult.slug}` },
+                  ].map(({ label, url }) => (
+                    <a key={url} href={url} target="_blank" rel="noreferrer"
+                      className="flex items-center justify-between p-3 bg-white border border-blue-100 rounded-xl hover:border-blue-400 transition-colors group">
+                      <span className="text-sm font-semibold text-gray-700">{label}</span>
+                      <span className="text-xs text-blue-600 font-mono group-hover:underline">{url}</span>
+                    </a>
+                  ))}
+                </div>
+              )}
 
-              <Link href="/" className="inline-block bg-gray-800 text-white font-semibold py-3 px-8 rounded-2xl hover:bg-gray-900 transition-all">
-                Return to Homepage
-              </Link>
+              {!provisionResult?.slug && (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 text-sm text-amber-800">
+                  Payment verified ✅ — your account is being activated. You'll receive an email at <strong>{email}</strong> within a few minutes with your login link.
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                {provisionResult?.slug && (
+                  <a href={`/login?slug=${provisionResult.slug}&email=${encodeURIComponent(email)}&firstLogin=true`}
+                    className="flex-1 py-3 bg-blue-600 text-white font-black rounded-2xl hover:bg-blue-700 transition-all text-sm text-center">
+                    🚀 Go to My Dashboard
+                  </a>
+                )}
+                <a href="/" className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-2xl hover:bg-gray-200 transition-all text-sm text-center">
+                  Return to Homepage
+                </a>
+              </div>
             </div>
           )}
         </div>

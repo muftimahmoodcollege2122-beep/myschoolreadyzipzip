@@ -1,5 +1,6 @@
 'use client';
 import React, { useState } from 'react';
+import { apiClient } from '../../../lib/api-client';
 import { Topbar } from '../../../components/layout/topbar';
 import { PageHeader } from '../../../components/shared/page-header';
 import { Badge } from '../../../components/shared/badge';
@@ -36,6 +37,13 @@ export default function LessonPlansPage() {
 
   const handleSubmit = async (id: string) => {
     await submit.mutateAsync(id);
+    // Notify admin that a lesson plan needs review
+    const plan = planList.find((p: any) => p.id === id);
+    await apiClient.post('/notifications/broadcast', {
+      title: '📋 Lesson Plan Submitted for Review',
+      body: `A lesson plan "${plan?.title || 'Untitled'}" has been submitted and is awaiting your approval.`,
+      audience: 'ALL_STAFF', channels: ['IN_APP'],
+    }).catch(() => {});
   };
 
   const formatDate = (d: string) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
