@@ -1160,3 +1160,7 @@ model OutboxEvent {
   @@index([tenantId, topic])
   @@map("outbox_events")
 }
+
+// ─── Performance Indexes (added for 100k-school scale) ────────────────────────
+// These are added via raw migration — Prisma schema already has @index on tenantId
+// but we need composite indexes for the most common query patterns.

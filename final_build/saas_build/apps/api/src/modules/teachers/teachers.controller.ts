@@ -3,6 +3,7 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { TeachersService } from './teachers.service';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { Throttle } from '../../common/guards/throttle.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { TenantId } from '../../common/decorators/tenant-id.decorator';
@@ -12,7 +13,7 @@ import { Request } from 'express';
 @ApiTags('Teachers') @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Controller('teachers')
 export class TeachersController {
   constructor(private readonly svc: TeachersService) {}
-  @Post() @Roles('SCHOOL_ADMIN')
+  @Post() @Roles('SCHOOL_ADMIN') @Throttle(30, 60)
   create(@Body() dto: CreateTeacherDto, @TenantId() tid: string, @CurrentUser() u: any, @Req() req: Request) { return this.svc.create(dto, tid, req.query.schoolId as string, u.sub); }
   @Get('me') @Roles('TEACHER','SCHOOL_ADMIN')
   findMe(@TenantId() tid: string, @CurrentUser() u: any) { return this.svc.findByUserId(u.sub, tid); }
