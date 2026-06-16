@@ -1,172 +1,257 @@
 'use client';
 import React, { useState } from 'react';
-import { useLibraryBooks, useLibraryStats, useLibraryCategories, useBookIssues, useCreateBook, useIssueBook, useReturnBook } from '../../../hooks/use-api';
-import { PageHeader } from '../../../components/shared/page-header';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '../../../lib/api-client';
 import { Topbar } from '../../../components/layout/topbar';
+import { PageHeader } from '../../../components/shared/page-header';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
-import { DataTable } from '../../../components/shared/data-table';
+
+const CATS = ['General','Science','Mathematics','History','Literature','Fiction','Reference','Islamic Studies','Urdu','English'];
+const EMPTY_BOOK = { title:'', author:'', isbn:'', publisher:'', category:'General', totalCopies:'1', shelfLocation:'', publishYear:'' };
 
 export default function LibraryPage() {
-  const [tab, setTab] = useState<'catalog'|'issued'>('catalog');
+  const qc = useQueryClient();
+  const [tab, setTab] = useState<'catalog'|'issued'|'overdue'>('catalog');
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
   const [addModal, setAddModal] = useState(false);
   const [issueModal, setIssueModal] = useState<any>(null);
-  const [bookForm, setBookForm] = useState({ title: '', author: '', isbn: '', publisher: '', category: 'General', totalCopies: '1', shelfLocation: '', publishYear: '' });
-  const [issueForm, setIssueForm] = useState({ userId: '', dueDays: '14' });
+  const [bookForm, setBookForm] = useState(EMPTY_BOOK);
+  const [issueForm, setIssueForm] = useState({ userId:'', dueDays:'14' });
+  const [alertsSent, setAlertsSent] = useState<string[]>([]);
 
-  const { data: stats } = useLibraryStats();
-  const { data: categories } = useLibraryCategories();
-  const { data: booksData, isLoading } = useLibraryBooks({ search, category, limit: 50 });
-  const { data: issuesData, isLoading: issuesLoading } = useBookIssues(false);
-  const createBook = useCreateBook();
-  const issueBook = useIssueBook();
-  const returnBook = useReturnBook();
+  const { data: stats } = useQuery({ queryKey:['lib-stats'], queryFn:()=>apiClient.get('/library/stats') });
+  const { data: booksData, isLoading } = useQuery({ queryKey:['books', search, category], queryFn:()=>apiClient.get(`/library/books?search=${search}&category=${category}&limit=100`) });
+  const { data: issuedData } = useQuery({ queryKey:['issued'], queryFn:()=>apiClient.get('/library/issues?returned=false') });
+  const { data: overdueData } = useQuery({ queryKey:['overdue'], queryFn:()=>apiClient.get('/library/issues?overdue=true') });
+  const { data: studentsData } = useQuery({ queryKey:['students-list'], queryFn:()=>apiClient.get('/students?limit=500') });
 
+  const createBook = useMutation({ mutationFn:(d:any)=>apiClient.post('/library/books',d), onSuccess:()=>{qc.invalidateQueries({queryKey:['books']});qc.invalidateQueries({queryKey:['lib-stats']});setAddModal(false);setBookForm(EMPTY_BOOK);} });
+  const issueBook  = useMutation({ mutationFn:(d:any)=>apiClient.post('/library/issue',d), onSuccess:()=>{qc.invalidateQueries({queryKey:['issued']});qc.invalidateQueries({queryKey:['books']});setIssueModal(null);setIssueForm({userId:'',dueDays:'14'});} });
+  const returnBook = useMutation({ mutationFn:(id:string)=>apiClient.post(`/library/return/${id}`,{}), onSuccess:()=>{qc.invalidateQueries({queryKey:['issued']});qc.invalidateQueries({queryKey:['overdue']});qc.invalidateQueries({queryKey:['books']});} });
+
+  const sendOverdueAlert = async (issue: any) => {
+    const name = `${issue.user?.profile?.firstName||''} ${issue.user?.profile?.lastName||''}`.trim();
+    const daysOverdue = Math.floor((Date.now() - new Date(issue.dueDate).getTime()) / 86400000);
+    const fine = daysOverdue * 5;
+    await apiClient.post('/notifications/send-inapp', {
+      userId: issue.userId,
+      title: '📚 Library Book Overdue',
+      body: `"${issue.book?.title}" is overdue by ${daysOverdue} day(s). Fine: Rs. ${fine}. Please return immediately.`,
+    });
+    setAlertsSent(prev => [...prev, issue.id]);
+    alert(`✅ Alert sent to ${name}`);
+  };
+
+  const st: any = stats ?? {};
   const books: any[] = (booksData as any)?.data ?? [];
-  const issues: any[] = (issuesData as any)?.data ?? [];
-  const catList: string[] = Array.isArray(categories) ? categories : ['General', 'Science', 'Mathematics', 'History', 'Literature', 'Fiction', 'Reference'];
-
-  const handleAddBook = async () => {
-    await createBook.mutateAsync(bookForm);
-    setBookForm({ title: '', author: '', isbn: '', publisher: '', category: 'General', totalCopies: '1', shelfLocation: '', publishYear: '' });
-    setAddModal(false);
-  };
-
-  const handleIssue = async () => {
-    await issueBook.mutateAsync({ bookId: issueModal?.id, ...issueForm, dueDays: Number(issueForm.dueDays) });
-    setIssueForm({ userId: '', dueDays: '14' });
-    setIssueModal(null);
-  };
-
-  const columns = [
-    { key: 'title', header: 'Book', render: (b: any) => <div><p className="text-sm font-semibold text-gray-900">{b.title}</p><p className="text-xs text-gray-400">{b.author} {b.publishYear ? `· ${b.publishYear}` : ''}</p></div> },
-    { key: 'category', header: 'Category', render: (b: any) => <Badge variant="blue">{b.category}</Badge> },
-    { key: 'isbn', header: 'ISBN', render: (b: any) => <span className="font-mono text-xs text-gray-500">{b.isbn ?? '—'}</span> },
-    { key: 'shelf', header: 'Shelf', render: (b: any) => <span className="text-sm text-gray-600">{b.shelfLocation ?? '—'}</span> },
-    { key: 'copies', header: 'Copies', render: (b: any) => (
-      <div className="flex items-center gap-2">
-        <span className="font-mono text-sm"><span className={b.availableCopies === 0 ? 'text-red-600' : 'text-green-600'}>{b.availableCopies}</span>/{b.totalCopies}</span>
-        {b.availableCopies === 0 && <Badge variant="red">Full</Badge>}
-      </div>
-    )},
-    { key: 'action', header: '', render: (b: any) => (
-      <button onClick={() => setIssueModal(b)} disabled={b.availableCopies === 0} className="px-3 py-1.5 text-xs font-bold bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 disabled:opacity-40 disabled:cursor-not-allowed">Issue</button>
-    )},
-  ];
-
-  const issueColumns = [
-    { key: 'book', header: 'Book', render: (i: any) => <div><p className="text-sm font-semibold">{i.book?.title}</p><p className="text-xs text-gray-400">{i.book?.author}</p></div> },
-    { key: 'user', header: 'Issued To', render: (i: any) => <span className="text-sm">{i.user?.profile?.firstName} {i.user?.profile?.lastName}</span> },
-    { key: 'issued', header: 'Issued', render: (i: any) => <span className="text-xs text-gray-500">{new Date(i.issuedAt).toLocaleDateString('en-PK')}</span> },
-    { key: 'due', header: 'Due', render: (i: any) => {
-      const overdue = new Date(i.dueDate) < new Date();
-      return <span className={`text-xs font-medium ${overdue ? 'text-red-600' : 'text-gray-600'}`}>{new Date(i.dueDate).toLocaleDateString('en-PK')}{overdue ? ' ⚠ Overdue' : ''}</span>;
-    }},
-    { key: 'fine', header: 'Fine', render: (i: any) => i.fineAmount ? <span className="text-red-600 font-mono text-sm">Rs. {i.fineAmount}</span> : <span className="text-gray-400 text-sm">—</span> },
-    { key: 'action', header: '', render: (i: any) => (
-      <button onClick={() => returnBook.mutate(i.id)} className="px-3 py-1.5 text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100">Return</button>
-    )},
-  ];
+  const issued: any[] = Array.isArray(issuedData) ? issuedData : (issuedData as any)?.data ?? [];
+  const overdue: any[] = Array.isArray(overdueData) ? overdueData : (overdueData as any)?.data ?? [];
+  const students: any[] = (studentsData as any)?.data ?? [];
 
   return (
     <>
-      <Topbar title="Library" subtitle="Manage books, catalog & borrowing" />
+      <Topbar title="Library" subtitle="Book catalog, issue tracking and overdue alerts" />
       <div className="p-6">
-        <PageHeader
-          title="Library Management"
-          action={<button onClick={() => setAddModal(true)} className="px-4 py-2 bg-green-600 text-white text-sm font-bold rounded-lg hover:bg-green-500">+ Add Book</button>}
-        />
-
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-5 gap-3 mb-6">
           {[
-            { label: 'Total Books', value: (stats as any)?.totalBooks ?? 0, color: 'text-blue-600', bg: 'bg-blue-50' },
-            { label: 'Available', value: (stats as any)?.availableCopies ?? 0, color: 'text-green-600', bg: 'bg-green-50' },
-            { label: 'Issued', value: (stats as any)?.totalIssued ?? 0, color: 'text-yellow-600', bg: 'bg-yellow-50' },
-            { label: 'Overdue', value: (stats as any)?.overdue ?? 0, color: 'text-red-600', bg: 'bg-red-50' },
+            { label:'Total Books',    value: st.totalBooks    ?? 0, color:'bg-blue-600',   icon:'📚' },
+            { label:'Available',      value: st.available     ?? 0, color:'bg-green-600',  icon:'✅' },
+            { label:'Issued',         value: st.issued        ?? issued.length, color:'bg-amber-500',  icon:'📤' },
+            { label:'Overdue',        value: st.overdue       ?? overdue.length, color:'bg-red-600',    icon:'⚠️' },
+            { label:'Categories',     value: st.categories    ?? CATS.length,    color:'bg-purple-600', icon:'🗂️' },
           ].map(s => (
-            <div key={s.label} className={`${s.bg} rounded-xl p-4 border border-white/50`}>
-              <p className={`text-3xl font-black ${s.color}`}>{s.value}</p>
-              <p className="text-xs text-gray-600 font-medium mt-1">{s.label}</p>
+            <div key={s.label} className={`${s.color} rounded-xl p-4 text-white`}>
+              <div className="text-2xl mb-1">{s.icon}</div>
+              <div className="text-2xl font-black">{s.value}</div>
+              <div className="text-sm opacity-80">{s.label}</div>
             </div>
           ))}
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 mb-4 bg-gray-100 rounded-lg p-1 w-fit">
-          {(['catalog','issued'] as const).map(t => (
-            <button key={t} onClick={() => setTab(t)} className={`px-4 py-1.5 text-sm font-bold rounded-md transition-all ${tab===t?'bg-white shadow text-gray-900':'text-gray-500'}`}>
-              {t === 'catalog' ? '📚 Catalog' : '📤 Issued Books'}
+        <div className="flex gap-3 mb-5">
+          {([['catalog','📚 Catalog'],['issued','📤 Issued'],['overdue','⚠️ Overdue']] as const).map(([k,l]) => (
+            <button key={k} onClick={() => setTab(k)} className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${tab===k?'bg-blue-600 text-white':'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+              {l} {k==='overdue' && overdue.length > 0 && <span className="ml-1 px-1.5 bg-red-500 text-white text-xs rounded-full">{overdue.length}</span>}
             </button>
           ))}
-        </div>
-
-        {tab === 'catalog' && (
-          <>
-            <div className="flex gap-3 mb-4">
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search title, author, ISBN..." className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-green-400" />
+          <div className="ml-auto flex gap-3">
+            {tab === 'catalog' && <>
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search books..." className="px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 w-48"/>
               <select value={category} onChange={e => setCategory(e.target.value)} className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white">
                 <option value="">All Categories</option>
-                {catList.map(c => <option key={c} value={c}>{c}</option>)}
+                {CATS.map(c => <option key={c}>{c}</option>)}
               </select>
-            </div>
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
-              <DataTable columns={columns} data={books} isLoading={isLoading} emptyMessage="No books in catalog. Add your first book!" />
-            </div>
-          </>
+              <button onClick={() => setAddModal(true)} className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700">+ Add Book</button>
+            </>}
+          </div>
+        </div>
+
+        {/* Catalog Tab */}
+        {tab === 'catalog' && (
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+            {isLoading ? <div className="text-center py-16 text-gray-400">Loading catalog...</div> :
+            books.length === 0 ? (
+              <div className="text-center py-16 text-gray-400"><div className="text-5xl mb-3">📚</div><p className="font-semibold">No books yet</p><p className="text-sm">Click "+ Add Book" to get started</p></div>
+            ) : (
+              <table className="w-full">
+                <thead><tr className="bg-gray-50 border-b border-gray-100">
+                  {['Book','Author','Category','ISBN','Shelf','Available','Action'].map(h => <th key={h} className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">{h}</th>)}
+                </tr></thead>
+                <tbody>
+                  {books.map((b:any) => (
+                    <tr key={b.id} className="border-b border-gray-50 hover:bg-gray-50">
+                      <td className="px-4 py-3"><p className="font-semibold text-sm">{b.title}</p>{b.publishYear && <p className="text-xs text-gray-400">{b.publishYear}</p>}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{b.author}</td>
+                      <td className="px-4 py-3"><Badge variant="blue">{b.category}</Badge></td>
+                      <td className="px-4 py-3 text-xs font-mono text-gray-500">{b.isbn || '—'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{b.shelfLocation || '—'}</td>
+                      <td className="px-4 py-3">
+                        <span className={`font-black text-sm ${b.availableCopies===0?'text-red-600':'text-green-600'}`}>{b.availableCopies ?? b.totalCopies}</span>
+                        <span className="text-gray-400 text-xs">/{b.totalCopies}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <button onClick={() => setIssueModal(b)} disabled={(b.availableCopies ?? b.totalCopies) === 0} className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed">
+                          {(b.availableCopies ?? b.totalCopies) === 0 ? 'Unavailable' : 'Issue'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         )}
 
+        {/* Issued Tab */}
         {tab === 'issued' && (
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
-            <DataTable columns={issueColumns} data={issues} isLoading={issuesLoading} emptyMessage="No books currently issued" />
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+            {issued.length === 0 ? <div className="text-center py-16 text-gray-400"><div className="text-5xl mb-3">📤</div><p>No books currently issued</p></div> : (
+              <table className="w-full">
+                <thead><tr className="bg-gray-50 border-b border-gray-100">
+                  {['Book','Issued To','Issue Date','Due Date','Status','Action'].map(h => <th key={h} className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">{h}</th>)}
+                </tr></thead>
+                <tbody>
+                  {issued.map((i:any) => {
+                    const isOverdue = new Date(i.dueDate) < new Date();
+                    const daysLeft = Math.ceil((new Date(i.dueDate).getTime() - Date.now()) / 86400000);
+                    return (
+                      <tr key={i.id} className={`border-b border-gray-50 hover:bg-gray-50 ${isOverdue?'bg-red-50/30':''}`}>
+                        <td className="px-4 py-3"><p className="font-semibold text-sm">{i.book?.title}</p><p className="text-xs text-gray-400">{i.book?.author}</p></td>
+                        <td className="px-4 py-3"><p className="text-sm font-medium">{i.user?.profile?.firstName} {i.user?.profile?.lastName}</p></td>
+                        <td className="px-4 py-3 text-sm text-gray-600">{new Date(i.issuedAt).toLocaleDateString('en-PK',{day:'numeric',month:'short'})}</td>
+                        <td className="px-4 py-3 text-sm"><span className={isOverdue?'text-red-600 font-black':'text-gray-700'}>{new Date(i.dueDate).toLocaleDateString('en-PK',{day:'numeric',month:'short'})}</span></td>
+                        <td className="px-4 py-3">
+                          {isOverdue ? <Badge variant="red">⚠️ Overdue {Math.abs(daysLeft)}d</Badge> : <Badge variant="green">{daysLeft}d left</Badge>}
+                        </td>
+                        <td className="px-4 py-3">
+                          <button onClick={() => returnBook.mutate(i.id)} disabled={returnBook.isPending} className="px-3 py-1.5 bg-green-600 text-white text-xs font-bold rounded-lg hover:bg-green-700 disabled:opacity-40">Return</button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+
+        {/* Overdue Tab */}
+        {tab === 'overdue' && (
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+            {overdue.length === 0 ? (
+              <div className="text-center py-16 text-gray-400"><div className="text-5xl mb-3">✅</div><p className="font-semibold">No overdue books</p><p className="text-sm">All books returned on time</p></div>
+            ) : (
+              <>
+                <div className="p-4 bg-red-50 border-b border-red-100 flex items-center justify-between">
+                  <p className="text-sm font-bold text-red-800">⚠️ {overdue.length} overdue books — daily SMS alerts are active (9 AM). Fine: Rs. 5/day per book.</p>
+                  <button onClick={() => {
+                    overdue.forEach(i => { if (!alertsSent.includes(i.id)) sendOverdueAlert(i); });
+                  }} className="px-4 py-2 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700">🔔 Alert All Now</button>
+                </div>
+                <table className="w-full">
+                  <thead><tr className="bg-gray-50 border-b border-gray-100">
+                    {['Book','Borrower','Due Date','Days Overdue','Fine (Rs.)','Alert'].map(h => <th key={h} className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">{h}</th>)}
+                  </tr></thead>
+                  <tbody>
+                    {overdue.map((i:any) => {
+                      const daysOverdue = Math.floor((Date.now() - new Date(i.dueDate).getTime()) / 86400000);
+                      const fine = daysOverdue * 5;
+                      return (
+                        <tr key={i.id} className="border-b border-gray-50 hover:bg-red-50/20">
+                          <td className="px-4 py-3"><p className="font-semibold text-sm">{i.book?.title}</p><p className="text-xs text-gray-400">{i.book?.author}</p></td>
+                          <td className="px-4 py-3"><p className="text-sm font-medium">{i.user?.profile?.firstName} {i.user?.profile?.lastName}</p></td>
+                          <td className="px-4 py-3 text-sm text-red-600 font-bold">{new Date(i.dueDate).toLocaleDateString('en-PK',{day:'numeric',month:'short',year:'numeric'})}</td>
+                          <td className="px-4 py-3 text-red-600 font-black text-sm">{daysOverdue} days</td>
+                          <td className="px-4 py-3 text-red-700 font-black text-sm">Rs. {fine}</td>
+                          <td className="px-4 py-3">
+                            {alertsSent.includes(i.id) ? <span className="text-xs text-green-600 font-bold">✅ Sent</span> :
+                              <button onClick={() => sendOverdueAlert(i)} className="px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700">Send Alert</button>}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </>
+            )}
           </div>
         )}
       </div>
 
       {/* Add Book Modal */}
-      <Modal isOpen={addModal} onClose={() => setAddModal(false)} title="Add Book to Catalog">
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2"><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Title *</label>
-              <input value={bookForm.title} onChange={e => setBookForm(f=>({...f,title:e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-green-400" /></div>
-            <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Author *</label>
-              <input value={bookForm.author} onChange={e => setBookForm(f=>({...f,author:e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-green-400" /></div>
-            <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">ISBN</label>
-              <input value={bookForm.isbn} onChange={e => setBookForm(f=>({...f,isbn:e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-green-400" /></div>
-            <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Publisher</label>
-              <input value={bookForm.publisher} onChange={e => setBookForm(f=>({...f,publisher:e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-green-400" /></div>
-            <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Year</label>
-              <input type="number" value={bookForm.publishYear} onChange={e => setBookForm(f=>({...f,publishYear:e.target.value}))} placeholder="2024" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-green-400" /></div>
-            <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Category</label>
-              <select value={bookForm.category} onChange={e => setBookForm(f=>({...f,category:e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white">
-                {catList.map(c => <option key={c} value={c}>{c}</option>)}
-              </select></div>
-            <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Total Copies</label>
-              <input type="number" value={bookForm.totalCopies} onChange={e => setBookForm(f=>({...f,totalCopies:e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-green-400" /></div>
-            <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Shelf Location</label>
-              <input value={bookForm.shelfLocation} onChange={e => setBookForm(f=>({...f,shelfLocation:e.target.value}))} placeholder="e.g. A-12" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-green-400" /></div>
+      {addModal && (
+        <Modal title="Add Book to Catalog" onClose={() => setAddModal(false)}>
+          <div className="p-6 space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2"><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Title *</label><input value={bookForm.title} onChange={e=>setBookForm(f=>({...f,title:e.target.value}))} placeholder="Book title" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400"/></div>
+              <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Author *</label><input value={bookForm.author} onChange={e=>setBookForm(f=>({...f,author:e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400"/></div>
+              <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Category</label>
+                <select value={bookForm.category} onChange={e=>setBookForm(f=>({...f,category:e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white">{CATS.map(c=><option key={c}>{c}</option>)}</select>
+              </div>
+              <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">ISBN</label><input value={bookForm.isbn} onChange={e=>setBookForm(f=>({...f,isbn:e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400"/></div>
+              <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Publisher</label><input value={bookForm.publisher} onChange={e=>setBookForm(f=>({...f,publisher:e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400"/></div>
+              <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Shelf Location</label><input value={bookForm.shelfLocation} onChange={e=>setBookForm(f=>({...f,shelfLocation:e.target.value}))} placeholder="A-12" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400"/></div>
+              <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Total Copies</label><input type="number" min="1" value={bookForm.totalCopies} onChange={e=>setBookForm(f=>({...f,totalCopies:e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400"/></div>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button onClick={() => setAddModal(false)} className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
+              <button onClick={() => createBook.mutate(bookForm)} disabled={!bookForm.title||!bookForm.author||createBook.isPending} className="flex-1 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 disabled:opacity-40">{createBook.isPending?'Adding...':'📚 Add Book'}</button>
+            </div>
           </div>
-          <button onClick={handleAddBook} disabled={createBook.isPending||!bookForm.title||!bookForm.author} className="w-full py-2.5 bg-green-600 text-white font-bold rounded-lg hover:bg-green-500 disabled:opacity-50">
-            {createBook.isPending ? 'Adding...' : 'Add to Catalog'}
-          </button>
-        </div>
-      </Modal>
+        </Modal>
+      )}
 
       {/* Issue Book Modal */}
-      <Modal isOpen={!!issueModal} onClose={() => setIssueModal(null)} title={`Issue: ${issueModal?.title}`}>
-        <div className="space-y-3">
-          <p className="text-sm text-gray-500">by {issueModal?.author} · {issueModal?.availableCopies} copies available</p>
-          <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">User ID (Student/Staff)</label>
-            <input value={issueForm.userId} onChange={e => setIssueForm(f=>({...f,userId:e.target.value}))} placeholder="Paste user UUID" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-green-400" /></div>
-          <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Due in (days)</label>
-            <input type="number" value={issueForm.dueDays} onChange={e => setIssueForm(f=>({...f,dueDays:e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-green-400" /></div>
-          <button onClick={handleIssue} disabled={issueBook.isPending||!issueForm.userId} className="w-full py-2.5 bg-green-600 text-white font-bold rounded-lg hover:bg-green-500 disabled:opacity-50">
-            {issueBook.isPending ? 'Processing...' : 'Issue Book'}
-          </button>
-        </div>
-      </Modal>
+      {issueModal && (
+        <Modal title={`Issue: ${issueModal.title}`} onClose={() => setIssueModal(null)}>
+          <div className="p-6 space-y-4">
+            <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-sm text-blue-800">
+              <strong>{issueModal.title}</strong> by {issueModal.author} — Available: {issueModal.availableCopies ?? issueModal.totalCopies} cop{(issueModal.availableCopies ?? issueModal.totalCopies) === 1 ? 'y':'ies'}
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Issue To *</label>
+              <select value={issueForm.userId} onChange={e=>setIssueForm(f=>({...f,userId:e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white">
+                <option value="">Select student</option>
+                {students.map((s:any) => <option key={s.userId} value={s.userId}>{s.user?.profile?.firstName} {s.user?.profile?.lastName} — {s.rollNumber}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Due in (days)</label>
+              <select value={issueForm.dueDays} onChange={e=>setIssueForm(f=>({...f,dueDays:e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white">
+                {['7','14','21','30'].map(d => <option key={d} value={d}>{d} days</option>)}
+              </select>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button onClick={() => setIssueModal(null)} className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
+              <button onClick={() => issueBook.mutate({ bookId: issueModal.id, ...issueForm, dueDays: Number(issueForm.dueDays) })} disabled={!issueForm.userId||issueBook.isPending} className="flex-1 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 disabled:opacity-40">{issueBook.isPending?'Issuing...':'📤 Issue Book'}</button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </>
   );
 }

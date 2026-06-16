@@ -1,144 +1,208 @@
 'use client';
 import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '../../../lib/api-client';
 import { Topbar } from '../../../components/layout/topbar';
 import { PageHeader } from '../../../components/shared/page-header';
 import { Badge } from '../../../components/shared/badge';
 import { Modal } from '../../../components/shared/modal';
-import { useStudentBehaviors, useCreateBehavior, useStudents } from '../../../hooks/use-api';
 
-const TYPE_COLOR: Record<string, string> = { POSITIVE: 'green', NEGATIVE: 'red', NEUTRAL: 'gray' };
-const SEVERITY_COLOR: Record<string, string> = { LOW: 'green', MEDIUM: 'yellow', HIGH: 'red', CRITICAL: 'red' };
-const EMPTY = { studentId: '', type: 'NEGATIVE', category: 'DISCIPLINE', description: '', severity: 'MEDIUM', actionTaken: '' };
+const TYPE_COLOR: Record<string,any> = { POSITIVE:'green', NEGATIVE:'red', NEUTRAL:'gray' };
+const SEV_COLOR:  Record<string,any> = { LOW:'green', MEDIUM:'yellow', HIGH:'red', CRITICAL:'red' };
+const CATEGORIES = ['DISCIPLINE','ACADEMIC','ATTENDANCE','SOCIAL','ACHIEVEMENT','OTHER'];
+const EMPTY = { studentId:'', type:'NEGATIVE', category:'DISCIPLINE', description:'', severity:'MEDIUM', actionTaken:'', notifyParent: true };
 
 export default function ConductPage() {
+  const qc = useQueryClient();
   const [modal, setModal] = useState(false);
-  const [form, setForm] = useState(EMPTY);
+  const [form, setForm] = useState<any>(EMPTY);
   const [typeFilter, setTypeFilter] = useState('');
-  const [studentSearch, setStudentSearch] = useState('');
+  const [search, setSearch] = useState('');
+  const [alertsSent, setAlertsSent] = useState<string[]>([]);
 
-  const { data: records = [], isLoading } = useStudentBehaviors();
-  const { data: studentsData } = useStudents({ limit: 100 });
-  const create = useCreateBehavior();
+  const { data: records = [], isLoading } = useQuery({ queryKey:['conduct'], queryFn:()=>apiClient.get('/students/behavior') });
+  const { data: studentsData } = useQuery({ queryKey:['students-list'], queryFn:()=>apiClient.get('/students?limit=500') });
 
-  const allRecords: any[] = Array.isArray(records) ? records : [];
-  const students: any[] = studentsData?.data ?? [];
+  const create = useMutation({
+    mutationFn: (d: any) => apiClient.post('/students/behavior', d),
+    onSuccess: async (res: any, vars: any) => {
+      qc.invalidateQueries({ queryKey:['conduct'] });
+      setModal(false); setForm(EMPTY);
+      // auto-notify parent if checked
+      if (vars.notifyParent && vars.type === 'NEGATIVE') {
+        const student = students.find((s:any) => s.id === vars.studentId);
+        const name = `${student?.user?.profile?.firstName || ''} ${student?.user?.profile?.lastName || ''}`.trim();
+        await apiClient.post('/notifications/broadcast', {
+          title: `⚠️ Conduct Alert: ${name}`,
+          body: `Dear Parent, a ${vars.severity.toLowerCase()} ${vars.category.toLowerCase()} incident was recorded for ${name} on ${new Date().toLocaleDateString('en-PK', { day:'numeric', month:'short' })}. Category: ${vars.category}. Action taken: ${vars.actionTaken || 'Under review'}. Please contact the school for details.`,
+          audience: 'ALL_PARENTS', channels: ['IN_APP','SMS'],
+        }).catch(() => {});
+        alert('✅ Record saved and parent notified via SMS & in-app.');
+      }
+    },
+  });
+
+  const sendAlert = async (record: any) => {
+    const name = `${record.student?.user?.profile?.firstName || ''} ${record.student?.user?.profile?.lastName || ''}`.trim();
+    await apiClient.post('/notifications/broadcast', {
+      title: `⚠️ Conduct Alert: ${name}`,
+      body: `Dear Parent, a ${record.severity?.toLowerCase()} ${record.category?.toLowerCase()} incident was recorded for ${name}. Action taken: ${record.actionTaken || 'Under review'}. Please contact the school.`,
+      audience: 'ALL_PARENTS', channels: ['IN_APP','SMS'],
+    });
+    setAlertsSent(prev => [...prev, record.id]);
+    alert('✅ Parent alerted via SMS and in-app notification.');
+  };
+
+  const allRecords: any[] = Array.isArray(records) ? records : (records as any)?.data ?? [];
+  const students: any[] = (studentsData as any)?.data ?? [];
   const filtered = allRecords.filter(r =>
     (!typeFilter || r.type === typeFilter) &&
-    (!studentSearch || r.student?.user?.profile?.firstName?.toLowerCase().includes(studentSearch.toLowerCase()))
+    (!search || `${r.student?.user?.profile?.firstName} ${r.student?.user?.profile?.lastName}`.toLowerCase().includes(search.toLowerCase()))
   );
 
-  const formatDate = (d: string) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-
-  const handleCreate = async () => {
-    if (!form.studentId || !form.description) return;
-    await create.mutateAsync(form);
-    setForm(EMPTY); setModal(false);
-  };
+  const positive = allRecords.filter(r => r.type === 'POSITIVE').length;
+  const negative = allRecords.filter(r => r.type === 'NEGATIVE').length;
+  const critical = allRecords.filter(r => r.severity === 'CRITICAL').length;
 
   return (
     <>
-      <Topbar title="Conduct" subtitle="Student behavior & discipline records" />
+      <Topbar title="Conduct & Discipline" subtitle="Track student behaviour — auto-notify parents on incidents" />
       <div className="p-6">
-        <PageHeader title="Conduct Records" subtitle={`${allRecords.length} behavior records`}
-          action={<button onClick={() => setModal(true)} className="px-4 py-2 bg-green-600 text-white text-sm font-bold rounded-lg hover:bg-green-500">+ Log Behavior</button>}
-        />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        {/* Stats */}
+        <div className="grid grid-cols-4 gap-4 mb-6">
           {[
-            { label: 'Total Records', value: allRecords.length, icon: '📋', color: 'text-blue-600', bg: 'bg-blue-50' },
-            { label: 'Positive', value: allRecords.filter(r => r.type === 'POSITIVE').length, icon: '⭐', color: 'text-green-600', bg: 'bg-green-50' },
-            { label: 'Negative', value: allRecords.filter(r => r.type === 'NEGATIVE').length, icon: '⚠️', color: 'text-red-600', bg: 'bg-red-50' },
-            { label: 'Critical', value: allRecords.filter(r => r.severity === 'CRITICAL').length, icon: '🚨', color: 'text-orange-600', bg: 'bg-orange-50' },
+            { label:'Total Records', value: allRecords.length, color:'bg-blue-600',   icon:'📋' },
+            { label:'Positive',      value: positive,          color:'bg-green-600',  icon:'⭐' },
+            { label:'Negative',      value: negative,          color:'bg-red-600',    icon:'⚠️' },
+            { label:'Critical',      value: critical,          color:'bg-red-800',    icon:'🚨' },
           ].map(s => (
-            <div key={s.label} className={`${s.bg} rounded-xl p-4`}>
-              <div className="flex items-center gap-2 mb-1"><span>{s.icon}</span><p className="text-xs text-gray-500">{s.label}</p></div>
-              <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
+            <div key={s.label} className={`${s.color} rounded-xl p-4 text-white`}>
+              <div className="text-2xl mb-1">{s.icon}</div>
+              <div className="text-2xl font-black">{s.value}</div>
+              <div className="text-sm opacity-80">{s.label}</div>
             </div>
           ))}
         </div>
-        <div className="flex gap-3 mb-6 flex-wrap">
-          <input value={studentSearch} onChange={e => setStudentSearch(e.target.value)} placeholder="Search student..." className="flex-1 min-w-48 px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-          <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
-            {['', 'POSITIVE', 'NEGATIVE', 'NEUTRAL'].map(t => (
-              <button key={t || 'all'} onClick={() => setTypeFilter(t)} className={`px-3 py-1 text-xs rounded-lg font-medium transition-all ${typeFilter === t ? 'bg-white text-green-700 shadow-sm' : 'text-gray-500'}`}>{t || 'All'}</button>
-            ))}
-          </div>
-        </div>
-        {isLoading ? <div className="text-center py-12 text-gray-400">Loading records...</div>
-          : filtered.length === 0 ? (
-            <div className="text-center py-12 text-gray-400">
-              <p className="text-4xl mb-2">📋</p>
-              <p className="font-medium">{typeFilter || studentSearch ? 'No records found' : 'No conduct records yet'}</p>
-              {!typeFilter && !studentSearch && <p className="text-sm mt-1">Log positive achievements or discipline incidents</p>}
+
+        <PageHeader title="Conduct Records" subtitle="All behaviour incidents and achievements"
+          action={
+            <div className="flex gap-3">
+              {['','POSITIVE','NEGATIVE','NEUTRAL'].map(t => (
+                <button key={t} onClick={() => setTypeFilter(t)}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${typeFilter===t?'bg-blue-600 text-white':'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+                  {t || 'All'}
+                </button>
+              ))}
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search student..." className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400" />
+              <button onClick={() => { setForm(EMPTY); setModal(true); }} className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700">+ Log Incident</button>
+            </div>
+          }
+        />
+
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          {isLoading ? (
+            <div className="text-center py-16 text-gray-400">Loading records...</div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-16 text-gray-400">
+              <div className="text-5xl mb-3">📋</div>
+              <p className="font-semibold">No conduct records found</p>
+              <p className="text-sm mt-1">Click "Log Incident" to add a record</p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {filtered.map((r: any) => {
-                const name = r.student?.user?.profile ? `${r.student.user.profile.firstName} ${r.student.user.profile.lastName}` : 'Unknown Student';
-                return (
-                  <div key={r.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold ${r.type === 'POSITIVE' ? 'bg-green-100 text-green-600' : r.type === 'NEGATIVE' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'}`}>
-                          {r.type === 'POSITIVE' ? '⭐' : r.type === 'NEGATIVE' ? '⚠️' : '📝'}
-                        </div>
-                        <div>
-                          <p className="font-bold text-gray-900 text-sm">{name}</p>
-                          <p className="text-xs text-gray-400">{r.category} · {formatDate(r.createdAt)}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={TYPE_COLOR[r.type] as any}>{r.type}</Badge>
-                        {r.severity && <Badge variant={SEVERITY_COLOR[r.severity] as any}>{r.severity}</Badge>}
-                      </div>
-                    </div>
-                    <p className="text-sm text-gray-600 ml-12">{r.description}</p>
-                    {r.actionTaken && <p className="text-xs text-blue-600 ml-12 mt-1">Action: {r.actionTaken}</p>}
-                    {r.isResolved && <p className="text-xs text-green-600 ml-12 mt-1">✅ Resolved</p>}
-                  </div>
-                );
-              })}
-            </div>
+            <table className="w-full">
+              <thead><tr className="bg-gray-50 border-b border-gray-100">
+                {['Student','Date','Type','Category','Severity','Description','Action Taken','Parent Alert'].map(h => (
+                  <th key={h} className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wide">{h}</th>
+                ))}
+              </tr></thead>
+              <tbody>
+                {filtered.map((r: any) => (
+                  <tr key={r.id} className="border-b border-gray-50 hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      <p className="font-semibold text-sm">{r.student?.user?.profile?.firstName} {r.student?.user?.profile?.lastName}</p>
+                      <p className="text-xs text-gray-400">{r.student?.rollNumber}</p>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{new Date(r.createdAt).toLocaleDateString('en-PK',{day:'numeric',month:'short',year:'numeric'})}</td>
+                    <td className="px-4 py-3"><Badge variant={TYPE_COLOR[r.type] ?? 'gray'}>{r.type}</Badge></td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{r.category}</td>
+                    <td className="px-4 py-3"><Badge variant={SEV_COLOR[r.severity] ?? 'gray'}>{r.severity}</Badge></td>
+                    <td className="px-4 py-3 text-sm text-gray-700 max-w-xs truncate">{r.description}</td>
+                    <td className="px-4 py-3 text-sm text-gray-500 max-w-xs truncate">{r.actionTaken || '—'}</td>
+                    <td className="px-4 py-3">
+                      {r.type === 'NEGATIVE' ? (
+                        alertsSent.includes(r.id) ? (
+                          <span className="text-xs text-green-600 font-bold">✅ Sent</span>
+                        ) : (
+                          <button onClick={() => sendAlert(r)} className="px-2 py-1 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700">Alert Parent</button>
+                        )
+                      ) : <span className="text-gray-300 text-xs">N/A</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
-      </div>
-      <Modal isOpen={modal} onClose={() => setModal(false)} title="Log Behavior Record">
-        <div className="p-6 space-y-4">
-          <div><label className="text-xs text-gray-500 mb-1 block">Student *</label>
-            <select value={form.studentId} onChange={e => setForm({ ...form, studentId: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-              <option value="">Select Student</option>
-              {students.map((s: any) => {
-                const name = s.user?.profile ? `${s.user.profile.firstName} ${s.user.profile.lastName}` : s.admissionNo;
-                return <option key={s.id} value={s.id}>{name}</option>;
-              })}
-            </select>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div><label className="text-xs text-gray-500 mb-1 block">Type</label>
-              <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-                {['POSITIVE','NEGATIVE','NEUTRAL'].map(t => <option key={t}>{t}</option>)}
-              </select>
-            </div>
-            <div><label className="text-xs text-gray-500 mb-1 block">Category</label>
-              <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-                {['DISCIPLINE','ACADEMIC','ATTENDANCE','SPORTS','SOCIAL'].map(c => <option key={c}>{c}</option>)}
-              </select>
-            </div>
-            <div><label className="text-xs text-gray-500 mb-1 block">Severity</label>
-              <select value={form.severity} onChange={e => setForm({ ...form, severity: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-                {['LOW','MEDIUM','HIGH','CRITICAL'].map(s => <option key={s}>{s}</option>)}
-              </select>
-            </div>
-          </div>
-          <div><label className="text-xs text-gray-500 mb-1 block">Description *</label>
-            <textarea rows={3} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Describe the behavior incident..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-          </div>
-          <div><label className="text-xs text-gray-500 mb-1 block">Action Taken</label>
-            <input value={form.actionTaken} onChange={e => setForm({ ...form, actionTaken: e.target.value })} placeholder="e.g. Warning issued, parent notified..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-          </div>
-          <button onClick={handleCreate} disabled={create.isPending} className="w-full py-2 bg-green-600 text-white text-sm rounded-lg disabled:opacity-50">
-            {create.isPending ? 'Logging...' : 'Log Record'}
-          </button>
         </div>
-      </Modal>
+      </div>
+
+      {modal && (
+        <Modal title="Log Conduct Record" onClose={() => setModal(false)}>
+          <div className="p-6 space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Student *</label>
+              <select value={form.studentId} onChange={e => setForm((f:any) => ({...f, studentId:e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white">
+                <option value="">Select student</option>
+                {students.map((s:any) => <option key={s.id} value={s.id}>{s.user?.profile?.firstName} {s.user?.profile?.lastName} — {s.rollNumber}</option>)}
+              </select>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Type</label>
+                <select value={form.type} onChange={e => setForm((f:any) => ({...f, type:e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white">
+                  {['POSITIVE','NEGATIVE','NEUTRAL'].map(t => <option key={t}>{t}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Category</label>
+                <select value={form.category} onChange={e => setForm((f:any) => ({...f, category:e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white">
+                  {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Severity</label>
+                <select value={form.severity} onChange={e => setForm((f:any) => ({...f, severity:e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white">
+                  {['LOW','MEDIUM','HIGH','CRITICAL'].map(s => <option key={s}>{s}</option>)}
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Description *</label>
+              <textarea value={form.description} onChange={e => setForm((f:any) => ({...f, description:e.target.value}))} rows={3} placeholder="Describe the incident in detail..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400 resize-none"/>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Action Taken</label>
+              <input value={form.actionTaken} onChange={e => setForm((f:any) => ({...f, actionTaken:e.target.value}))} placeholder="e.g. Verbal warning, detention, parent called..." className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400"/>
+            </div>
+            {form.type === 'NEGATIVE' && (
+              <label className="flex items-center gap-3 p-3 bg-red-50 border border-red-100 rounded-xl cursor-pointer">
+                <input type="checkbox" checked={form.notifyParent} onChange={e => setForm((f:any) => ({...f, notifyParent:e.target.checked}))} className="w-4 h-4 accent-red-600"/>
+                <div>
+                  <p className="text-sm font-bold text-red-800">Auto-notify parent via SMS + in-app</p>
+                  <p className="text-xs text-red-600">Parent receives instant alert about this incident</p>
+                </div>
+              </label>
+            )}
+            <div className="flex gap-3 pt-2">
+              <button onClick={() => setModal(false)} className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
+              <button
+                onClick={() => create.mutate(form)}
+                disabled={!form.studentId || !form.description || create.isPending}
+                className="flex-1 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 disabled:opacity-40"
+              >{create.isPending ? 'Saving...' : '💾 Save Record'}</button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </>
   );
 }

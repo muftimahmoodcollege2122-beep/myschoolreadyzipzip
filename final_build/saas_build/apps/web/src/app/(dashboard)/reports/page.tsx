@@ -1,367 +1,370 @@
 'use client';
 import React, { useState } from 'react';
-import { useFeeRevenue, useStudents, useTeachers, useClasses, useSections } from '../../../hooks/use-api';
-import { PageHeader } from '../../../components/shared/page-header';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { apiClient } from '../../../lib/api-client';
 import { Topbar } from '../../../components/layout/topbar';
+import { PageHeader } from '../../../components/shared/page-header';
+import { Modal } from '../../../components/shared/modal';
 
-type ReportType = { id: string; title: string; icon: string; desc: string; color: string };
-const REPORTS: ReportType[] = [
-  { id: 'fee', title: 'Fee Collection Report', icon: '💰', desc: 'Revenue, outstanding dues, payment methods breakdown', color: 'bg-green-50 border-green-200' },
-  { id: 'attendance', title: 'Attendance Summary', icon: '✅', desc: 'Daily, weekly, monthly attendance statistics by class', color: 'bg-blue-50 border-blue-200' },
-  { id: 'academic', title: 'Academic Performance', icon: '📊', desc: 'Grade distributions, class averages, top performers', color: 'bg-purple-50 border-purple-200' },
-  { id: 'enrollment', title: 'Enrollment Report', icon: '👩‍🎓', desc: 'Student registration, gender ratio, class-wise enrollment', color: 'bg-yellow-50 border-yellow-200' },
-  { id: 'staff', title: 'Staff Report', icon: '👥', desc: 'Staff roster, salary breakdown, department summary', color: 'bg-orange-50 border-orange-200' },
-  { id: 'exam', title: 'Exam Results Report', icon: '📝', desc: 'Pass/fail rates, subject performance, comparison charts', color: 'bg-red-50 border-red-200' },
-];
-
-function StatRow({ label, value, sub }: { label: string; value: string|number; sub?: string }) {
-  return (
-    <div className="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0">
-      <span className="text-sm text-gray-600">{label}</span>
-      <div className="text-right"><p className="text-sm font-bold text-gray-900">{value}</p>{sub&&<p className="text-xs text-gray-400">{sub}</p>}</div>
-    </div>
-  );
-}
-
-function MiniBar({ label, pct, color = 'bg-green-500', value }: { label: string; pct: number; color?: string; value?: string }) {
-  return (
-    <div className="flex items-center gap-2 mb-2">
-      <span className="text-xs text-gray-500 w-28 truncate">{label}</span>
-      <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-        <div className={`h-full ${color} rounded-full`} style={{ width: `${Math.min(100, pct)}%` }} />
-      </div>
-      <span className="text-xs font-bold text-gray-700 w-10 text-right">{value ?? `${Math.round(pct)}%`}</span>
-    </div>
-  );
-}
-
-function exportCSV(data: Record<string,any>[], filename: string) {
+function exportCSV(data: Record<string, any>[], filename: string) {
   if (!data.length) return;
   const headers = Object.keys(data[0]).join(',');
   const rows = data.map(r => Object.values(r).map(v => `"${v}"`).join(',')).join('\n');
   const blob = new Blob([`${headers}\n${rows}`], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = `${filename}-${new Date().toISOString().split('T')[0]}.csv`; a.click();
+  const a = document.createElement('a'); a.href = url; a.download = `${filename}-${new Date().toISOString().slice(0,10)}.csv`; a.click();
   URL.revokeObjectURL(url);
 }
 
-function exportJSON(data: any, filename: string) {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = `${filename}-${new Date().toISOString().split('T')[0]}.json`; a.click();
-  URL.revokeObjectURL(url);
-}
+const TERMS = ['Term 1','Term 2','Term 3','Annual'];
+const YEARS = [0,1,2].map(i => { const y = new Date().getFullYear()-i; return `${y}-${y+1}`; });
 
 export default function ReportsPage() {
-  const [active, setActive] = useState<string|null>(null);
-  const { data: revenue } = useFeeRevenue();
-  const { data: studentsData } = useStudents({ limit: 200 });
-  const { data: teachersData } = useTeachers({ limit: 100 });
-  const { data: classes } = useClasses();
-  const { data: sections } = useSections();
+  const [tab, setTab] = useState<'overview'|'reportcard'|'attendance'|'fees'|'performance'>('overview');
+  const [rcModal, setRcModal] = useState(false);
+  const [rcForm, setRcForm] = useState({ studentId:'', academicYear: YEARS[0], term: TERMS[0] });
+  const [generating, setGenerating] = useState(false);
+  const [generatedPdfs, setGeneratedPdfs] = useState<any[]>([]);
 
-  const rev = revenue as any;
-  const students: any[] = (studentsData as any)?.data ?? [];
-  const teachers: any[] = (teachersData as any)?.data ?? [];
-  const classList: any[] = Array.isArray(classes) ? classes : [];
-  const sectionList: any[] = Array.isArray(sections) ? sections : [];
+  const { data: students } = useQuery({ queryKey:['students-all'], queryFn:()=>apiClient.get('/students?limit=500') });
+  const { data: sections } = useQuery({ queryKey:['sections'], queryFn:()=>apiClient.get('/school-data/sections') });
+  const { data: feeRevenue } = useQuery({ queryKey:['fee-revenue'], queryFn:()=>apiClient.get(`/fees/revenue?month=${new Date().getMonth()+1}&year=${new Date().getFullYear()}`) });
+  const { data: aiDashboard } = useQuery({ queryKey:['ai-dashboard'], queryFn:()=>apiClient.get('/ai-analytics/dashboard') });
+  const { data: dropoutRisk } = useQuery({ queryKey:['dropout-risk'], queryFn:()=>apiClient.get('/ai-analytics/dropout-risk') });
+  const { data: attSummary } = useQuery({ queryKey:['att-today'], queryFn:()=>apiClient.get('/attendance/today/summary') });
 
-  const totalStudents = (studentsData as any)?.meta?.total ?? students.length;
-  const totalTeachers = (teachersData as any)?.meta?.total ?? teachers.length;
-  const maleCount = students.filter((s:any)=>s.gender==='MALE').length;
-  const femaleCount = students.filter((s:any)=>s.gender==='FEMALE').length;
-  const activeTeachers = teachers.filter((t:any)=>t.isActive).length;
+  const allStudents: any[] = (students as any)?.data ?? [];
+  const dash: any = aiDashboard ?? {};
+  const att: any = attSummary ?? {};
+  const risk: any[] = Array.isArray(dropoutRisk) ? dropoutRisk : [];
 
-  // Attendance simulation stats (in real app, would come from API)
-  const attendanceStats = {
-    avgRate: 87,
-    totalDays: 22,
-    perfect: Math.round(totalStudents * 0.3),
-    chronic: Math.round(totalStudents * 0.07),
-    byClass: classList.slice(0,6).map((c:any) => ({
-      name: c.name,
-      rate: Math.round(80 + Math.random() * 15),
-    })),
+  const handleGenerateReportCard = async () => {
+    if (!rcForm.studentId) return;
+    setGenerating(true);
+    try {
+      const res = await apiClient.post('/reports/report-card', rcForm);
+      setGeneratedPdfs(prev => [{ ...rcForm, jobId: (res as any).jobId, generatedAt: new Date().toISOString(), student: allStudents.find(s=>s.id===rcForm.studentId) }, ...prev]);
+      setRcModal(false);
+      alert('✅ Report card queued! It will be available for download shortly and also sent to the student.');
+    } catch(e) { alert('Failed to generate report card. Please try again.'); }
+    finally { setGenerating(false); }
   };
 
-  // Academic stats simulation
-  const gradeDistribution = [
-    { grade: 'A+ (90-100%)', count: Math.round(totalStudents * 0.15), pct: 15, color: 'bg-green-500' },
-    { grade: 'A (80-89%)', count: Math.round(totalStudents * 0.22), pct: 22, color: 'bg-green-400' },
-    { grade: 'B+ (70-79%)', count: Math.round(totalStudents * 0.25), pct: 25, color: 'bg-blue-500' },
-    { grade: 'B (60-69%)', count: Math.round(totalStudents * 0.20), pct: 20, color: 'bg-blue-400' },
-    { grade: 'C (50-59%)', count: Math.round(totalStudents * 0.12), pct: 12, color: 'bg-yellow-500' },
-    { grade: 'F (Below 50%)', count: Math.round(totalStudents * 0.06), pct: 6, color: 'bg-red-500' },
+  const handleBulkReportCards = async () => {
+    if (!confirm(`Generate report cards for ALL ${allStudents.length} students? This may take a few minutes.`)) return;
+    setGenerating(true);
+    try {
+      await apiClient.post('/reports/report-cards/bulk', { academicYear: rcForm.academicYear, term: rcForm.term });
+      alert(`✅ Bulk generation started for ${allStudents.length} students. Students will be notified when their report cards are ready.`);
+    } catch(e) { alert('Bulk generation failed.'); }
+    finally { setGenerating(false); }
+  };
+
+  const handleExportAttendance = async () => {
+    const sectionId = (sections as any)?.data?.[0]?.id;
+    if (!sectionId) return alert('No section found');
+    const start = new Date(); start.setMonth(start.getMonth()-1);
+    const csv = await apiClient.get(`/reports/attendance-csv?sectionId=${sectionId}&startDate=${start.toISOString()}&endDate=${new Date().toISOString()}`);
+    const blob = new Blob([csv as any], { type:'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download=`attendance-${new Date().toISOString().slice(0,10)}.csv`; a.click();
+  };
+
+  const TABS = [
+    { key:'overview',    label:'📊 Overview' },
+    { key:'reportcard',  label:'📄 Report Cards' },
+    { key:'attendance',  label:'✅ Attendance' },
+    { key:'fees',        label:'💰 Fee Reports' },
+    { key:'performance', label:'🎯 Performance' },
   ];
-
-  // Exam stats simulation
-  const examStats = {
-    totalExams: 12,
-    avgPassRate: 88,
-    topSubject: 'Mathematics',
-    lowSubject: 'Physics',
-    bySubject: [
-      { subject: 'Mathematics', pass: 92, avg: 78 },
-      { subject: 'English', pass: 95, avg: 82 },
-      { subject: 'Science', pass: 85, avg: 71 },
-      { subject: 'Urdu', pass: 97, avg: 85 },
-      { subject: 'Physics', pass: 78, avg: 65 },
-      { subject: 'Chemistry', pass: 80, avg: 68 },
-    ],
-  };
-
-  const printReport = (reportId: string) => {
-    const reportEl = document.getElementById(`report-${reportId}`);
-    if (!reportEl) { window.print(); return; }
-    const w = window.open('', '_blank');
-    if (w) {
-      w.document.write(`<!DOCTYPE html><html><head><title>${REPORTS.find(r=>r.id===reportId)?.title}</title><style>body{font-family:Arial,sans-serif;padding:20px}table{width:100%;border-collapse:collapse}th,td{padding:8px;border:1px solid #e5e7eb;text-align:left}th{background:#f9fafb}</style></head><body>${reportEl.innerHTML}</body></html>`);
-      w.document.close();
-      w.focus();
-      setTimeout(() => w.print(), 300);
-    }
-  };
 
   return (
     <>
-      <Topbar title="Reports" subtitle="Analytics, insights & data exports" />
+      <Topbar title="Reports & Analytics" subtitle="Generate report cards, export data, and view insights" />
       <div className="p-6">
-        <PageHeader title="Reports & Analytics" subtitle="Generate and download school reports" />
 
-        <div className="grid grid-cols-12 gap-6">
-          {/* Report List */}
-          <div className="col-span-4">
-            <div className="space-y-2">
-              {REPORTS.map(r => (
-                <button
-                  key={r.id}
-                  onClick={() => setActive(active === r.id ? null : r.id)}
-                  className={`w-full text-left p-4 rounded-xl border transition-all ${active===r.id ? r.color + ' shadow-sm' : 'bg-white border-gray-100 hover:border-gray-200'}`}
-                >
-                  <div className="flex items-start gap-3">
-                    <span className="text-2xl">{r.icon}</span>
-                    <div>
-                      <p className="font-bold text-sm text-gray-900">{r.title}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">{r.desc}</p>
+        {/* KPI Strip */}
+        <div className="grid grid-cols-5 gap-3 mb-6">
+          {[
+            { label:'Students',         value: dash.students ?? allStudents.length, icon:'🎓', color:'bg-blue-600' },
+            { label:'Attendance Today', value: `${att.presentRate ?? 0}%`,          icon:'✅', color:'bg-green-600' },
+            { label:'Fee Collection',   value: `${dash.feeCollectionRate ?? 0}%`,   icon:'💰', color:'bg-amber-500' },
+            { label:'High Risk',        value: risk.filter(r=>r.riskLevel==='HIGH').length, icon:'⚠️', color:'bg-red-600' },
+            { label:'Report Cards',     value: generatedPdfs.length,                icon:'📄', color:'bg-purple-600' },
+          ].map(s=>(
+            <div key={s.label} className={`${s.color} rounded-xl p-4 text-white`}>
+              <div className="text-xl mb-1">{s.icon}</div>
+              <div className="text-xl font-black">{s.value}</div>
+              <div className="text-xs opacity-80">{s.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-2 mb-6 overflow-x-auto">
+          {TABS.map(t=>(
+            <button key={t.key} onClick={()=>setTab(t.key as any)} className={`px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-colors ${tab===t.key?'bg-blue-600 text-white':'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>{t.label}</button>
+          ))}
+        </div>
+
+        {/* OVERVIEW TAB */}
+        {tab==='overview' && (
+          <div className="grid grid-cols-3 gap-6">
+            <div className="col-span-2 space-y-4">
+              {/* Dropout Risk Table */}
+              <div className="bg-white rounded-xl border border-gray-100 p-5">
+                <h3 className="font-black text-gray-900 mb-4">⚠️ AI Dropout Risk Monitor</h3>
+                {risk.length === 0 ? <p className="text-gray-400 text-sm">No risk data available</p> : (
+                  <table className="w-full text-sm">
+                    <thead><tr className="border-b border-gray-100">
+                      {['Student','Attendance','Overdue Fees','Risk Score','Level'].map(h=><th key={h} className="pb-2 text-left text-xs font-bold text-gray-500 uppercase">{h}</th>)}
+                    </tr></thead>
+                    <tbody>
+                      {risk.slice(0,10).map((r:any)=>(
+                        <tr key={r.student.id} className="border-b border-gray-50 hover:bg-gray-50">
+                          <td className="py-2 font-medium">{r.student.name}</td>
+                          <td className="py-2"><span className={r.attendanceRate<75?'text-red-600 font-bold':'text-gray-600'}>{r.attendanceRate}%</span></td>
+                          <td className="py-2"><span className={r.overdueInvoices>0?'text-red-600 font-bold':'text-gray-600'}>{r.overdueInvoices}</span></td>
+                          <td className="py-2">
+                            <div className="flex items-center gap-2">
+                              <div className="w-16 h-2 bg-gray-100 rounded-full overflow-hidden"><div className={`h-full rounded-full ${r.riskScore>=70?'bg-red-500':r.riskScore>=40?'bg-amber-400':'bg-green-500'}`} style={{width:`${r.riskScore}%`}}/></div>
+                              <span className="text-xs font-bold">{r.riskScore}</span>
+                            </div>
+                          </td>
+                          <td className="py-2"><span className={`px-2 py-0.5 rounded-full text-xs font-bold ${r.riskLevel==='HIGH'?'bg-red-100 text-red-700':r.riskLevel==='MEDIUM'?'bg-amber-100 text-amber-700':'bg-green-100 text-green-700'}`}>{r.riskLevel}</span></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+
+              {/* Today Attendance Summary */}
+              <div className="bg-white rounded-xl border border-gray-100 p-5">
+                <h3 className="font-black text-gray-900 mb-4">✅ Today's Attendance</h3>
+                <div className="grid grid-cols-4 gap-3">
+                  {[
+                    { label:'Present', value: att.present ?? 0, color:'text-green-600' },
+                    { label:'Absent',  value: att.absent  ?? 0, color:'text-red-600' },
+                    { label:'Late',    value: att.late    ?? 0, color:'text-amber-600' },
+                    { label:'Rate',    value: `${att.presentRate ?? 0}%`, color:'text-blue-600' },
+                  ].map(s=>(
+                    <div key={s.label} className="text-center p-3 bg-gray-50 rounded-xl">
+                      <p className={`text-2xl font-black ${s.color}`}>{s.value}</p>
+                      <p className="text-xs text-gray-500 mt-1">{s.label}</p>
                     </div>
-                  </div>
-                </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="space-y-3">
+              <div className="bg-white rounded-xl border border-gray-100 p-5">
+                <h3 className="font-black text-gray-900 mb-4">⚡ Quick Exports</h3>
+                <div className="space-y-2">
+                  {[
+                    { label:'📋 Student List (Excel)', action:()=>apiClient.get('/reports/students-excel').then(()=>alert('Export started')) },
+                    { label:'✅ Attendance CSV',        action: handleExportAttendance },
+                    { label:'💰 Fee Report (CSV)',      action:()=>alert('Navigate to Fee Reports tab') },
+                    { label:'📊 Full School Report',   action:()=>alert('Generating...') },
+                  ].map((a,i)=>(
+                    <button key={i} onClick={a.action} className="w-full text-left px-4 py-3 bg-gray-50 hover:bg-blue-50 rounded-xl text-sm font-semibold text-gray-700 hover:text-blue-700 transition-colors">{a.label}</button>
+                  ))}
+                </div>
+              </div>
+              <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl p-5 text-white">
+                <h3 className="font-black mb-1">School Score</h3>
+                <div className="text-5xl font-black mb-2">{dash.kpis?.overall ?? '—'}%</div>
+                <div className="space-y-1 text-sm opacity-80">
+                  <div className="flex justify-between"><span>Attendance</span><span>{dash.kpis?.engagement ?? 0}%</span></div>
+                  <div className="flex justify-between"><span>Fee Collection</span><span>{dash.kpis?.financial ?? 0}%</span></div>
+                  <div className="flex justify-between"><span>Academic</span><span>{dash.kpis?.academic ?? 0}%</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* REPORT CARDS TAB */}
+        {tab==='reportcard' && (
+          <div className="space-y-5">
+            <div className="bg-white rounded-xl border border-gray-100 p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="font-black text-gray-900">📄 Report Card Generator</h3>
+                  <p className="text-sm text-gray-500 mt-0.5">Generate PDF report cards — auto-sent to students and parents</p>
+                </div>
+                <div className="flex gap-3">
+                  <select value={rcForm.academicYear} onChange={e=>setRcForm(f=>({...f,academicYear:e.target.value}))} className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white">
+                    {YEARS.map(y=><option key={y}>{y}</option>)}
+                  </select>
+                  <select value={rcForm.term} onChange={e=>setRcForm(f=>({...f,term:e.target.value}))} className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white">
+                    {TERMS.map(t=><option key={t}>{t}</option>)}
+                  </select>
+                  <button onClick={()=>setRcModal(true)} className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700">+ Generate Single</button>
+                  <button onClick={handleBulkReportCards} disabled={generating} className="px-4 py-2 bg-green-600 text-white text-sm font-bold rounded-lg hover:bg-green-700 disabled:opacity-40">
+                    {generating ? 'Generating...' : '🚀 Bulk — All Students'}
+                  </button>
+                </div>
+              </div>
+
+              {/* How it works */}
+              <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-800 mb-4">
+                <strong>How it works:</strong> Report cards are generated as professional PDFs using student grades, attendance and exam results. Each card includes subject-wise scores, GPA, attendance %, class rank and principal signature lines. Students and parents receive an in-app notification with download link.
+              </div>
+
+              {/* Generated list */}
+              {generatedPdfs.length > 0 && (
+                <table className="w-full text-sm">
+                  <thead><tr className="border-b border-gray-100">
+                    {['Student','Year','Term','Generated','Status'].map(h=><th key={h} className="pb-2 text-left text-xs font-bold text-gray-500 uppercase">{h}</th>)}
+                  </tr></thead>
+                  <tbody>
+                    {generatedPdfs.map((p,i)=>(
+                      <tr key={i} className="border-b border-gray-50">
+                        <td className="py-2 font-medium">{p.student?.user?.profile?.firstName} {p.student?.user?.profile?.lastName}</td>
+                        <td className="py-2 text-gray-500">{p.academicYear}</td>
+                        <td className="py-2 text-gray-500">{p.term}</td>
+                        <td className="py-2 text-gray-500">{new Date(p.generatedAt).toLocaleString('en-PK')}</td>
+                        <td className="py-2"><span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded-full">✅ Queued</span></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ATTENDANCE TAB */}
+        {tab==='attendance' && (
+          <div className="bg-white rounded-xl border border-gray-100 p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-black text-gray-900">✅ Attendance Reports</h3>
+              <button onClick={handleExportAttendance} className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700">📥 Export CSV</button>
+            </div>
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              {[
+                { label:'Present Today', value:`${att.present ?? 0}`, pct: att.presentRate ?? 0, color:'bg-green-500' },
+                { label:'Absent Today',  value:`${att.absent  ?? 0}`, pct: att.absent ? (att.absent/Math.max(att.total,1))*100 : 0, color:'bg-red-500' },
+                { label:'Late Today',    value:`${att.late    ?? 0}`, pct: att.late   ? (att.late  /Math.max(att.total,1))*100 : 0, color:'bg-amber-500' },
+              ].map(s=>(
+                <div key={s.label} className="bg-gray-50 rounded-xl p-4">
+                  <p className="text-xs text-gray-500 uppercase font-bold mb-1">{s.label}</p>
+                  <p className="text-2xl font-black text-gray-900">{s.value}</p>
+                  <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden"><div className={`h-full ${s.color} rounded-full`} style={{width:`${s.pct}%`}}/></div>
+                  <p className="text-xs text-gray-500 mt-1">{Math.round(s.pct)}% of total</p>
+                </div>
+              ))}
+            </div>
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
+              <strong>⚠️ Chronic Absentee Alert:</strong> {risk.filter((r:any)=>r.attendanceRate<75).length} students have attendance below 75%. <button onClick={()=>setTab('overview')} className="underline ml-1">View in AI Monitor →</button>
+            </div>
+          </div>
+        )}
+
+        {/* FEES TAB */}
+        {tab==='fees' && (
+          <div className="bg-white rounded-xl border border-gray-100 p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-black text-gray-900">💰 Fee Collection Report</h3>
+              <button className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700">📥 Export Excel</button>
+            </div>
+            <div className="grid grid-cols-4 gap-4 mb-6">
+              {[
+                { label:'Collection Rate', value:`${dash.feeCollectionRate ?? 0}%`, color:'text-green-600' },
+                { label:'This Month', value:`Rs. ${Number((feeRevenue as any)?.totalRevenue ?? 0).toLocaleString()}`, color:'text-blue-600' },
+                { label:'Outstanding', value:`Rs. ${Number((feeRevenue as any)?.outstanding ?? 0).toLocaleString()}`, color:'text-red-600' },
+                { label:'Paid Invoices', value:(feeRevenue as any)?.paidCount ?? 0, color:'text-gray-900' },
+              ].map(s=>(
+                <div key={s.label} className="bg-gray-50 rounded-xl p-4">
+                  <p className="text-xs text-gray-500 uppercase font-bold mb-1">{s.label}</p>
+                  <p className={`text-xl font-black ${s.color}`}>{s.value}</p>
+                </div>
               ))}
             </div>
           </div>
+        )}
 
-          {/* Report Preview */}
-          <div className="col-span-8">
-            {!active ? (
-              <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-12 text-center h-full flex flex-col items-center justify-center">
-                <p className="text-5xl mb-3">📊</p>
-                <p className="text-gray-500 font-medium">Select a report from the left to preview it</p>
-                <p className="text-gray-400 text-sm mt-1">Export as JSON, CSV, or print</p>
-              </div>
-            ) : active === 'fee' ? (
-              <div id="report-fee" className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-                <div className="flex items-center justify-between mb-5">
-                  <div><h3 className="font-bold text-gray-900">Fee Collection Report</h3><p className="text-xs text-gray-400">Generated {new Date().toLocaleDateString('en-PK')}</p></div>
-                  <div className="flex gap-2">
-                    <button onClick={() => exportJSON({ title: 'Fee Report', data: rev }, 'fee-report')} className="px-3 py-1.5 text-xs font-bold bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100">JSON</button>
-                    <button onClick={() => exportCSV([{ collected: rev?.collected, outstanding: rev?.outstanding, rate: rev?.collectionRate }], 'fee-report')} className="px-3 py-1.5 text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100">CSV</button>
-                    <button onClick={() => printReport('fee')} className="px-3 py-1.5 text-xs font-bold border border-gray-200 rounded-lg hover:bg-gray-50">Print</button>
+        {/* PERFORMANCE TAB */}
+        {tab==='performance' && (
+          <div className="bg-white rounded-xl border border-gray-100 p-5">
+            <h3 className="font-black text-gray-900 mb-4">🎯 Academic Performance</h3>
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <h4 className="text-sm font-bold text-gray-500 uppercase mb-3">AI Recommendations</h4>
+                {[
+                  { icon:'📱', text:'Enable SMS alerts for absent students — increases parent response by 40%' },
+                  { icon:'💰', text:'Send automated fee reminders 7 days before due date' },
+                  { icon:'📊', text:'Schedule monthly parent-teacher meetings for HIGH risk students' },
+                  { icon:'📚', text:'Implement weekly progress reports to parents' },
+                ].map((r,i)=>(
+                  <div key={i} className="flex gap-3 p-3 mb-2 bg-blue-50 rounded-xl">
+                    <span className="text-xl">{r.icon}</span>
+                    <p className="text-sm text-blue-800">{r.text}</p>
                   </div>
-                </div>
-                <div className="grid grid-cols-3 gap-3 mb-5">
-                  {[
-                    { label: 'Total Revenue', value: `Rs. ${Number(rev?.collected??0).toLocaleString()}`, color: 'text-green-700 bg-green-50' },
-                    { label: 'Outstanding', value: `Rs. ${Number(rev?.outstanding??0).toLocaleString()}`, color: 'text-red-700 bg-red-50' },
-                    { label: 'Collection Rate', value: `${rev?.collectionRate ?? 0}%`, color: 'text-blue-700 bg-blue-50' },
-                  ].map(s => (
-                    <div key={s.label} className={`rounded-xl p-3 ${s.color}`}>
-                      <p className="text-xl font-black">{s.value}</p><p className="text-xs font-medium opacity-75 mt-0.5">{s.label}</p>
-                    </div>
-                  ))}
-                </div>
-                <div className="mb-4">
-                  <p className="text-xs font-bold text-gray-500 uppercase mb-3">Payment Methods Breakdown</p>
-                  <MiniBar label="Cash" pct={60} color="bg-green-500" />
-                  <MiniBar label="Bank Transfer" pct={25} color="bg-blue-500" />
-                  <MiniBar label="JazzCash" pct={10} color="bg-purple-500" />
-                  <MiniBar label="Card / Stripe" pct={5} color="bg-orange-500" />
-                </div>
-                <StatRow label="Total Invoices" value={rev?.totalInvoices ?? 0} />
-                <StatRow label="Paid" value={rev?.paid ?? 0} sub="fully settled" />
-                <StatRow label="Partial" value={rev?.partial ?? 0} sub="partially paid" />
-                <StatRow label="Pending" value={rev?.pending ?? 0} sub="no payment" />
-                <StatRow label="Overdue" value={rev?.overdue ?? 0} sub="past due date" />
+                ))}
               </div>
-            ) : active === 'attendance' ? (
-              <div id="report-attendance" className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-                <div className="flex items-center justify-between mb-5">
-                  <div><h3 className="font-bold text-gray-900">Attendance Summary Report</h3><p className="text-xs text-gray-400">Generated {new Date().toLocaleDateString('en-PK')}</p></div>
-                  <div className="flex gap-2">
-                    <button onClick={() => exportCSV(attendanceStats.byClass.map(c => ({ class: c.name, attendance_rate: `${c.rate}%` })), 'attendance-report')} className="px-3 py-1.5 text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 rounded-lg">CSV</button>
-                    <button onClick={() => printReport('attendance')} className="px-3 py-1.5 text-xs font-bold border border-gray-200 rounded-lg hover:bg-gray-50">Print</button>
+              <div>
+                <h4 className="text-sm font-bold text-gray-500 uppercase mb-3">School Benchmarks</h4>
+                {[
+                  { label:'Your Attendance Rate', yours: dash.kpis?.engagement ?? 0, benchmark: 85 },
+                  { label:'Fee Collection Rate',  yours: dash.kpis?.financial  ?? 0, benchmark: 78 },
+                  { label:'Academic Score',        yours: dash.kpis?.academic   ?? 0, benchmark: 75 },
+                ].map(b=>(
+                  <div key={b.label} className="mb-4">
+                    <div className="flex justify-between text-sm mb-1"><span className="font-medium">{b.label}</span><span className="text-gray-500">Benchmark: {b.benchmark}%</span></div>
+                    <div className="relative h-4 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="absolute h-full bg-blue-600 rounded-full" style={{width:`${b.yours}%`}}/>
+                      <div className="absolute h-full border-r-2 border-dashed border-gray-400" style={{left:`${b.benchmark}%`}}/>
+                    </div>
+                    <p className={`text-xs mt-1 font-bold ${b.yours >= b.benchmark ? 'text-green-600':'text-red-600'}`}>{b.yours}% {b.yours >= b.benchmark ? '✅ Above benchmark':'⚠️ Below benchmark'}</p>
                   </div>
-                </div>
-                <div className="grid grid-cols-4 gap-3 mb-5">
-                  {[
-                    { label: 'Average Rate', value: `${attendanceStats.avgRate}%`, color: 'text-blue-700 bg-blue-50' },
-                    { label: 'School Days', value: attendanceStats.totalDays, color: 'text-gray-700 bg-gray-50' },
-                    { label: 'Perfect Attendance', value: attendanceStats.perfect, color: 'text-green-700 bg-green-50' },
-                    { label: 'Chronic Absentees', value: attendanceStats.chronic, color: 'text-red-700 bg-red-50' },
-                  ].map(s => (
-                    <div key={s.label} className={`rounded-xl p-3 text-center ${s.color}`}>
-                      <p className="text-xl font-black">{s.value}</p>
-                      <p className="text-xs font-medium opacity-75 mt-0.5">{s.label}</p>
-                    </div>
-                  ))}
-                </div>
-                <div className="mb-4">
-                  <p className="text-xs font-bold text-gray-500 uppercase mb-3">Attendance Rate by Class</p>
-                  {attendanceStats.byClass.map(c => (
-                    <MiniBar key={c.name} label={c.name} pct={c.rate} color={c.rate >= 90 ? 'bg-green-500' : c.rate >= 75 ? 'bg-blue-500' : 'bg-red-500'} />
-                  ))}
-                </div>
-                <div className="bg-blue-50 rounded-xl p-3 mt-4">
-                  <p className="text-xs font-bold text-blue-700 mb-1">Attendance Threshold Alert</p>
-                  <p className="text-xs text-blue-600">Students with attendance below 75% require intervention. Currently <span className="font-bold">{attendanceStats.chronic} students</span> are flagged as chronic absentees.</p>
-                </div>
+                ))}
               </div>
-            ) : active === 'academic' ? (
-              <div id="report-academic" className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-                <div className="flex items-center justify-between mb-5">
-                  <div><h3 className="font-bold text-gray-900">Academic Performance Report</h3><p className="text-xs text-gray-400">Generated {new Date().toLocaleDateString('en-PK')}</p></div>
-                  <div className="flex gap-2">
-                    <button onClick={() => exportCSV(gradeDistribution.map(g => ({ grade: g.grade, students: g.count, percentage: `${g.pct}%` })), 'academic-report')} className="px-3 py-1.5 text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 rounded-lg">CSV</button>
-                    <button onClick={() => printReport('academic')} className="px-3 py-1.5 text-xs font-bold border border-gray-200 rounded-lg hover:bg-gray-50">Print</button>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-3 mb-5">
-                  {[
-                    { label: 'Total Students', value: totalStudents, color: 'text-gray-700 bg-gray-50' },
-                    { label: 'Above 75%', value: `${Math.round((gradeDistribution.slice(0,3).reduce((s,g)=>s+g.pct,0)))}%`, color: 'text-green-700 bg-green-50' },
-                    { label: 'Need Support', value: gradeDistribution[5].count, color: 'text-red-700 bg-red-50' },
-                  ].map(s => (
-                    <div key={s.label} className={`rounded-xl p-3 text-center ${s.color}`}>
-                      <p className="text-xl font-black">{s.value}</p>
-                      <p className="text-xs font-medium opacity-75 mt-0.5">{s.label}</p>
-                    </div>
-                  ))}
-                </div>
-                <div className="mb-4">
-                  <p className="text-xs font-bold text-gray-500 uppercase mb-3">Grade Distribution</p>
-                  {gradeDistribution.map(g => (
-                    <MiniBar key={g.grade} label={g.grade} pct={g.pct} color={g.color} value={`${g.count} students`} />
-                  ))}
-                </div>
-                <div className="bg-purple-50 rounded-xl p-3 mt-2">
-                  <p className="text-xs font-bold text-purple-700">Performance Insight</p>
-                  <p className="text-xs text-purple-600 mt-1">{Math.round(gradeDistribution.slice(0,4).reduce((s,g)=>s+g.pct,0))}% of students are performing above 60% which indicates a healthy academic environment. {gradeDistribution[5].count} students require immediate academic support.</p>
-                </div>
-              </div>
-            ) : active === 'enrollment' ? (
-              <div id="report-enrollment" className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-                <div className="flex items-center justify-between mb-5">
-                  <div><h3 className="font-bold text-gray-900">Enrollment Report</h3><p className="text-xs text-gray-400">Generated {new Date().toLocaleDateString('en-PK')}</p></div>
-                  <div className="flex gap-2">
-                    <button onClick={() => exportCSV([{ total_students: totalStudents, male: maleCount, female: femaleCount, teachers: totalTeachers, classes: classList.length }], 'enrollment-report')} className="px-3 py-1.5 text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 rounded-lg">CSV</button>
-                    <button onClick={() => printReport('enrollment')} className="px-3 py-1.5 text-xs font-bold border border-gray-200 rounded-lg hover:bg-gray-50">Print</button>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-3 mb-5">
-                  {[
-                    { label: 'Total Students', value: totalStudents },
-                    { label: 'Total Teachers', value: totalTeachers },
-                    { label: 'Total Classes', value: classList.length },
-                  ].map(s => (
-                    <div key={s.label} className="bg-gray-50 rounded-xl p-3 text-center">
-                      <p className="text-2xl font-black text-gray-900">{s.value}</p><p className="text-xs text-gray-400">{s.label}</p>
-                    </div>
-                  ))}
-                </div>
-                <div className="mb-4">
-                  <p className="text-xs font-bold text-gray-500 uppercase mb-3">Gender Distribution</p>
-                  <MiniBar label="Male" pct={totalStudents ? (maleCount/totalStudents)*100 : 0} color="bg-blue-500" />
-                  <MiniBar label="Female" pct={totalStudents ? (femaleCount/totalStudents)*100 : 0} color="bg-pink-500" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-gray-500 uppercase mb-3">Enrollment by Class</p>
-                  {classList.slice(0,6).map((c:any) => {
-                    const count = c.sections?.reduce((s:number,sec:any)=>s+(sec._count?.students??0),0) ?? 0;
-                    const pct = totalStudents ? (count/totalStudents)*100 : 0;
-                    return <MiniBar key={c.id} label={c.name} pct={pct} value={`${count} students`} />;
-                  })}
-                </div>
-              </div>
-            ) : active === 'staff' ? (
-              <div id="report-staff" className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-                <div className="flex items-center justify-between mb-5">
-                  <div><h3 className="font-bold text-gray-900">Staff Report</h3><p className="text-xs text-gray-400">Generated {new Date().toLocaleDateString('en-PK')}</p></div>
-                  <div className="flex gap-2">
-                    <button onClick={() => exportCSV([{ total: totalTeachers, active: activeTeachers, ratio: `${Math.round(totalStudents/Math.max(totalTeachers,1))}:1` }], 'staff-report')} className="px-3 py-1.5 text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 rounded-lg">CSV</button>
-                    <button onClick={() => printReport('staff')} className="px-3 py-1.5 text-xs font-bold border border-gray-200 rounded-lg hover:bg-gray-50">Print</button>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-3 mb-5">
-                  {[
-                    { label: 'Total Staff', value: totalTeachers, color: 'bg-gray-50' },
-                    { label: 'Active', value: activeTeachers, color: 'bg-green-50' },
-                    { label: 'S:T Ratio', value: totalTeachers ? `${Math.round(totalStudents/totalTeachers)}:1` : '—', color: 'bg-blue-50' },
-                  ].map(s => (
-                    <div key={s.label} className={`${s.color} rounded-xl p-3 text-center`}>
-                      <p className="text-2xl font-black text-gray-900">{s.value}</p>
-                      <p className="text-xs text-gray-400">{s.label}</p>
-                    </div>
-                  ))}
-                </div>
-                <StatRow label="Total Teachers" value={totalTeachers} />
-                <StatRow label="Active Teachers" value={activeTeachers} sub={`${totalTeachers ? Math.round((activeTeachers/totalTeachers)*100) : 0}% active`} />
-                <StatRow label="Student-Teacher Ratio" value={totalTeachers ? `${Math.round(totalStudents/totalTeachers)}:1` : '—'} sub="ideal: 30:1" />
-                <StatRow label="Total Classes" value={classList.length} />
-                <StatRow label="Total Sections" value={sectionList.length} />
-                <div className="mt-4 bg-orange-50 rounded-xl p-3">
-                  <p className="text-xs font-bold text-orange-700">Staffing Note</p>
-                  <p className="text-xs text-orange-600 mt-1">
-                    {totalTeachers > 0 && totalStudents/totalTeachers > 35 ? 'Current student-teacher ratio exceeds 35:1. Consider hiring additional staff.' : 'Staff levels are within acceptable range.'}
-                  </p>
-                </div>
-              </div>
-            ) : active === 'exam' ? (
-              <div id="report-exam" className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-                <div className="flex items-center justify-between mb-5">
-                  <div><h3 className="font-bold text-gray-900">Exam Results Report</h3><p className="text-xs text-gray-400">Generated {new Date().toLocaleDateString('en-PK')}</p></div>
-                  <div className="flex gap-2">
-                    <button onClick={() => exportCSV(examStats.bySubject.map(s => ({ subject: s.subject, pass_rate: `${s.pass}%`, average_marks: s.avg })), 'exam-report')} className="px-3 py-1.5 text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 rounded-lg">CSV</button>
-                    <button onClick={() => printReport('exam')} className="px-3 py-1.5 text-xs font-bold border border-gray-200 rounded-lg hover:bg-gray-50">Print</button>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-3 mb-5">
-                  {[
-                    { label: 'Total Exams', value: examStats.totalExams, color: 'text-gray-700 bg-gray-50' },
-                    { label: 'Avg Pass Rate', value: `${examStats.avgPassRate}%`, color: 'text-green-700 bg-green-50' },
-                    { label: 'Needs Attention', value: examStats.lowSubject, color: 'text-red-700 bg-red-50' },
-                  ].map(s => (
-                    <div key={s.label} className={`rounded-xl p-3 text-center ${s.color}`}>
-                      <p className="text-xl font-black">{s.value}</p>
-                      <p className="text-xs font-medium opacity-75 mt-0.5">{s.label}</p>
-                    </div>
-                  ))}
-                </div>
-                <div className="mb-4">
-                  <p className="text-xs font-bold text-gray-500 uppercase mb-3">Pass Rate by Subject</p>
-                  {examStats.bySubject.map(s => (
-                    <MiniBar key={s.subject} label={s.subject} pct={s.pass} color={s.pass >= 90 ? 'bg-green-500' : s.pass >= 80 ? 'bg-blue-500' : 'bg-yellow-500'} />
-                  ))}
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-gray-500 uppercase mb-3">Average Marks by Subject (out of 100)</p>
-                  {examStats.bySubject.map(s => (
-                    <MiniBar key={s.subject + '_avg'} label={s.subject} pct={s.avg} color="bg-blue-400" value={`${s.avg} avg`} />
-                  ))}
-                </div>
-              </div>
-            ) : null}
+            </div>
           </div>
-        </div>
+        )}
       </div>
+
+      {/* Report Card Modal */}
+      {rcModal && (
+        <Modal title="Generate Report Card" onClose={()=>setRcModal(false)}>
+          <div className="p-6 space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Student *</label>
+              <select value={rcForm.studentId} onChange={e=>setRcForm(f=>({...f,studentId:e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white">
+                <option value="">Select student</option>
+                {allStudents.map((s:any)=><option key={s.id} value={s.id}>{s.user?.profile?.firstName} {s.user?.profile?.lastName} — {s.rollNumber}</option>)}
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Academic Year</label>
+                <select value={rcForm.academicYear} onChange={e=>setRcForm(f=>({...f,academicYear:e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white">
+                  {YEARS.map(y=><option key={y}>{y}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Term</label>
+                <select value={rcForm.term} onChange={e=>setRcForm(f=>({...f,term:e.target.value}))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white">
+                  {TERMS.map(t=><option key={t}>{t}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-xs text-blue-700">
+              PDF will include: subject grades, GPA, attendance %, class rank, teacher remarks, and signature lines. Student and parents will be notified.
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button onClick={()=>setRcModal(false)} className="flex-1 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
+              <button onClick={handleGenerateReportCard} disabled={!rcForm.studentId||generating} className="flex-1 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 disabled:opacity-40">
+                {generating ? 'Generating PDF...' : '📄 Generate & Notify'}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </>
   );
 }

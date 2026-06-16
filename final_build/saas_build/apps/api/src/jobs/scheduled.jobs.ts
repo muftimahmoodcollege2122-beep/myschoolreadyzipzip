@@ -358,3 +358,82 @@ export class ScheduledJobs {
     }
   }
 }
+
+  // ── 8. Library overdue alerts (daily 9am) ──────────────────────────────────
+  @Cron('0 9 * * *')
+  async libraryOverdueAlerts() {
+    this.logger.log('Library overdue job running');
+    const overdue = await this.prisma.bookIssue.findMany({
+      where: { returnedAt: null, dueDate: { lt: new Date() } },
+      include: {
+        book: true,
+        user: { include: { profile: true } },
+      },
+      take: 500,
+    });
+
+    for (const issue of overdue) {
+      try {
+        const daysOverdue = Math.floor((Date.now() - issue.dueDate.getTime()) / 86400000);
+        const userName = `${issue.user.profile?.firstName || ''} ${issue.user.profile?.lastName || ''}`.trim();
+        const fine = daysOverdue * 5; // Rs. 5 per day fine
+
+        await this.notifications.sendInApp(
+          issue.userId, issue.tenantId,
+          '📚 Library Book Overdue',
+          `"${issue.book.title}" was due ${daysOverdue} day(s) ago. Fine: Rs. ${fine}. Please return immediately to avoid further charges.`,
+          { bookIssueId: issue.id, type: 'library_overdue' },
+        );
+
+        const phone = issue.user.profile?.phone;
+        if (phone) {
+          await this.notifications.queueSms(phone, issue.tenantId,
+            `Library Alert: "${issue.book.title}" is overdue by ${daysOverdue} day(s). Fine: Rs. ${fine}. Return immediately to avoid suspension of library privileges.`);
+        }
+      } catch(e) {
+        this.logger.error(`Library overdue alert failed for issue ${issue.id}: ${e}`);
+      }
+    }
+    this.logger.log(`Library overdue alerts sent for ${overdue.length} books`);
+  }
+
+  // ── 9. AI dropout risk — auto alert admins for HIGH risk students (weekly Mon 8am) ──
+  @Cron('0 8 * * 1')
+  async autoDropoutRiskAlerts() {
+    this.logger.log('Dropout risk auto-alert job running');
+    const tenants = await this.prisma.tenant.findMany({ where: { isActive: true }, select: { id: true } });
+
+    for (const tenant of tenants) {
+      try {
+        const students = await this.prisma.student.findMany({
+          where: { tenantId: tenant.id, isActive: true },
+          include: {
+            attendances: { take: 60, orderBy: { date: 'desc' } },
+            feeInvoices: { where: { status: { in: ['PENDING', 'OVERDUE'] as any } } },
+            user: { include: { profile: true } },
+          },
+        });
+
+        const highRisk = students.filter(s => {
+          const total = s.attendances.length || 1;
+          const present = s.attendances.filter(a => a.status === 'PRESENT' || a.status === 'LATE').length;
+          const attRate = (present / total) * 100;
+          const riskScore = Math.max(0, Math.min(100, (100 - attRate) * 0.6 + s.feeInvoices.length * 10));
+          return riskScore >= 70;
+        });
+
+        if (highRisk.length > 0) {
+          const admin = await this.prisma.user.findFirst({ where: { tenantId: tenant.id, role: 'SCHOOL_ADMIN', isActive: true } });
+          if (admin) {
+            const names = highRisk.slice(0,5).map(s => `${s.user.profile?.firstName} ${s.user.profile?.lastName}`).join(', ');
+            await this.notifications.sendInApp(
+              admin.id, tenant.id,
+              `🚨 ${highRisk.length} High-Risk Students This Week`,
+              `AI Alert: ${names}${highRisk.length > 5 ? ` and ${highRisk.length - 5} more` : ''} are at HIGH dropout risk. Immediate parent contact recommended.`,
+              { type: 'dropout_risk_weekly', count: highRisk.length },
+            );
+          }
+        }
+      } catch(e) { this.logger.error(`Dropout risk alert failed for tenant ${tenant.id}: ${e}`); }
+    }
+  }

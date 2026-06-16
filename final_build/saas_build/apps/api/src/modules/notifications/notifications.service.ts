@@ -72,3 +72,89 @@ export class NotificationsService {
     await this.prisma.outboxEvent.create({ data: { tenantId, topic: 'announcement.broadcast', key: schoolId, payload: { schoolId, title, body, channels }, headers: {} } });
   }
 }
+
+  // ── Audience-based broadcast ───────────────────────────────────────────────
+  async broadcastToAudience(
+    tenantId: string, schoolId: string,
+    title: string, body: string,
+    channels: string[], audience: string,
+  ): Promise<{ count: number }> {
+    let userIds: string[] = [];
+
+    if (audience === 'ALL_STUDENTS' || audience === 'ENTIRE_SCHOOL') {
+      const students = await this.prisma.student.findMany({
+        where: { tenantId, isActive: true }, select: { userId: true },
+      });
+      userIds.push(...students.map(s => s.userId));
+    }
+    if (audience === 'ALL_TEACHERS' || audience === 'ALL_STAFF' || audience === 'ENTIRE_SCHOOL') {
+      const teachers = await this.prisma.teacher.findMany({
+        where: { tenantId, isActive: true }, select: { userId: true },
+      });
+      userIds.push(...teachers.map(t => t.userId));
+    }
+    if (audience === 'ALL_PARENTS' || audience === 'ENTIRE_SCHOOL') {
+      const parents = await this.prisma.user.findMany({
+        where: { tenantId, role: 'PARENT', isActive: true }, select: { id: true },
+      });
+      userIds.push(...parents.map(p => p.id));
+    }
+    if (audience === 'ALL_STAFF' || audience === 'ENTIRE_SCHOOL') {
+      const admins = await this.prisma.user.findMany({
+        where: { tenantId, role: { in: ['SCHOOL_ADMIN','STAFF'] as any }, isActive: true }, select: { id: true },
+      });
+      userIds.push(...admins.map(a => a.id));
+    }
+
+    userIds = [...new Set(userIds)];
+
+    // Create in-app notifications in bulk
+    if (channels.includes('IN_APP') && userIds.length > 0) {
+      await this.prisma.notification.createMany({
+        data: userIds.map(uid => ({
+          userId: uid, tenantId, title, body,
+          data: { type: 'broadcast', audience },
+          isRead: false,
+        })),
+        skipDuplicates: true,
+      });
+    }
+
+    // Queue SMS if requested
+    if (channels.includes('SMS')) {
+      const users = await this.prisma.user.findMany({
+        where: { id: { in: userIds } },
+        include: { profile: true },
+      });
+      for (const u of users) {
+        if (u.profile?.phone) {
+          await this.queueSms(u.profile.phone, tenantId, `${title}: ${body}`);
+        }
+      }
+    }
+
+    this.logger.log(`Broadcast to ${userIds.length} users (${audience}) — channels: ${channels.join(',')}`);
+    return { count: userIds.length };
+  }
+
+  async getUserNotifications(userId: string, tenantId: string, limit = 20) {
+    return this.prisma.notification.findMany({
+      where: { userId, tenantId },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+  }
+
+  async markAsRead(id: string, userId: string, tenantId: string) {
+    return this.prisma.notification.updateMany({
+      where: { id, userId, tenantId },
+      data: { isRead: true, readAt: new Date() },
+    });
+  }
+
+  async markAllAsRead(userId: string, tenantId: string) {
+    return this.prisma.notification.updateMany({
+      where: { userId, tenantId, isRead: false },
+      data: { isRead: true, readAt: new Date() },
+    });
+  }
