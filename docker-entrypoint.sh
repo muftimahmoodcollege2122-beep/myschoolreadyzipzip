@@ -58,13 +58,13 @@ export PORT=$API_PORT
 
 if [ -f "dist/main.js" ]; then
   echo "   Using compiled dist/main.js"
-  node dist/main.js > /tmp/api.log 2>&1 &
+  NODE_PATH="/app/node_modules" node dist/main.js > /tmp/api.log 2>&1 &
 else
   echo "   No dist/ found — using ts-node"
-  NODE_PATH="$SAAS_DIR/node_modules" \
+  NODE_PATH="/app/node_modules" \
   node \
-    -r "$SAAS_DIR/node_modules/ts-node/register/transpile-only" \
-    -r "$SAAS_DIR/node_modules/tsconfig-paths/register" \
+    -r "/app/node_modules/ts-node/register/transpile-only" \
+    -r "/app/node_modules/tsconfig-paths/register" \
     src/main.ts > /tmp/api.log 2>&1 &
 fi
 API_PID=$!
