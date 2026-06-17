@@ -1,6 +1,14 @@
 #!/bin/bash
 set -e
 
+# Ensure Node.js is available
+if ! command -v npm &> /dev/null; then
+  echo "==> npm not found — installing Node.js 20..."
+  curl -fsSL https://deb.nodesource.com/setup_20.x | bash - 2>/dev/null || \
+  apk add --no-cache nodejs npm 2>/dev/null || \
+  { echo "ERROR: Cannot install Node.js. Use Docker deployment instead."; exit 1; }
+fi
+
 SAAS_DIR="$(pwd)/final_build/saas_build"
 API_DIR="$SAAS_DIR/apps/api"
 WEB_DIR="$SAAS_DIR/apps/web"
