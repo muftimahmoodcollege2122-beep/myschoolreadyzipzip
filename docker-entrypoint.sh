@@ -23,11 +23,11 @@ else
 fi
 
 echo "==> Starting API on port $API_PORT..."
-cd /app/apps/api
 export PORT=$API_PORT
 
 echo "   Using compiled dist/main.js"
-node dist/main.js > /tmp/api.log 2>&1 &
+# Use NODE_PATH to explicitly tell node where node_modules are
+NODE_PATH=/app/apps/api/node_modules node /app/apps/api/dist/main.js > /tmp/api.log 2>&1 &
 API_PID=$!
 echo "   API PID: $API_PID"
 
