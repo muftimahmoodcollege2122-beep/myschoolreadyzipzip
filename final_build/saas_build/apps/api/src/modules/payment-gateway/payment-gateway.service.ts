@@ -271,7 +271,7 @@ export class PaymentGatewayService {
       data:  { status: 'SENT', sentAt: new Date() },
     });
 
-    await this.events.publishDirect({ topic: 'payment.confirmed', key: 'payment', tenantId: '', payload: { ...payload, approvedManually: true });
+    await this.events.publishDirect({ topic: 'payment.confirmed', key: 'payment', tenantId: '', payload: { ...payload, approvedManually: true } });
 
     return { success: true, message: `Tenant ${payload.tenantId} activated` };
   }
