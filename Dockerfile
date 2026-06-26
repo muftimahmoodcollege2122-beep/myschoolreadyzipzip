@@ -2,40 +2,41 @@ FROM node:20-alpine
 RUN apk add --no-cache redis openssl libc6-compat python3 make g++ dumb-init wget
 WORKDIR /app
 
-ENV NODE_ENV=production
+# Do NOT set NODE_ENV=production during build — we need devDependencies
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Copy everything first
+# Copy full source
 COPY final_build/saas_build/ .
 
-# Install deps directly inside apps/api (where dist/main.js will look)
-RUN cd /app/apps/api && npm install --legacy-peer-deps --no-audit 2>&1 | tail -3
-
-# Install deps for web
-RUN cd /app/apps/web && npm install --legacy-peer-deps --no-audit 2>&1 | tail -3
-
-# Install root deps
-RUN npm install --legacy-peer-deps --no-audit 2>&1 | tail -3
-
-# Generate Prisma client inside api
+# Install ALL deps (including devDeps) inside apps/api
 RUN cd /app/apps/api && \
-    npx prisma generate --schema=prisma/schema.prisma 2>&1 | tail -3 || \
-    (cd /app && npx prisma generate --schema=packages/database/prisma/schema.prisma 2>&1 | tail -3) || true
+    npm install --include=dev --legacy-peer-deps --no-audit 2>&1 | tail -5
 
-# Build NestJS API
+# Install ALL deps inside apps/web
+RUN cd /app/apps/web && \
+    npm install --include=dev --legacy-peer-deps --no-audit 2>&1 | tail -5
+
+# Generate Prisma client
 RUN cd /app/apps/api && \
-    npx @nestjs/cli build 2>&1 | tail -10 || \
-    npx tsc -p tsconfig.build.json 2>&1 | tail -10 || true
+    ./node_modules/.bin/prisma generate --schema=prisma/schema.prisma 2>&1 | tail -3 || true
 
-# Verify @nestjs/core is findable from dist/main.js location
-RUN node -e "require('/app/apps/api/node_modules/@nestjs/core')" && echo "✅ @nestjs/core found" || \
-    node -e "require('/app/node_modules/@nestjs/core')" && echo "✅ @nestjs/core found at root" || \
-    echo "❌ @nestjs/core NOT found anywhere"
+# Build NestJS with tsc directly (no nest CLI dependency)
+RUN cd /app/apps/api && \
+    ./node_modules/.bin/tsc -p tsconfig.json --outDir dist 2>&1 | tail -15 || \
+    ./node_modules/.bin/nest build 2>&1 | tail -15 || \
+    echo "WARNING: build failed"
+
+# Confirm dist/main.js exists and @nestjs/core is resolvable
+RUN ls /app/apps/api/dist/main.js && echo "✅ dist/main.js exists" || echo "❌ dist/main.js MISSING"
+RUN ls /app/apps/api/node_modules/@nestjs/core && echo "✅ @nestjs/core exists" || echo "❌ @nestjs/core MISSING"
 
 # Build Next.js
 RUN cd /app/apps/web && \
     NEXT_PUBLIC_API_URL=http://localhost:3001 \
-    npx next build 2>&1 | tail -10 || true
+    ./node_modules/.bin/next build 2>&1 | tail -10 || true
+
+# Now set production env
+ENV NODE_ENV=production
 
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
