@@ -3,6 +3,9 @@ RUN apk add --no-cache redis openssl libc6-compat python3 make g++ dumb-init wge
 WORKDIR /app
 
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV CHROME_SKIP_DOWNLOAD=true
 
 # Copy full source
 COPY final_build/saas_build/ .
