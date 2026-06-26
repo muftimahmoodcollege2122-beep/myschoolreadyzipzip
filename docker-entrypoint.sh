@@ -1,34 +1,24 @@
 #!/bin/sh
 set -e
 
-SAAS_DIR="/app"
-API_DIR="$SAAS_DIR/apps/api"
-WEB_DIR="$SAAS_DIR/apps/web"
-BIN="$SAAS_DIR/node_modules/.bin"
-
-# Railway sets PORT — API listens on it, Next.js on PORT+1 or 5000
 API_PORT="${PORT:-3001}"
 WEB_PORT="5000"
 
-echo "==> API will listen on port $API_PORT"
-
-# ── Redis ──────────────────────────────────────────────────────────────────────
 echo "==> Starting Redis..."
 redis-server --daemonize yes --logfile /tmp/redis.log --port 6379 --loglevel warning
 sleep 1
 echo "==> Redis ready"
 
-# ── Database push ──────────────────────────────────────────────────────────────
 if [ -n "$DATABASE_URL" ]; then
   echo "==> Syncing database schema..."
-  cd "$API_DIR"
-  "$BIN/prisma" db push --skip-generate --accept-data-loss 2>&1 | grep -E "✔|Error|warn|already" | head -5 || true
+  cd /app/apps/api
+  ./node_modules/.bin/prisma db push --skip-generate --accept-data-loss 2>&1 | grep -E "✔|Error|warn|already" | head -5 || true
   echo "==> Schema synced"
 
   echo "==> Seeding demo tenant..."
   node -e "
-const { PrismaClient } = require('@prisma/client');
-const bcrypt = require('bcryptjs');
+const { PrismaClient } = require('./node_modules/@prisma/client');
+const bcrypt = require('./node_modules/bcryptjs');
 const crypto = require('crypto');
 async function seed() {
   const p = new PrismaClient();
@@ -48,29 +38,26 @@ seed();
 " 2>/dev/null || true
   echo "==> Demo data ready"
 else
-  echo "==> WARNING: DATABASE_URL not set — skipping schema sync and seed"
+  echo "==> WARNING: DATABASE_URL not set"
 fi
 
-# ── NestJS API ─────────────────────────────────────────────────────────────────
 echo "==> Starting API on port $API_PORT..."
-cd "$API_DIR"
+cd /app/apps/api
 export PORT=$API_PORT
 
 if [ -f "dist/main.js" ]; then
   echo "   Using compiled dist/main.js"
-  NODE_PATH="/app/node_modules" node dist/main.js > /tmp/api.log 2>&1 &
+  node dist/main.js > /tmp/api.log 2>&1 &
 else
-  echo "   No dist/ found — using ts-node"
-  NODE_PATH="/app/node_modules" \
+  echo "   No dist/ — using ts-node"
   node \
-    -r "/app/node_modules/ts-node/register/transpile-only" \
-    -r "/app/node_modules/tsconfig-paths/register" \
+    -r ./node_modules/ts-node/register/transpile-only \
+    -r ./node_modules/tsconfig-paths/register \
     src/main.ts > /tmp/api.log 2>&1 &
 fi
 API_PID=$!
 echo "   API PID: $API_PID"
 
-# ── Wait for API ───────────────────────────────────────────────────────────────
 echo "==> Waiting for API..."
 WAITED=0
 while [ $WAITED -lt 90 ]; do
@@ -93,15 +80,12 @@ if [ $WAITED -ge 90 ]; then
   exit 1
 fi
 
-# ── Next.js Web ────────────────────────────────────────────────────────────────
 echo "==> Starting Next.js on port $WEB_PORT..."
-cd "$WEB_DIR"
+cd /app/apps/web
 export NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-http://localhost:$API_PORT}"
 
 if [ -d ".next" ] && [ -f ".next/BUILD_ID" ]; then
-  echo "   Using pre-built .next/"
-  exec "$BIN/next" start -p "$WEB_PORT"
+  exec ./node_modules/.bin/next start -p "$WEB_PORT"
 else
-  echo "   No .next build — running dev server"
-  exec "$BIN/next" dev -p "$WEB_PORT"
+  exec ./node_modules/.bin/next dev -p "$WEB_PORT"
 fi
