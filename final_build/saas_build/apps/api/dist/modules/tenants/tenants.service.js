@@ -49,7 +49,8 @@ const prisma_service_1 = require("../../database/prisma.service");
 const cache_service_1 = require("../../common/cache/cache.service");
 const event_publisher_service_1 = require("../../events/event-publisher.service");
 const audit_service_1 = require("../../common/audit/audit.service");
-const client_1 = require("@prisma/client");
+const prisma_enums_1 = require("../../common/prisma-enums");
+;
 const crypto_1 = require("crypto");
 const bcrypt = __importStar(require("bcryptjs"));
 let TenantsService = TenantsService_1 = class TenantsService {
@@ -71,7 +72,7 @@ let TenantsService = TenantsService_1 = class TenantsService {
             const tenant = await tx.tenant.create({
                 data: {
                     id: tenantId, name: dto.schoolName, slug,
-                    tier: client_1.TenantTier.STARTER, status: client_1.TenantStatus.TRIAL, schemaName,
+                    tier: prisma_enums_1.TenantTier.STARTER, status: prisma_enums_1.TenantStatus.TRIAL, schemaName,
                     dataRegion: dto.dataRegion || 'ap-south-1',
                     trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
                     planLimits: { maxStudents: 200, maxTeachers: 20, smsEnabled: false, storageGb: 1 },
@@ -137,12 +138,12 @@ let TenantsService = TenantsService_1 = class TenantsService {
             await this.cache.del(`tenant:${t.slug}`);
     }
     async suspend(tenantId) {
-        await this.prisma.tenant.update({ where: { id: tenantId }, data: { status: client_1.TenantStatus.SUSPENDED, suspendedAt: new Date() } });
+        await this.prisma.tenant.update({ where: { id: tenantId }, data: { status: prisma_enums_1.TenantStatus.SUSPENDED, suspendedAt: new Date() } });
         await this.cache.delPattern('tenant:*');
         this.logger.warn(`Tenant suspended: ${tenantId}`);
     }
     async reactivate(tenantId) {
-        await this.prisma.tenant.update({ where: { id: tenantId }, data: { status: client_1.TenantStatus.ACTIVE, suspendedAt: null } });
+        await this.prisma.tenant.update({ where: { id: tenantId }, data: { status: prisma_enums_1.TenantStatus.ACTIVE, suspendedAt: null } });
         await this.cache.delPattern('tenant:*');
     }
     generateSlug(name) {

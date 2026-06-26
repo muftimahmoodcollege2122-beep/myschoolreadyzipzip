@@ -17,7 +17,8 @@ exports.FeesService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../database/prisma.service");
 const audit_service_1 = require("../../common/audit/audit.service");
-const client_1 = require("@prisma/client");
+const prisma_enums_1 = require("../../common/prisma-enums");
+;
 const crypto_1 = require("crypto");
 const dayjs_1 = __importDefault(require("dayjs"));
 let FeesService = FeesService_1 = class FeesService {
@@ -61,7 +62,7 @@ let FeesService = FeesService_1 = class FeesService {
                     invoiceNo,
                     amount: dto.amount,
                     dueDate: new Date(dto.dueDate),
-                    status: client_1.FeeStatus.PENDING,
+                    status: prisma_enums_1.FeeStatus.PENDING,
                 },
             });
             await tx.outboxEvent.create({
@@ -86,7 +87,7 @@ let FeesService = FeesService_1 = class FeesService {
                     continue;
                 }
                 const invoiceNo = `INV-${Date.now()}-${(0, crypto_1.randomUUID)().slice(0, 8).toUpperCase()}`;
-                await tx.feeInvoice.create({ data: { studentId, feeStructureId, tenantId, invoiceNo, amount: totalAmount, dueDate, status: client_1.FeeStatus.PENDING } });
+                await tx.feeInvoice.create({ data: { studentId, feeStructureId, tenantId, invoiceNo, amount: totalAmount, dueDate, status: prisma_enums_1.FeeStatus.PENDING } });
                 created++;
             }
             await tx.outboxEvent.create({ data: { tenantId, topic: 'fees.invoices.generated', key: feeStructureId, payload: { feeStructureId, created, studentIds }, headers: {} } });
@@ -105,8 +106,8 @@ let FeesService = FeesService_1 = class FeesService {
             await tx.payment.create({ data: { invoiceId: dto.invoiceId, tenantId, amount: dto.amount, method: dto.method, transactionRef: dto.transactionRef ?? null, processedBy: processedById } });
             const newPaid = Number(invoice.amountPaid ?? 0) + dto.amount;
             const newOutstanding = Number(invoice.amount) + Number(invoice.fine ?? 0) - Number(invoice.discount ?? 0) - newPaid;
-            const newStatus = newOutstanding <= 0 ? client_1.FeeStatus.PAID : 'PARTIAL';
-            await tx.feeInvoice.update({ where: { id: dto.invoiceId }, data: { amountPaid: newPaid, status: newStatus, paidAt: newStatus === client_1.FeeStatus.PAID ? new Date() : undefined } });
+            const newStatus = newOutstanding <= 0 ? prisma_enums_1.FeeStatus.PAID : 'PARTIAL';
+            await tx.feeInvoice.update({ where: { id: dto.invoiceId }, data: { amountPaid: newPaid, status: newStatus, paidAt: newStatus === prisma_enums_1.FeeStatus.PAID ? new Date() : undefined } });
             await tx.outboxEvent.create({ data: { tenantId, topic: 'fees.payment.recorded', key: dto.invoiceId, payload: { invoiceId: dto.invoiceId, amount: dto.amount, studentId: invoice.studentId }, headers: {} } });
         });
         await this.audit.log({ tenantId, userId: processedById, action: 'CREATE', entity: 'Payment', entityId: dto.invoiceId, after: { amount: dto.amount, method: dto.method } });
@@ -119,7 +120,7 @@ let FeesService = FeesService_1 = class FeesService {
     }
     async getOutstandingInvoices(schoolId, tenantId) {
         return this.prisma.feeInvoice.findMany({
-            where: { tenantId, status: { in: [client_1.FeeStatus.PENDING, 'OVERDUE'] } },
+            where: { tenantId, status: { in: [prisma_enums_1.FeeStatus.PENDING, 'OVERDUE'] } },
             include: { student: { include: { user: { include: { profile: true } }, enrollments: { include: { section: { include: { class: true } } } } } } },
             orderBy: { dueDate: 'asc' },
         });
@@ -134,9 +135,9 @@ let FeesService = FeesService_1 = class FeesService {
             outstanding,
             collectionRate: total > 0 ? Math.round((collected / total) * 100) : 0,
             totalInvoices: allInvoices.length,
-            paid: allInvoices.filter(i => i.status === client_1.FeeStatus.PAID).length,
+            paid: allInvoices.filter(i => i.status === prisma_enums_1.FeeStatus.PAID).length,
             partial: allInvoices.filter(i => i.status === 'PARTIAL').length,
-            pending: allInvoices.filter(i => i.status === client_1.FeeStatus.PENDING).length,
+            pending: allInvoices.filter(i => i.status === prisma_enums_1.FeeStatus.PENDING).length,
             overdue: allInvoices.filter(i => i.status === 'OVERDUE').length,
         };
     }

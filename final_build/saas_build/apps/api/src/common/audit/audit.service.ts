@@ -1,11 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
-import { AuditAction } from '@prisma/client';
+import { AuditAction } from '../prisma-enums';;
 
 export interface AuditLogEntry {
   tenantId: string;
   userId?: string;
-  action: AuditAction;
+  action: AuditAction | string;
   entity: string;
   entityId: string;
   before?: Record<string, unknown>;

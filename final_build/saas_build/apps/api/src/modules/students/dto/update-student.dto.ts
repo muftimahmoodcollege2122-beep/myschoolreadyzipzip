@@ -1,6 +1,6 @@
 import { IsOptional, IsString, IsEnum, IsBoolean, IsUUID, IsNumber, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
-import { Gender } from '@prisma/client';
+import { Gender } from '../../../common/prisma-enums';;
 
 export class UpdateStudentDto {
   @IsOptional() @IsString() firstName?: string;

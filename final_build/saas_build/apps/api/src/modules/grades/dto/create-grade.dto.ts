@@ -1,5 +1,5 @@
 import { IsString, IsNumber, IsEnum, IsOptional, Min, Max, IsUUID } from 'class-validator';
-import { ExamType } from '@prisma/client';
+import { ExamType } from '../../../common/prisma-enums';;
 export class CreateGradeDto {
   @IsUUID() studentId: string;
   @IsUUID() classSubjectId: string;

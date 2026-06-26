@@ -48,10 +48,10 @@ let HttpExceptionFilter = HttpExceptionFilter_1 = class HttpExceptionFilter {
                 error: common_1.HttpStatus[status] || 'Error',
             };
         }
-        if (exception instanceof client_1.Prisma.PrismaClientKnownRequestError) {
+        if (exception instanceof client_1.PrismaClientKnownRequestError) {
             return this.handlePrismaError(exception);
         }
-        if (exception instanceof client_1.Prisma.PrismaClientValidationError) {
+        if (exception instanceof client_1.PrismaClientValidationError) {
             return {
                 statusCode: common_1.HttpStatus.BAD_REQUEST,
                 message: 'Invalid request data',

@@ -38,7 +38,7 @@ export class StudentsService {
     tenantId: string,
     schoolId: string | undefined,
     createdById: string,
-  ): Promise<Student> {
+  ): Promise<any> {
     if (!schoolId) {
       const school = await this.prisma.school.findFirst({ where: { tenantId } });
       if (!school) throw new Error('School not found for this tenant');
@@ -143,7 +143,7 @@ export class StudentsService {
     const { page = 1, limit = 20, search, classId, sectionId, isActive } = query;
     const skip = (page - 1) * limit;
 
-    const where: Prisma.StudentWhereInput = {
+    const where: any = {
       tenantId,
       ...(resolvedSchoolId && { schoolId: resolvedSchoolId }),
       ...(isActive !== undefined && { isActive }),
@@ -221,7 +221,7 @@ export class StudentsService {
     });
   }
 
-  async findOne(id: string, tenantId: string): Promise<Student> {
+  async findOne(id: string, tenantId: string): Promise<any> {
     const student = await this.prisma.student.findFirst({
       where: { id, tenantId },
       include: {
@@ -247,7 +247,7 @@ export class StudentsService {
     dto: UpdateStudentDto,
     tenantId: string,
     updatedById: string,
-  ): Promise<Student> {
+  ): Promise<any> {
     const existing = await this.findOne(id, tenantId);
 
     const updated = await this.prisma.$transaction(async (tx) => {
@@ -337,7 +337,7 @@ export class StudentsService {
           lastName: '[ERASED]',
           dateOfBirth: null,
           phone: null,
-          address: Prisma.JsonNull,
+          address: Prisma.DbNull,
           nationalId: null,
           photoUrl: null,
         },

@@ -1,4 +1,4 @@
-import { Gender } from '@prisma/client';
+import { Gender } from '../../../common/prisma-enums';
 export declare class UpdateStudentDto {
     firstName?: string;
     lastName?: string;

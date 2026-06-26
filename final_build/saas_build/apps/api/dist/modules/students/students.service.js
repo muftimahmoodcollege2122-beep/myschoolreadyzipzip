@@ -284,7 +284,7 @@ let StudentsService = StudentsService_1 = class StudentsService {
                     lastName: '[ERASED]',
                     dateOfBirth: null,
                     phone: null,
-                    address: client_1.Prisma.JsonNull,
+                    address: client_1.Prisma.DbNull,
                     nationalId: null,
                     photoUrl: null,
                 },

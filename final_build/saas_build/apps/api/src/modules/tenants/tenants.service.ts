@@ -4,7 +4,7 @@ import { CacheService } from '../../common/cache/cache.service';
 import { EventPublisher } from '../../events/event-publisher.service';
 import { AuditService } from '../../common/audit/audit.service';
 import { CreateTenantDto } from './dto/create-tenant.dto';
-import { TenantStatus, TenantTier } from '@prisma/client';
+import { TenantStatus, TenantTier } from '../../common/prisma-enums';;
 import { randomUUID } from 'crypto';
 import * as bcrypt from 'bcryptjs';
 

@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, BadRequestException, Logger } from '@nes
 import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../../common/audit/audit.service';
 import { CreateInvoiceDto, RecordPaymentDto } from './dto/create-invoice.dto';
-import { FeeStatus } from '@prisma/client';
+import { FeeStatus } from '../../common/prisma-enums';;
 import { randomUUID } from 'crypto';
 import dayjs from 'dayjs';
 

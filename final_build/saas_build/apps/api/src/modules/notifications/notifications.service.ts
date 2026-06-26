@@ -4,7 +4,7 @@ import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { PrismaService } from '../../database/prisma.service';
 import * as nodemailer from 'nodemailer';
-import { NotificationChannel, NotificationStatus } from '@prisma/client';
+import { NotificationChannel, NotificationStatus } from '../../common/prisma-enums';;
 
 @Injectable()
 export class NotificationsService {

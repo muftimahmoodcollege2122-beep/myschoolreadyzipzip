@@ -1,7 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 import { Queue } from 'bull';
 import { PrismaService } from '../../database/prisma.service';
-import { NotificationChannel } from '@prisma/client';
+import { NotificationChannel } from '../../common/prisma-enums';
 export declare class NotificationsService {
     private readonly prisma;
     private readonly config;

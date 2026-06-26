@@ -55,7 +55,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   }
 
   private setupMiddleware(): void {
-    this.$use(async (params: Prisma.MiddlewareParams, next) => {
+    this.$use(async (params: any, next) => {
       // Soft delete
       if (params.action === 'delete') {
         params.action = 'update';
@@ -77,7 +77,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   }
 
   private setupLogging(): void {
-    (this as any).$on('query', (e: Prisma.QueryEvent) => {
+    (this as any).$on('query', (e: any) => {
       if (e.duration > 200) {
         this.logger.warn(`Slow query [${e.duration}ms]: ${e.query.substring(0, 150)}`);
       }

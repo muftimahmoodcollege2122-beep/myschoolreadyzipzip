@@ -1,4 +1,4 @@
-import { ExamType } from '@prisma/client';
+import { ExamType } from '../../../common/prisma-enums';
 export declare class CreateGradeDto {
     studentId: string;
     classSubjectId: string;

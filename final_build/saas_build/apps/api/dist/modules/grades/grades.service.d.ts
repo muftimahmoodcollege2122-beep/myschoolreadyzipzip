@@ -2,7 +2,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../../common/audit/audit.service';
 import { Queue } from 'bull';
 import { CreateGradeDto } from './dto/create-grade.dto';
-import { ExamType } from '@prisma/client';
+import { ExamType } from '../../common/prisma-enums';
 export interface SubjectGradeSummary {
     subjectId: string;
     subjectName: string;

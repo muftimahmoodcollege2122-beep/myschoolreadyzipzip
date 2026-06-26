@@ -15,11 +15,11 @@ export declare class StudentsService {
     private readonly logger;
     private resolveSchoolId;
     constructor(prisma: PrismaService, audit: AuditService, events: EventPublisher, planGuard: PlanGuard);
-    create(dto: CreateStudentDto, tenantId: string, schoolId: string | undefined, createdById: string): Promise<Student>;
+    create(dto: CreateStudentDto, tenantId: string, schoolId: string | undefined, createdById: string): Promise<any>;
     findAll(tenantId: string, schoolId: string, query: StudentListQueryDto): Promise<PaginatedResult<Student>>;
     findByUserId(userId: string, tenantId: string): Promise<Student | null>;
-    findOne(id: string, tenantId: string): Promise<Student>;
-    update(id: string, dto: UpdateStudentDto, tenantId: string, updatedById: string): Promise<Student>;
+    findOne(id: string, tenantId: string): Promise<any>;
+    update(id: string, dto: UpdateStudentDto, tenantId: string, updatedById: string): Promise<any>;
     deactivate(id: string, tenantId: string, deactivatedById: string): Promise<void>;
     erasePersonalData(id: string, tenantId: string, requestedById: string): Promise<void>;
 }

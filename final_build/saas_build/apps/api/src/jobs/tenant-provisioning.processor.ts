@@ -39,7 +39,7 @@ export class TenantProvisioningProcessor {
     await job.progress(30);
 
     // 3. Seed default classes (Grade 1-12)
-    const classes = [];
+    const classes: any[] = [];
     for (let i = 1; i <= 12; i++) {
       classes.push({
         tenantId,

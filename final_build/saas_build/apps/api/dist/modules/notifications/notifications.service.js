@@ -52,7 +52,8 @@ const config_1 = require("@nestjs/config");
 const bull_1 = require("@nestjs/bull");
 const prisma_service_1 = require("../../database/prisma.service");
 const nodemailer = __importStar(require("nodemailer"));
-const client_1 = require("@prisma/client");
+const prisma_enums_1 = require("../../common/prisma-enums");
+;
 let NotificationsService = NotificationsService_1 = class NotificationsService {
     constructor(prisma, config, notifQueue) {
         this.prisma = prisma;
@@ -76,7 +77,7 @@ let NotificationsService = NotificationsService_1 = class NotificationsService {
                 tenantId: dto.tenantId,
                 userId: dto.userId,
                 channel: dto.channel,
-                status: client_1.NotificationStatus.PENDING,
+                status: prisma_enums_1.NotificationStatus.PENDING,
                 title: dto.title,
                 body: dto.body,
                 data: dto.data || {},
@@ -94,8 +95,8 @@ let NotificationsService = NotificationsService_1 = class NotificationsService {
             data: {
                 tenantId,
                 userId,
-                channel: client_1.NotificationChannel.IN_APP,
-                status: client_1.NotificationStatus.SENT,
+                channel: prisma_enums_1.NotificationChannel.IN_APP,
+                status: prisma_enums_1.NotificationStatus.SENT,
                 title,
                 body,
                 data: data || {},

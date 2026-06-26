@@ -7,7 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { Prisma } from '@prisma/client';
+import { Prisma, PrismaClientKnownRequestError, PrismaClientValidationError } from '@prisma/client';
 
 interface ErrorResponse {
   statusCode: number;
@@ -73,11 +73,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
     }
 
     // Prisma errors — map to HTTP, never expose SQL
-    if (exception instanceof Prisma.PrismaClientKnownRequestError) {
+    if (exception instanceof PrismaClientKnownRequestError) {
       return this.handlePrismaError(exception);
     }
 
-    if (exception instanceof Prisma.PrismaClientValidationError) {
+    if (exception instanceof PrismaClientValidationError) {
       return {
         statusCode: HttpStatus.BAD_REQUEST,
         message: 'Invalid request data',
@@ -93,7 +93,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     };
   }
 
-  private handlePrismaError(err: Prisma.PrismaClientKnownRequestError): {
+  private handlePrismaError(err: PrismaClientKnownRequestError): {
     statusCode: number;
     message: string;
     error: string;

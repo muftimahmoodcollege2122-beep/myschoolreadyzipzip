@@ -1,6 +1,6 @@
 import { IsString, IsEmail, IsOptional, IsDateString, IsEnum, IsUUID, MinLength, MaxLength } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Gender } from '@prisma/client';
+import { Gender } from '../../../common/prisma-enums';;
 
 export class CreateStudentDto {
   @ApiProperty({ example: 'John' })

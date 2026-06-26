@@ -19,7 +19,8 @@ const prisma_service_1 = require("../../database/prisma.service");
 const event_publisher_service_1 = require("../../events/event-publisher.service");
 const audit_service_1 = require("../../common/audit/audit.service");
 const notifications_service_1 = require("../notifications/notifications.service");
-const client_1 = require("@prisma/client");
+const prisma_enums_1 = require("../../common/prisma-enums");
+;
 const dayjs_1 = __importDefault(require("dayjs"));
 let AttendanceService = AttendanceService_1 = class AttendanceService {
     constructor(prisma, events, audit, notifications) {
@@ -44,8 +45,8 @@ let AttendanceService = AttendanceService_1 = class AttendanceService {
                 update: { status: record.status, markedById: teacherId, remarks: record.remarks, markedAt: new Date() },
             }));
             await Promise.all(upserts);
-            const absentStudents = records.filter(r => r.status === client_1.AttendanceStatus.ABSENT);
-            const lateStudents = records.filter(r => r.status === client_1.AttendanceStatus.LATE);
+            const absentStudents = records.filter(r => r.status === prisma_enums_1.AttendanceStatus.ABSENT);
+            const lateStudents = records.filter(r => r.status === prisma_enums_1.AttendanceStatus.LATE);
             await tx.outboxEvent.create({
                 data: {
                     tenantId,
@@ -68,8 +69,8 @@ let AttendanceService = AttendanceService_1 = class AttendanceService {
                 },
             });
         });
-        const absentCount = records.filter(r => r.status === client_1.AttendanceStatus.ABSENT).length;
-        const lateCount = records.filter(r => r.status === client_1.AttendanceStatus.LATE).length;
+        const absentCount = records.filter(r => r.status === prisma_enums_1.AttendanceStatus.ABSENT).length;
+        const lateCount = records.filter(r => r.status === prisma_enums_1.AttendanceStatus.LATE).length;
         this.logger.log(`Attendance marked for section ${sectionId}: ${records.length} students (${absentCount} absent, ${lateCount} late)`);
         return { marked: records.length, absentCount, lateCount };
     }
@@ -142,10 +143,10 @@ let AttendanceService = AttendanceService_1 = class AttendanceService {
     }
     calculateSummary(studentId, records) {
         const total = records.length;
-        const present = records.filter(r => r.status === client_1.AttendanceStatus.PRESENT).length;
-        const absent = records.filter(r => r.status === client_1.AttendanceStatus.ABSENT).length;
-        const late = records.filter(r => r.status === client_1.AttendanceStatus.LATE).length;
-        const excused = records.filter(r => r.status === client_1.AttendanceStatus.EXCUSED).length;
+        const present = records.filter(r => r.status === prisma_enums_1.AttendanceStatus.PRESENT).length;
+        const absent = records.filter(r => r.status === prisma_enums_1.AttendanceStatus.ABSENT).length;
+        const late = records.filter(r => r.status === prisma_enums_1.AttendanceStatus.LATE).length;
+        const excused = records.filter(r => r.status === prisma_enums_1.AttendanceStatus.EXCUSED).length;
         return {
             studentId, total, present, absent, late, excused,
             percentage: total > 0 ? Math.round(((present + late * 0.5) / total) * 10000) / 100 : 0,

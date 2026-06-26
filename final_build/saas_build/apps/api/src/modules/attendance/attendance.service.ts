@@ -5,7 +5,7 @@ import { AuditService } from '../../common/audit/audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { MarkAttendanceDto } from './dto/mark-attendance.dto';
 import { AttendanceReportQueryDto } from './dto/attendance-report-query.dto';
-import { AttendanceStatus } from '@prisma/client';
+import { AttendanceStatus } from '../../common/prisma-enums';;
 import dayjs from 'dayjs';
 
 export interface AttendanceSummary {

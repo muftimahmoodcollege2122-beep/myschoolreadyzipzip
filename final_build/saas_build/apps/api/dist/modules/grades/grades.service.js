@@ -18,6 +18,7 @@ const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../database/prisma.service");
 const audit_service_1 = require("../../common/audit/audit.service");
 const bull_1 = require("@nestjs/bull");
+;
 const GRADING_SCALE = [
     { grade: 'A+', min: 95, gpa: 4.0 }, { grade: 'A', min: 90, gpa: 4.0 },
     { grade: 'A-', min: 85, gpa: 3.7 }, { grade: 'B+', min: 80, gpa: 3.3 },

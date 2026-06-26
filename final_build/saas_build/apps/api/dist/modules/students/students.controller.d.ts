@@ -7,11 +7,11 @@ import type { JwtPayload } from '../auth/auth.service';
 export declare class StudentsController {
     private readonly studentsService;
     constructor(studentsService: StudentsService);
-    create(dto: CreateStudentDto, tenantId: string, user: JwtPayload, req: Request): Promise<Student>;
+    create(dto: CreateStudentDto, tenantId: string, user: JwtPayload, req: Request): Promise<any>;
     findMe(tenantId: string, user: JwtPayload): Promise<any>;
     findAll(tenantId: string, query: StudentListQueryDto, req: Request): Promise<import("../../common/types/pagination.types").PaginatedResult<Student>>;
-    findOne(id: string, tenantId: string): Promise<Student>;
-    update(id: string, dto: UpdateStudentDto, tenantId: string, user: JwtPayload): Promise<Student>;
+    findOne(id: string, tenantId: string): Promise<any>;
+    update(id: string, dto: UpdateStudentDto, tenantId: string, user: JwtPayload): Promise<any>;
     deactivate(id: string, tenantId: string, user: JwtPayload): Promise<void>;
     erasePersonalData(id: string, tenantId: string, user: JwtPayload): Promise<void>;
 }
