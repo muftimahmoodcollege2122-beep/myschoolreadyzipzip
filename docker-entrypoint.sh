@@ -16,26 +16,7 @@ if [ -n "$DATABASE_URL" ]; then
   echo "==> Schema synced"
 
   echo "==> Seeding demo tenant..."
-  node -e "
-const { PrismaClient } = require('./node_modules/@prisma/client');
-const bcrypt = require('./node_modules/bcryptjs');
-const crypto = require('crypto');
-async function seed() {
-  const p = new PrismaClient();
-  try {
-    const ex = await p.tenant.findUnique({ where: { slug: 'demo' } });
-    if (ex) { console.log('   Demo exists'); return; }
-    const tid = crypto.randomUUID();
-    await p.tenant.create({ data: { id: tid, name: 'Demo School', slug: 'demo', tier: 'STARTER', status: 'ACTIVE', schemaName: 'tenant_demo', dataRegion: 'ap-south-1', trialEndsAt: new Date(Date.now()+365*86400000), planLimits: {}, settings: { timezone:'Asia/Karachi', locale:'en', currency:'PKR', academicYear:'2025-2026' } } });
-    await p.school.create({ data: { tenantId: tid, name: 'Demo School', code: 'DEMO', address: { country: 'Pakistan' }, email: 'admin@demo.edu', timezone: 'Asia/Karachi', locale: 'en', academicYear: '2025-2026' } });
-    const hash = await bcrypt.hash('Admin@123456', 12);
-    await p.user.create({ data: { tenantId: tid, email: 'admin@demo.edu', passwordHash: hash, role: 'SCHOOL_ADMIN', emailVerified: true, profile: { create: { firstName: 'Demo', lastName: 'Admin', phone: '+923001234567' } } } });
-    console.log('   Seeded: admin@demo.edu / Admin@123456');
-  } catch(e) { console.log('   Seed note:', e.message.split('\n')[0]); }
-  await p.\$disconnect();
-}
-seed();
-" 2>/dev/null || true
+  node /app/apps/api/seed-demo.js 2>/dev/null || true
   echo "==> Demo data ready"
 else
   echo "==> WARNING: DATABASE_URL not set"
@@ -45,16 +26,8 @@ echo "==> Starting API on port $API_PORT..."
 cd /app/apps/api
 export PORT=$API_PORT
 
-if [ -f "dist/main.js" ]; then
-  echo "   Using compiled dist/main.js"
-  node dist/main.js > /tmp/api.log 2>&1 &
-else
-  echo "   No dist/ — using ts-node"
-  node \
-    -r ./node_modules/ts-node/register/transpile-only \
-    -r ./node_modules/tsconfig-paths/register \
-    src/main.ts > /tmp/api.log 2>&1 &
-fi
+echo "   Using compiled dist/main.js"
+node dist/main.js > /tmp/api.log 2>&1 &
 API_PID=$!
 echo "   API PID: $API_PID"
 
@@ -67,7 +40,7 @@ while [ $WAITED -lt 90 ]; do
   fi
   if ! kill -0 $API_PID 2>/dev/null; then
     echo "==> API process died. Last logs:"
-    cat /tmp/api.log | tail -40
+    cat /tmp/api.log | tail -50
     exit 1
   fi
   sleep 2
@@ -75,8 +48,8 @@ while [ $WAITED -lt 90 ]; do
 done
 
 if [ $WAITED -ge 90 ]; then
-  echo "==> API did not start in 90s. Last logs:"
-  cat /tmp/api.log | tail -40
+  echo "==> API timeout. Last logs:"
+  cat /tmp/api.log | tail -50
   exit 1
 fi
 
