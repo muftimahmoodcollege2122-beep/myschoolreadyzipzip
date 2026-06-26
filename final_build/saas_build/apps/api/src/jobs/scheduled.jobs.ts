@@ -357,7 +357,6 @@ export class ScheduledJobs {
       }
     }
   }
-}
 
   // ── 8. Library overdue alerts (daily 9am) ──────────────────────────────────
   @Cron('0 9 * * *')
@@ -401,7 +400,7 @@ export class ScheduledJobs {
   @Cron('0 8 * * 1')
   async autoDropoutRiskAlerts() {
     this.logger.log('Dropout risk auto-alert job running');
-    const tenants = await this.prisma.tenant.findMany({ where: { isActive: true }, select: { id: true } });
+    const tenants = await this.prisma.tenant.findMany({ where: { status: { in: ['ACTIVE', 'TRIAL'] as any } }, select: { id: true } });
 
     for (const tenant of tenants) {
       try {
@@ -437,3 +436,4 @@ export class ScheduledJobs {
       } catch(e) { this.logger.error(`Dropout risk alert failed for tenant ${tenant.id}: ${e}`); }
     }
   }
+}

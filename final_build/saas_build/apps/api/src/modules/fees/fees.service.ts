@@ -83,8 +83,8 @@ export class FeesService {
     return { created, skipped };
   }
 
-  async recordPayment(dto: RecordPaymentDto & { invoiceId: string }, tenantId: string, processedById: string): Promise<void> {
-    const invoice = await this.prisma.feeInvoice.findFirst({ where: { id: dto.invoiceId, tenantId } });
+  async recordPayment(dto: RecordPaymentDto, tenantId: string, processedById: string): Promise<void> {
+    const invoice = await this.prisma.feeInvoice.findFirst({ where: { id: (dto as any).invoiceId ?? dto.invoiceId, tenantId } });
     if (!invoice) throw new NotFoundException('Invoice not found');
 
     const outstanding = Number(invoice.amount) + Number(invoice.fine ?? 0) - Number(invoice.discount ?? 0) - Number(invoice.amountPaid ?? 0);

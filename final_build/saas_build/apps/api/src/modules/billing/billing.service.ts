@@ -27,18 +27,19 @@ export class BillingService {
     private readonly events: EventPublisher,
   ) {
     const key = config.get<string>('STRIPE_SECRET_KEY', 'sk_test_placeholder');
-    this.stripe = new Stripe(key, { apiVersion: '2023-10-16', typescript: true, telemetry: false });
+    this.stripe = new Stripe(key, { apiVersion: '2025-02-24.acacia', typescript: true, telemetry: false });
   }
 
   async createCheckoutSession(tenantId: string, tier: 'GROWTH' | 'PRO' | 'ENTERPRISE'): Promise<any> {
     const priceId = PRICE_MAP[tier];
     if (!priceId) throw new BadRequestException(`Invalid tier: ${tier}`);
 
-    const tenant = await this.prisma.tenant.findUniqueOrThrow({ where: { id: tenantId } });
+    const tenant = await this.prisma.tenant.findUniqueOrThrow({ where: { id: tenantId }, include: { schools: { take: 1 } } });
     let customerId = tenant.stripeCustomerId;
 
     if (!customerId) {
-      const customer = await this.stripe.customers.create({ email: tenant.email ?? '', metadata: { tenantId } });
+      const tenantEmail = (tenant as any).schools?.[0]?.email ?? '';
+      const customer = await this.stripe.customers.create({ email: tenantEmail, metadata: { tenantId } });
       customerId = customer.id;
       await this.prisma.tenant.update({ where: { id: tenantId }, data: { stripeCustomerId: customerId } });
     }
@@ -68,7 +69,7 @@ export class BillingService {
   }
 
   async getSubscription(tenantId: string): Promise<any> {
-    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { tier: true, status: true, stripeSubId: true, stripeSubscriptionId: true } as any });
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { tier: true, status: true, stripeSubId: true } });
     return tenant;
   }
 
@@ -123,13 +124,13 @@ export class BillingService {
   }
 
   private async handlePaymentSucceeded(invoice: Stripe.Invoice): Promise<void> {
-    const tenantId = (invoice.subscription_details?.metadata?.tenantId) as string;
+    const tenantId = ((invoice as any).subscription_details?.metadata?.tenantId ?? (invoice as any).metadata?.tenantId) as string;
     if (!tenantId) return;
-    await this.prisma.tenant.update({ where: { id: tenantId }, data: { status: 'ACTIVE', suspendedAt: null } });
+    await this.prisma.tenant.update({ where: { id: tenantId }, data: { status: 'ACTIVE' as any, suspendedAt: null } });
   }
 
   private async handlePaymentFailed(invoice: Stripe.Invoice): Promise<void> {
-    const tenantId = (invoice.subscription_details?.metadata?.tenantId) as string;
+    const tenantId = ((invoice as any).subscription_details?.metadata?.tenantId ?? (invoice as any).metadata?.tenantId) as string;
     if (!tenantId) return;
     await this.events.publishViaOutbox({ tenantId, topic: 'billing.payment.failed', key: tenantId, payload: { tenantId, invoiceId: invoice.id } });
   }

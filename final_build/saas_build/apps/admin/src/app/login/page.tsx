@@ -22,7 +22,7 @@ export default function AdminLogin() {
     if (!slug.trim()) { setError('Please enter your school ID'); return; }
     setLoading(true); setError('');
     try {
-      const data: any = await api.post('/auth/login', { email, password, slug: slug.trim(), expectedRole: 'SCHOOL_ADMIN' });
+      const data: any = await api.post('/auth/login', { email, password, tenantSlug: slug.trim() });
       if (data?.accessToken) {
         setTokens(data.accessToken, slug.trim());
         setAuth(data.accessToken, data.user, slug.trim());

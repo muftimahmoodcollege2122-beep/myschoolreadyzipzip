@@ -29,9 +29,9 @@ export class AiAnalyticsService {
       this.prisma.attendance.findMany({ where: { tenantId, studentId }, take: 90, orderBy: { date: 'desc' } }),
       this.prisma.examResult.findMany({ where: { tenantId, studentId }, take: 10, orderBy: { createdAt: 'desc' }, include: { exam: true } }),
     ]);
-    const avgGrade = grades.length > 0 ? grades.reduce((s, g) => s + Number(g.marks ?? 0), 0) / grades.length : 0;
+    const avgGrade = grades.length > 0 ? grades.reduce((s, g) => s + Number(g.score ?? 0), 0) / grades.length : 0;
     const attRate = attendance.length > 0 ? (attendance.filter(a => a.status === 'PRESENT').length / attendance.length) * 100 : 0;
-    const trend = grades.length > 4 ? (grades.slice(0, 2).reduce((s, g) => s + Number(g.marks ?? 0), 0) / 2) - (grades.slice(-2).reduce((s, g) => s + Number(g.marks ?? 0), 0) / 2) : 0;
+    const trend = grades.length > 4 ? (grades.slice(0, 2).reduce((s, g) => s + Number(g.score ?? 0), 0) / 2) - (grades.slice(-2).reduce((s, g) => s + Number(g.score ?? 0), 0) / 2) : 0;
     const predictedGrade = Math.max(0, Math.min(100, avgGrade + trend * 0.3 + (attRate - 75) * 0.2));
     return { studentId, currentAvgGrade: Math.round(avgGrade), attendanceRate: Math.round(attRate), trend: trend > 2 ? 'IMPROVING' : trend < -2 ? 'DECLINING' : 'STABLE', predictedNextGrade: Math.round(predictedGrade), confidence: 75, recentExams: exams.slice(0, 5) };
   }

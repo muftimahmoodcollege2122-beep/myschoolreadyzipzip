@@ -31,5 +31,6 @@ export function setupTracing(): void {
       sdk?.shutdown().catch(() => {});
     });
   } catch {
+    // Non-fatal — tracing is optional
   }
 }

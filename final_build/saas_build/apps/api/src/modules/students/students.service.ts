@@ -22,7 +22,7 @@ export class StudentsService {
 
   private async resolveSchoolId(tenantId: string, schoolId?: string): Promise<string | undefined> {
     if (schoolId && UUID_RE.test(schoolId)) return schoolId;
-    const school = await this.prisma.school.findFirst({ where: { tenantId, isActive: true }, select: { id: true } });
+    const school = await this.prisma.school.findFirst({ where: { tenantId }, select: { id: true } });
     return school?.id;
   }
 

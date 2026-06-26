@@ -25,7 +25,7 @@ export class DashboardService {
 
   private async resolveSchoolId(tenantId: string, schoolId?: string): Promise<string | undefined> {
     if (schoolId && UUID_RE.test(schoolId)) return schoolId;
-    const school = await this.prisma.school.findFirst({ where: { tenantId, isActive: true }, select: { id: true } });
+    const school = await this.prisma.school.findFirst({ where: { tenantId }, select: { id: true } });
     return school?.id;
   }
 
@@ -55,9 +55,9 @@ export class DashboardService {
         withTimeout(db.student.count({ where: schoolFilter }), 3000, 0),
         withTimeout(db.teacher.count({ where: schoolFilter }), 3000, 0),
         withTimeout(db.exam.findMany({
-          where: { tenantId, startDate: { gte: today } },
-          take: 3, orderBy: { startDate: 'asc' },
-          include: { section: { include: { class: true } } },
+          where: { tenantId, scheduledAt: { gte: today } },
+          take: 3, orderBy: { scheduledAt: 'asc' },
+          include: { subject: true },
         }), 3000, []),
         withTimeout(db.feeInvoice.aggregate({
           where: feeFilter,

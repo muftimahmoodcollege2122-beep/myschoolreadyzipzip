@@ -93,7 +93,7 @@ export default function ParentAssignmentsPage() {
                       <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-400">
                         <span>📅 Due: {dayjs(a.dueDate).format('MMM D, YYYY')}</span>
                         <span>📊 {a.totalMarks} marks</span>
-                        {a.teacher?.user?.name && <span>👨‍🏫 {a.teacher.user.name}</span>}
+                        {a.teacher?.user?.name && <span>👨‍🏫 {a.teacher.user.firstName || user.lastName}</span>}
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0">

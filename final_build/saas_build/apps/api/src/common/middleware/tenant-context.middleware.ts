@@ -7,6 +7,7 @@ export interface TenantContext {
   tenantId: string;
   tenantSlug: string;
   tier: string;
+  status: string;
   schemaName: string;
   planLimits: Record<string, unknown>;
   dataRegion: string;
@@ -62,7 +63,7 @@ export class TenantContextMiddleware implements NestMiddleware {
     if (!ctx) {
       throw new UnauthorizedException(`Tenant not found: ${slug ?? req.hostname}`);
     }
-    if (ctx.tier === 'SUSPENDED') {
+    if (ctx.status === 'SUSPENDED') {
       throw new ForbiddenException('Tenant account is suspended');
     }
 
@@ -92,7 +93,7 @@ export class TenantContextMiddleware implements NestMiddleware {
         });
         if (!t) return null;
         return {
-          tenantId: t.id, tenantSlug: t.slug, tier: t.tier,
+          tenantId: t.id, tenantSlug: t.slug, tier: t.tier, status: t.status,
           schemaName: t.schemaName, planLimits: t.planLimits as Record<string, unknown>, dataRegion: t.dataRegion,
         };
       },
@@ -116,7 +117,7 @@ export class TenantContextMiddleware implements NestMiddleware {
         });
         if (!t) return null;
         return {
-          tenantId: t.id, tenantSlug: t.slug, tier: t.tier,
+          tenantId: t.id, tenantSlug: t.slug, tier: t.tier, status: t.status,
           schemaName: t.schemaName, planLimits: t.planLimits as Record<string, unknown>, dataRegion: t.dataRegion,
         };
       },

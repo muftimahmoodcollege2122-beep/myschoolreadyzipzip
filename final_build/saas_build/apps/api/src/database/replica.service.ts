@@ -14,7 +14,7 @@ export class ReplicaService extends PrismaClient implements OnModuleInit, OnModu
   private isReplica = false;
 
   constructor(private readonly config: ConfigService) {
-    const replicaUrl = config.get<string>('DATABASE_REPLICA_URL');
+    const replicaUrl = config.get<string>('DATABASE_READ_URL') || config.get<string>('DATABASE_REPLICA_URL');
     const primaryUrl = config.get<string>('DATABASE_URL') ?? '';
 
     // Use replica URL if available, else fall back to primary

@@ -25,7 +25,7 @@ export default function StudentLogin() {
       const isEmail = rollOrEmail.includes('@');
       const data: any = await api.post('/auth/login', {
         ...(isEmail ? { email: rollOrEmail } : { rollNumber: rollOrEmail }),
-        password, slug: slug.trim(), expectedRole: 'STUDENT',
+        password, tenantSlug: slug.trim(),
       });
       if (data?.accessToken) {
         setTokens(data.accessToken, slug.trim());

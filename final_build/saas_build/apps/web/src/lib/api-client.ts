@@ -49,14 +49,10 @@ instance.interceptors.response.use(r => r, async (err: AxiosError) => {
     isRefreshing = true;
     try {
       const { refreshToken, tenantSlug } = getAuthFromStorage();
-      if (!refreshToken) {
-        // No refresh token — just reject, auth guard will handle redirect
-        return Promise.reject(err);
-      }
+      if (!refreshToken) return Promise.reject(err);
       const { data } = await axios.post(`${BASE_URL}/api/v1/auth/refresh`, { refreshToken }, {
         headers: { ...(tenantSlug ? { 'X-Tenant-ID': tenantSlug } : {}) },
       });
-      // Update stored tokens
       const stored = localStorage.getItem('auth-storage');
       const state = stored ? JSON.parse(stored) : { state: {}, version: 0 };
       if (state.state) {
@@ -69,7 +65,6 @@ instance.interceptors.response.use(r => r, async (err: AxiosError) => {
       return instance(orig);
     } catch (e) {
       processQueue(e);
-      // Refresh failed — clear auth so the auth guard redirects on next navigation
       try {
         const stored = localStorage.getItem('auth-storage');
         const state = stored ? JSON.parse(stored) : { state: {}, version: 0 };

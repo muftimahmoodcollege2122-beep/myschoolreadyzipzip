@@ -4,7 +4,7 @@ const nextConfig = {
   reactStrictMode: false,
   poweredByHeader: false,
   compress: true,
-  experimental: { serverComponentsExternalPackages: [] },
+  
   async rewrites() {
     return [{
       source: '/api/v1/:path*',

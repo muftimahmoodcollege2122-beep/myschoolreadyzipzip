@@ -48,9 +48,9 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
 
       if (!token) { client.disconnect(); return; }
 
-      const payload = this.jwt.verify(token, { secret: this.config.get('JWT_SECRET') }) as any;
+      const payload = this.jwt.verify(token, { secret: this.config.get('JWT_ACCESS_SECRET') || this.config.get('JWT_SECRET') }) as any;
       client.userId   = payload.sub;
-      client.tenantId = payload.tenantId;
+      client.tenantId = payload.tid ?? payload.tenantId;
       client.role     = payload.role;
       client.schoolId = payload.schoolId;
 

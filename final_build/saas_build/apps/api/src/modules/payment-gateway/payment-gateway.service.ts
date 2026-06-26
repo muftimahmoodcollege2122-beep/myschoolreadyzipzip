@@ -105,15 +105,16 @@ export class PaymentGatewayService {
 
     await this.prisma.outboxEvent.create({
       data: {
-        aggregateId:   dto.tenantId,
-        aggregateType: 'Payment',
-        eventType:     'payment.initiated',
-        payload:       JSON.stringify({
+        tenantId:  dto.tenantId,
+        topic:     'payment.initiated',
+        key:       orderId,
+        payload:   {
           orderId, method: dto.method, plan: dto.plan,
           amountPKR, tenantId: dto.tenantId, email: dto.email,
           schoolName: dto.schoolName, paymentId: result.paymentId,
-        }),
-        status: 'PENDING',
+        },
+        headers:   { source: 'payment-gateway' },
+        status:    'PENDING',
       },
     });
 
@@ -139,30 +140,36 @@ export class PaymentGatewayService {
 
     if (!outbox) throw new NotFoundException('Payment record not found');
 
-    const payload = JSON.parse(outbox.payload as string);
+    const payload = outbox.payload as any;
 
     await this.prisma.outboxEvent.create({
       data: {
-        aggregateId:   payload.tenantId,
-        aggregateType: 'Payment',
-        eventType:     'payment.verified',
-        payload:       JSON.stringify({
+        tenantId:  payload.tenantId,
+        topic:     'payment.verified',
+        key:       dto.paymentId,
+        payload:   {
           ...payload,
           transactionId:   dto.transactionId,
           screenshotUrl:   dto.screenshot,
           verifiedAt:      new Date().toISOString(),
           status:          'PENDING_REVIEW',
-        }),
-        status: 'PENDING',
+        },
+        headers:   { source: 'payment-gateway' },
+        status:    'PENDING',
       },
     });
 
-    await this.events.publish('payment.verified', {
-      tenantId:      payload.tenantId,
-      plan:          payload.plan,
-      method:        payload.method,
-      transactionId: dto.transactionId,
-      email:         payload.email,
+    await this.events.publishDirect({
+      topic: 'payment.verified',
+      key: payload.tenantId,
+      tenantId: payload.tenantId,
+      payload: {
+        tenantId:      payload.tenantId,
+        plan:          payload.plan,
+        method:        payload.method,
+        transactionId: dto.transactionId,
+        email:         payload.email,
+      },
     });
 
     return {
@@ -177,17 +184,22 @@ export class PaymentGatewayService {
 
     if (capture.success) {
       const outbox = await this.prisma.outboxEvent.findFirst({
-        where: { eventType: 'payment.initiated', payload: { string_contains: internalOrderId } },
+        where: { topic: 'payment.initiated', key: { contains: internalOrderId } },
       });
 
       if (outbox) {
-        const payload = JSON.parse(outbox.payload as string);
-        await this.events.publish('payment.confirmed', {
-          tenantId:  payload.tenantId,
-          plan:      payload.plan,
-          method:    PaymentMethod.PAYPAL,
-          captureId: capture.captureId,
-          email:     payload.email,
+        const payload = outbox.payload as any;
+        await this.events.publishDirect({
+          topic: 'payment.confirmed',
+          key: payload.tenantId,
+          tenantId: payload.tenantId,
+          payload: {
+            tenantId:  payload.tenantId,
+            plan:      payload.plan,
+            method:    PaymentMethod.PAYPAL,
+            captureId: capture.captureId,
+            email:     payload.email,
+          },
         });
 
         await this.prisma.tenant.update({
@@ -209,17 +221,22 @@ export class PaymentGatewayService {
       this.logger.log(`JazzCash payment confirmed for order ${orderId}`);
 
       const outbox = await this.prisma.outboxEvent.findFirst({
-        where: { eventType: 'payment.initiated', payload: { string_contains: orderId } },
+        where: { topic: 'payment.initiated', key: { contains: orderId } },
       });
 
       if (outbox) {
-        const data = JSON.parse(outbox.payload as string);
-        await this.events.publish('payment.confirmed', {
-          tenantId:      data.tenantId,
-          plan:          data.plan,
-          method:        PaymentMethod.JAZZCASH,
-          transactionId: payload.pp_TxnRefNo,
-          email:         data.email,
+        const data = outbox.payload as any;
+        await this.events.publishDirect({
+          topic: 'payment.confirmed',
+          key: data.tenantId,
+          tenantId: data.tenantId,
+          payload: {
+            tenantId:      data.tenantId,
+            plan:          data.plan,
+            method:        PaymentMethod.JAZZCASH,
+            transactionId: payload.pp_TxnRefNo,
+            email:         data.email,
+          },
         });
 
         await this.prisma.tenant.update({
@@ -234,7 +251,7 @@ export class PaymentGatewayService {
 
   async getPendingVerifications() {
     const events = await this.prisma.outboxEvent.findMany({
-      where: { eventType: 'payment.verified', status: 'PENDING' },
+      where: { topic: 'payment.verified', status: 'PENDING' },
       orderBy: { createdAt: 'desc' },
     });
     return events.map(e => ({ id: e.id, ...JSON.parse(e.payload as string) }));
@@ -242,7 +259,7 @@ export class PaymentGatewayService {
 
   async approveManualPayment(outboxId: string) {
     const outbox = await this.prisma.outboxEvent.findUniqueOrThrow({ where: { id: outboxId } });
-    const payload = JSON.parse(outbox.payload as string);
+    const payload = outbox.payload as any;
 
     await this.prisma.tenant.update({
       where: { id: payload.tenantId },
@@ -251,10 +268,10 @@ export class PaymentGatewayService {
 
     await this.prisma.outboxEvent.update({
       where: { id: outboxId },
-      data:  { status: 'PROCESSED' },
+      data:  { status: 'SENT', sentAt: new Date() },
     });
 
-    await this.events.publish('payment.confirmed', { ...payload, approvedManually: true });
+    await this.events.publishDirect({ topic: 'payment.confirmed', key: 'payment', tenantId: '', payload: { ...payload, approvedManually: true });
 
     return { success: true, message: `Tenant ${payload.tenantId} activated` };
   }

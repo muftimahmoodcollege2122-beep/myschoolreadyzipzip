@@ -6,7 +6,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { MarkAttendanceDto } from './dto/mark-attendance.dto';
 import { AttendanceReportQueryDto } from './dto/attendance-report-query.dto';
 import { AttendanceStatus } from '@prisma/client';
-import * as dayjs from 'dayjs';
+import dayjs from 'dayjs';
 
 export interface AttendanceSummary {
   studentId: string;

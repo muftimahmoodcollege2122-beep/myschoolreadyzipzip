@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { api, apiClient, setTokens, clearTokens } from '../lib/api-client';
 
 export function useAuth() {
-  const { user, accessToken, setAuth, clearAuth, slug, tenantSlug } = useAuthStore();
+  const { user, accessToken, setAuth, clearAuth, tenantSlug } = useAuthStore();
   const router = useRouter();
 
   const login = async (email: string, password: string, schoolSlug?: string) => {
@@ -12,8 +12,7 @@ export function useAuth() {
     const res = await api.post<any>('/auth/login', {
       email,
       password,
-      slug: useSlug,
-      expectedRole: 'SCHOOL_ADMIN',
+      tenantSlug: useSlug,
     });
     if (res?.accessToken) {
       setTokens(res.accessToken, useSlug);
@@ -38,6 +37,6 @@ export function useAuth() {
     logout,
     isRole,
     isAuthenticated: !!accessToken,
-    tenantSlug: tenantSlug || slug,
+    tenantSlug: tenantSlug,
   };
 }

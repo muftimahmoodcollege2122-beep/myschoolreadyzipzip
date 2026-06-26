@@ -148,23 +148,21 @@ export class SearchService {
   async getExamPerformanceAnalytics(tenantId: string, sectionId: string, academicYear: string) {
     return this.prisma.$queryRaw`
       SELECT
-        e.title,
+        e.name,
         e.exam_type,
         e.max_marks,
         COUNT(er.id) as total_students,
-        COUNT(er.id) FILTER (WHERE er.is_pass = true) as passed,
         ROUND(AVG(er.marks_obtained), 1) as avg_marks,
         MAX(er.marks_obtained) as highest,
         MIN(er.marks_obtained) as lowest,
-        ROUND(COUNT(er.id) FILTER (WHERE er.is_pass = true)::numeric / NULLIF(COUNT(er.id),0) * 100, 1) as pass_rate
+        ROUND(COUNT(er.id) FILTER (WHERE er.marks_obtained >= e.passing_marks)::numeric / NULLIF(COUNT(er.id),0) * 100, 1) as pass_rate
       FROM exams e
       LEFT JOIN exam_results er ON er.exam_id = e.id
       WHERE e.tenant_id = ${tenantId}::uuid
-        AND e.section_id = ${sectionId}::uuid
         AND e.academic_year = ${academicYear}
-        AND e.result_published = true
-      GROUP BY e.id, e.title, e.exam_type, e.max_marks
-      ORDER BY e.start_date ASC
+        AND e.is_published = true
+      GROUP BY e.id, e.name, e.exam_type, e.max_marks
+      ORDER BY e.scheduled_at ASC
     `;
   }
 
@@ -178,14 +176,14 @@ export class SearchService {
       this.prisma.tenant.groupBy({ by: ['tier'], _count: { tier: true } }),
       this.prisma.tenant.count({ where: { status: 'ACTIVE' as any } }),
       this.prisma.$queryRaw`
-        SELECT t.id, t.name, t.plan,
+        SELECT t.id, t.name, t.tier,
           COUNT(DISTINCT s.id) as student_count,
           COUNT(DISTINCT tc.id) as teacher_count
         FROM tenants t
         LEFT JOIN students s ON s.tenant_id = t.id
         LEFT JOIN teachers tc ON tc.tenant_id = t.id
         WHERE t.status = 'ACTIVE'
-        GROUP BY t.id, t.name, t.plan
+        GROUP BY t.id, t.name, t.tier
         ORDER BY student_count DESC LIMIT 10
       `,
     ]);

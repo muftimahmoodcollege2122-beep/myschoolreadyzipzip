@@ -65,7 +65,7 @@ export default function AdminDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-black text-gray-900">{greeting}, {user?.name?.split(' ')[0] || 'Admin'} 👋</h1>
+          <h1 className="text-2xl font-black text-gray-900">{greeting}, {user?.firstName || user?.name?.split(' ')[0] || 'Admin'} 👋</h1>
           <p className="text-gray-500 text-sm mt-1">{now.format('dddd, MMMM D, YYYY')} · {slug?.toUpperCase()} Admin Panel</p>
         </div>
         <div className="flex items-center gap-3">

@@ -1,2 +1,1 @@
-export { LoggingInterceptor } from './correlation-id.interceptor';
-export { PiiScrubberInterceptor } from './correlation-id.interceptor';
+export { LoggingInterceptor } from './pii-scrubber.interceptor';
