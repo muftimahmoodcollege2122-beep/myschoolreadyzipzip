@@ -12,9 +12,10 @@ export declare class EventPublisher implements OnModuleInit, OnModuleDestroy {
     private readonly config;
     private readonly prisma;
     private readonly logger;
-    private readonly kafka;
     private producer;
     private isConnected;
+    private kafkaEnabled;
+    private relayInterval;
     constructor(config: ConfigService, prisma: PrismaService);
     onModuleInit(): Promise<void>;
     onModuleDestroy(): Promise<void>;

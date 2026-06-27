@@ -16,7 +16,6 @@ const prisma_service_1 = require("../../database/prisma.service");
 const audit_service_1 = require("../../common/audit/audit.service");
 const event_publisher_service_1 = require("../../events/event-publisher.service");
 const plan_guard_1 = require("../../common/guards/plan.guard");
-const client_1 = require("@prisma/client");
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 let StudentsService = StudentsService_1 = class StudentsService {
     async resolveSchoolId(tenantId, schoolId) {
@@ -284,7 +283,7 @@ let StudentsService = StudentsService_1 = class StudentsService {
                     lastName: '[ERASED]',
                     dateOfBirth: null,
                     phone: null,
-                    address: client_1.Prisma.DbNull,
+                    address: null,
                     nationalId: null,
                     photoUrl: null,
                 },

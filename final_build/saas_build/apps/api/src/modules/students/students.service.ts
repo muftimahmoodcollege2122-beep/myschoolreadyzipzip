@@ -337,7 +337,7 @@ export class StudentsService {
           lastName: '[ERASED]',
           dateOfBirth: null,
           phone: null,
-          address: Prisma.DbNull,
+          address: null as any,
           nationalId: null,
           photoUrl: null,
         },

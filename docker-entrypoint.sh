@@ -6,6 +6,14 @@ WEB_DIR="/app/apps/web"
 API_BIN="$API_DIR/node_modules/.bin"
 WEB_BIN="$WEB_DIR/node_modules/.bin"
 
+# Fallback to root node_modules if app-level not found
+if [ ! -f "$API_BIN/prisma" ]; then
+  API_BIN="/app/node_modules/.bin"
+fi
+if [ ! -f "$WEB_BIN/next" ]; then
+  WEB_BIN="/app/node_modules/.bin"
+fi
+
 API_PORT="${PORT:-3001}"
 WEB_PORT="5000"
 
@@ -18,11 +26,17 @@ sleep 1
 echo "==> Redis ready"
 
 # ── Database ──────────────────────────────────────────────────────────────────
-if [ -n "$DATABASE_URL" ]; then
+if [ -z "$DATABASE_URL" ]; then
+  echo ""
+  echo "==> WARNING: DATABASE_URL is not set."
+  echo "    The API will start in degraded mode (no data persistence)."
+  echo "    Set DATABASE_URL=postgresql://user:pass@host:5432/dbname to enable full functionality."
+  echo ""
+else
   echo "==> Syncing database schema..."
   cd "$API_DIR"
   "$API_BIN/prisma" db push --skip-generate --accept-data-loss 2>&1 | \
-    grep -E "already|applied|✔|Error|warn" | head -5 || true
+    grep -E "already|applied|Your database|Error|warn" | head -5 || true
   echo "==> Schema synced"
 
   echo "==> Seeding demo tenant..."
@@ -64,49 +78,39 @@ async function seed() {
 seed();
 " 2>/dev/null || true
   echo "==> Demo data ready"
-else
-  echo "==> WARNING: DATABASE_URL not set — skipping DB steps"
 fi
 
 # ── NestJS API ────────────────────────────────────────────────────────────────
 echo "==> Starting API on port $API_PORT..."
 cd "$API_DIR"
 export PORT=$API_PORT
+export REDIS_HOST="${REDIS_HOST:-localhost}"
+export REDIS_PORT="${REDIS_PORT:-6379}"
 
-if [ -f "dist/main.js" ]; then
-  echo "   Using compiled dist/main.js"
-  node dist/main.js > /tmp/api.log 2>&1 &
-else
-  echo "   No dist/ — using ts-node fallback"
-  node \
-    -r "$API_DIR/node_modules/ts-node/register/transpile-only" \
-    -r "$API_DIR/node_modules/tsconfig-paths/register" \
-    src/main.ts > /tmp/api.log 2>&1 &
-fi
-
+node dist/main.js > /tmp/api.log 2>&1 &
 API_PID=$!
 echo "   API PID: $API_PID"
 
 # ── Wait for API ──────────────────────────────────────────────────────────────
 echo "==> Waiting for API..."
 WAITED=0
-while [ $WAITED -lt 90 ]; do
+while [ $WAITED -lt 60 ]; do
   if wget -qO- "http://localhost:$API_PORT/api/v1/health/live" >/dev/null 2>&1; then
     echo "==> API ready after ${WAITED}s"
     break
   fi
   if ! kill -0 $API_PID 2>/dev/null; then
     echo "==> API process died. Last logs:"
-    tail -60 /tmp/api.log
+    cat /tmp/api.log
     exit 1
   fi
   sleep 2
   WAITED=$((WAITED + 2))
 done
 
-if [ $WAITED -ge 90 ]; then
-  echo "==> API timed out. Last logs:"
-  tail -60 /tmp/api.log
+if [ $WAITED -ge 60 ]; then
+  echo "==> API did not start in 60s. Last logs:"
+  cat /tmp/api.log
   exit 1
 fi
 
@@ -116,9 +120,7 @@ cd "$WEB_DIR"
 export NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-http://localhost:$API_PORT}"
 
 if [ -d ".next" ] && [ -f ".next/BUILD_ID" ]; then
-  echo "   Using pre-built .next/"
   exec "$WEB_BIN/next" start -p "$WEB_PORT"
 else
-  echo "   No .next — running dev server"
   exec "$WEB_BIN/next" dev -p "$WEB_PORT"
 fi

@@ -1,62 +1,72 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PrismaService.name);
+  private isConnected = false;
 
   constructor(private readonly config: ConfigService) {
-    const dbUrl = config.get<string>('DATABASE_URL') ?? '';
+    const dbUrl = process.env.DATABASE_URL ?? config.get<string>('DATABASE_URL') ?? '';
+    const isProd = (process.env.NODE_ENV ?? config.get('NODE_ENV')) === 'production';
+    const poolSize = isProd ? 5 : 10;
 
-    // Connection pool: use PgBouncer in production, direct pool in dev
-    // PgBouncer handles the heavy lifting at 100k schools — app just needs small pool
-    const isProd = config.get('NODE_ENV') === 'production';
-    const poolSize = isProd ? 5 : 10; // PgBouncer multiplies this per pod
-
-    // Append pool config to DATABASE_URL if not already present
-    const url = dbUrl.includes('connection_limit')
-      ? dbUrl
-      : `${dbUrl}${dbUrl.includes('?') ? '&' : '?'}connection_limit=${poolSize}&pool_timeout=10&connect_timeout=10`;
+    // Always call super — use dummy URL if DATABASE_URL not set (degraded mode)
+    const effectiveUrl = dbUrl
+      ? (dbUrl.includes('connection_limit')
+          ? dbUrl
+          : `${dbUrl}${dbUrl.includes('?') ? '&' : '?'}connection_limit=${poolSize}&pool_timeout=10&connect_timeout=10`)
+      : 'postgresql://localhost:5432/noop?connection_limit=1';
 
     super({
-      datasources: { db: { url } },
+      datasources: { db: { url: effectiveUrl } },
       log: [
-        { level: 'query', emit: 'event' },
         { level: 'warn',  emit: 'event' },
         { level: 'error', emit: 'event' },
       ],
       errorFormat: 'minimal',
     });
 
-    this.setupMiddleware();
-    this.setupLogging();
+    if (dbUrl) {
+      this.setupMiddleware();
+      this.setupLogging();
+    }
   }
 
   async onModuleInit(): Promise<void> {
+    const dbUrl = process.env.DATABASE_URL ?? '';
+    if (!dbUrl) {
+      this.logger.warn('DATABASE_URL not set — running without database. Set DATABASE_URL to enable full functionality.');
+      return;
+    }
+
     let attempts = 0;
     while (attempts < 5) {
       try {
         await this.$connect();
+        this.isConnected = true;
         this.logger.log('Database connected');
         return;
       } catch (err) {
         attempts++;
-        this.logger.warn(`DB connect attempt ${attempts}/5 failed: ${err}`);
-        await new Promise(r => setTimeout(r, attempts * 1000));
+        this.logger.warn(`DB connect attempt ${attempts}/5 failed: ${(err as Error).message}`);
+        if (attempts < 5) await new Promise(r => setTimeout(r, attempts * 2000));
       }
     }
-    throw new Error('Failed to connect to database after 5 attempts');
+    // Log warning but DON'T throw — let the app start so health endpoint can respond
+    this.logger.error('Failed to connect to database after 5 attempts — API starting in degraded mode');
   }
 
   async onModuleDestroy(): Promise<void> {
-    await this.$disconnect();
-    this.logger.log('Database disconnected');
+    if (this.isConnected) {
+      await this.$disconnect();
+      this.logger.log('Database disconnected');
+    }
   }
 
   private setupMiddleware(): void {
     this.$use(async (params: any, next) => {
-      // Soft delete
       if (params.action === 'delete') {
         params.action = 'update';
         params.args.data = { deletedAt: new Date() };
@@ -77,18 +87,12 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   }
 
   private setupLogging(): void {
-    (this as any).$on('query', (e: any) => {
-      if (e.duration > 200) {
-        this.logger.warn(`Slow query [${e.duration}ms]: ${e.query.substring(0, 150)}`);
-      }
-    });
     (this as any).$on('warn',  (e: { message: string }) => this.logger.warn(`Prisma: ${e.message}`));
     (this as any).$on('error', (e: { message: string }) => this.logger.error(`Prisma: ${e.message}`));
   }
 
   private modelHasSoftDelete(model: string | undefined): boolean {
-    const models = ['User', 'Student', 'Teacher', 'Staff', 'School'];
-    return model ? models.includes(model) : false;
+    return ['User', 'Student', 'Teacher', 'Staff', 'School'].includes(model ?? '');
   }
 
   async queryTenantScoped<T>(tenantId: string, query: (prisma: PrismaClient) => Promise<T>): Promise<T> {

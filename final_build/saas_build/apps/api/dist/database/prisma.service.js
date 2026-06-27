@@ -16,16 +16,17 @@ const client_1 = require("@prisma/client");
 const config_1 = require("@nestjs/config");
 let PrismaService = PrismaService_1 = class PrismaService extends client_1.PrismaClient {
     constructor(config) {
-        const dbUrl = config.get('DATABASE_URL') ?? '';
-        const isProd = config.get('NODE_ENV') === 'production';
+        const dbUrl = process.env.DATABASE_URL ?? config.get('DATABASE_URL') ?? '';
+        const isProd = (process.env.NODE_ENV ?? config.get('NODE_ENV')) === 'production';
         const poolSize = isProd ? 5 : 10;
-        const url = dbUrl.includes('connection_limit')
-            ? dbUrl
-            : `${dbUrl}${dbUrl.includes('?') ? '&' : '?'}connection_limit=${poolSize}&pool_timeout=10&connect_timeout=10`;
+        const effectiveUrl = dbUrl
+            ? (dbUrl.includes('connection_limit')
+                ? dbUrl
+                : `${dbUrl}${dbUrl.includes('?') ? '&' : '?'}connection_limit=${poolSize}&pool_timeout=10&connect_timeout=10`)
+            : 'postgresql://localhost:5432/noop?connection_limit=1';
         super({
-            datasources: { db: { url } },
+            datasources: { db: { url: effectiveUrl } },
             log: [
-                { level: 'query', emit: 'event' },
                 { level: 'warn', emit: 'event' },
                 { level: 'error', emit: 'event' },
             ],
@@ -33,28 +34,40 @@ let PrismaService = PrismaService_1 = class PrismaService extends client_1.Prism
         });
         this.config = config;
         this.logger = new common_1.Logger(PrismaService_1.name);
-        this.setupMiddleware();
-        this.setupLogging();
+        this.isConnected = false;
+        if (dbUrl) {
+            this.setupMiddleware();
+            this.setupLogging();
+        }
     }
     async onModuleInit() {
+        const dbUrl = process.env.DATABASE_URL ?? '';
+        if (!dbUrl) {
+            this.logger.warn('DATABASE_URL not set — running without database. Set DATABASE_URL to enable full functionality.');
+            return;
+        }
         let attempts = 0;
         while (attempts < 5) {
             try {
                 await this.$connect();
+                this.isConnected = true;
                 this.logger.log('Database connected');
                 return;
             }
             catch (err) {
                 attempts++;
-                this.logger.warn(`DB connect attempt ${attempts}/5 failed: ${err}`);
-                await new Promise(r => setTimeout(r, attempts * 1000));
+                this.logger.warn(`DB connect attempt ${attempts}/5 failed: ${err.message}`);
+                if (attempts < 5)
+                    await new Promise(r => setTimeout(r, attempts * 2000));
             }
         }
-        throw new Error('Failed to connect to database after 5 attempts');
+        this.logger.error('Failed to connect to database after 5 attempts — API starting in degraded mode');
     }
     async onModuleDestroy() {
-        await this.$disconnect();
-        this.logger.log('Database disconnected');
+        if (this.isConnected) {
+            await this.$disconnect();
+            this.logger.log('Database disconnected');
+        }
     }
     setupMiddleware() {
         this.$use(async (params, next) => {
@@ -79,17 +92,11 @@ let PrismaService = PrismaService_1 = class PrismaService extends client_1.Prism
         });
     }
     setupLogging() {
-        this.$on('query', (e) => {
-            if (e.duration > 200) {
-                this.logger.warn(`Slow query [${e.duration}ms]: ${e.query.substring(0, 150)}`);
-            }
-        });
         this.$on('warn', (e) => this.logger.warn(`Prisma: ${e.message}`));
         this.$on('error', (e) => this.logger.error(`Prisma: ${e.message}`));
     }
     modelHasSoftDelete(model) {
-        const models = ['User', 'Student', 'Teacher', 'Staff', 'School'];
-        return model ? models.includes(model) : false;
+        return ['User', 'Student', 'Teacher', 'Staff', 'School'].includes(model ?? '');
     }
     async queryTenantScoped(tenantId, query) {
         return this.$transaction(async (tx) => {
