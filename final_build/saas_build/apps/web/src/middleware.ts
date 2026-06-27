@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export const runtime = 'nodejs';
-
-const PLATFORM_DOMAINS = ['localhost', 'replit.dev', 'repl.co', 'replit.app', 'railway.app', 'up.railway.app'];
+const PLATFORM_DOMAINS = ['localhost', 'replit.dev', 'repl.co', 'replit.app'];
 
 function isPlatformDomain(hostname: string): boolean {
   return PLATFORM_DOMAINS.some(d => hostname === d || hostname.endsWith(`.${d}`));
