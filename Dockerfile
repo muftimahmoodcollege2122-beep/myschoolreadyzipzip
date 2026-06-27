@@ -55,5 +55,5 @@ ENV NODE_PATH=/app/final_build/saas_build/node_modules
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
-EXPOSE 3001 5000
+EXPOSE 3000
 ENTRYPOINT ["dumb-init", "--", "/docker-entrypoint.sh"]
