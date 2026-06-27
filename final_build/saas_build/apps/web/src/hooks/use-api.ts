@@ -560,23 +560,13 @@ export const useSubmitLeaveRequest = () => {
 
 export const useTeacherStats = (slug: string) =>
   useQuery({ queryKey: ['teacher-stats', slug], queryFn: () => apiClient.get(`/dashboard/stats?tenantSlug=${slug}`), enabled: !!slug, staleTime: 5 * 60 * 1000 });
-
-
-
-// ── Budget hooks ──────────────────────────────────────────────────────────────
-export const useBudget = () =>
-  useQuery({ queryKey: ['budget'], queryFn: () => apiClient.get('/finance/budget'), staleTime: 5 * 60 * 1000 });
-
+// ── Missing hooks ─────────────────────────────────────────────────────────────
 export const useCreateBudget = () => {
   const qc = useQueryClient();
   return useMutation({ mutationFn: (dto: any) => apiClient.post('/finance/budget', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['budget'] }) });
 };
 
-// ── Lesson plan hooks ─────────────────────────────────────────────────────────
-export const useLessonPlans = () =>
-  useQuery({ queryKey: ['lesson-plans'], queryFn: () => apiClient.get('/content/lesson-plans'), staleTime: 5 * 60 * 1000 });
-
 export const useSubmitLessonPlan = () => {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (dto: any) => apiClient.post('/content/lesson-plans', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['lesson-plans'] }) });
+  return useMutation({ mutationFn: (dto: any) => apiClient.post('/hr-extended/lesson-plans', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['lesson-plans'] }) });
 };
