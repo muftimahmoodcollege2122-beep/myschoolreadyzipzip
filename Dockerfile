@@ -7,43 +7,39 @@ ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
 
-# Copy repo — lands at /app/
-# API  => /app/final_build/saas_build/apps/api/
-# Web  => /app/final_build/saas_build/apps/web/
+# Copy entire repo
 COPY . .
 
-# .npmrc already fixed (legacy-peer-deps=true) — no override needed
-
-# Install API deps
-RUN cd /app/final_build/saas_build/apps/api && \
+# ── Install all deps at WORKSPACE ROOT (npm workspaces hoists everything here) ──
+RUN cd /app/final_build/saas_build && \
     npm install --legacy-peer-deps --no-audit --no-fund
 
-# Verify @nestjs/core
-RUN test -d /app/final_build/saas_build/apps/api/node_modules/@nestjs/core && \
-    echo "✅ @nestjs/core found" || (echo "❌ @nestjs/core MISSING" && exit 1)
+# Verify @nestjs/core is at workspace root (expected location)
+RUN test -d /app/final_build/saas_build/node_modules/@nestjs/core && \
+    echo "✅ @nestjs/core found at workspace root" || \
+    (echo "❌ @nestjs/core MISSING" && exit 1)
 
-# Generate Prisma
+# Generate Prisma client
+RUN cd /app/final_build/saas_build && \
+    ./node_modules/.bin/prisma generate \
+    --schema=apps/api/prisma/schema.prisma 2>&1 | tail -3 || true
+
+# Build API using workspace root tsc/nest
 RUN cd /app/final_build/saas_build/apps/api && \
-    PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1 \
-    ./node_modules/.bin/prisma generate --schema=prisma/schema.prisma 2>&1 | tail -3 || true
+    NODE_PATH=/app/final_build/saas_build/node_modules \
+    /app/final_build/saas_build/node_modules/.bin/tsc \
+    -p tsconfig.json --skipLibCheck --noEmitOnError false 2>&1 | tail -5 || true
 
-# Rebuild dist from fixed main.ts (CORS fix)
-RUN cd /app/final_build/saas_build/apps/api && \
-    ./node_modules/.bin/tsc -p tsconfig.json --skipLibCheck --noEmitOnError false 2>&1 | tail -5 || true
-
-# Verify dist/main.js
+# Verify dist/main.js was built
 RUN test -f /app/final_build/saas_build/apps/api/dist/main.js && \
-    echo "✅ dist/main.js found" || (echo "❌ dist/main.js MISSING" && exit 1)
+    echo "✅ dist/main.js built ($(wc -c < /app/final_build/saas_build/apps/api/dist/main.js) bytes)" || \
+    (echo "❌ dist/main.js MISSING" && exit 1)
 
-# Install web deps
+# Build Next.js web app
 RUN cd /app/final_build/saas_build/apps/web && \
-    npm install --legacy-peer-deps --no-audit --no-fund
-
-# Delete stale .next and build fresh
-RUN rm -rf /app/final_build/saas_build/apps/web/.next && \
-    cd /app/final_build/saas_build/apps/web && \
     NEXT_PUBLIC_API_URL=http://localhost:3001 \
-    ./node_modules/.bin/next build 2>&1 | tail -15
+    NODE_PATH=/app/final_build/saas_build/node_modules \
+    /app/final_build/saas_build/node_modules/.bin/next build 2>&1 | tail -10
 
 # Verify Next.js build
 RUN test -f /app/final_build/saas_build/apps/web/.next/BUILD_ID && \

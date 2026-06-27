@@ -1,8 +1,10 @@
 #!/bin/sh
 set -e
 
-API_DIR="/app/final_build/saas_build/apps/api"
-WEB_DIR="/app/final_build/saas_build/apps/web"
+SAAS_DIR="/app/final_build/saas_build"
+API_DIR="$SAAS_DIR/apps/api"
+WEB_DIR="$SAAS_DIR/apps/web"
+NODE_MODULES="$SAAS_DIR/node_modules"
 API_PORT="3001"
 WEB_PORT="${PORT:-5000}"
 
@@ -14,14 +16,17 @@ echo "==> Redis ready"
 if [ -n "$DATABASE_URL" ]; then
   echo "==> Syncing schema..."
   cd "$API_DIR"
-  ./node_modules/.bin/prisma db push --skip-generate --accept-data-loss 2>&1 | grep -E "✔|Error|already" | head -5 || true
+  NODE_PATH="$NODE_MODULES" \
+    "$NODE_MODULES/.bin/prisma" db push \
+    --schema=prisma/schema.prisma \
+    --skip-generate --accept-data-loss 2>&1 | grep -E "✔|Error|already" | head -5 || true
   echo "==> Schema synced"
-  node "$API_DIR/seed-demo.js" 2>/dev/null || true
+  NODE_PATH="$NODE_MODULES" node "$API_DIR/seed-demo.js" 2>/dev/null || true
   echo "==> Seed done"
 fi
 
 echo "==> Starting API on :$API_PORT..."
-PORT=$API_PORT NODE_PATH="$API_DIR/node_modules" \
+PORT=$API_PORT NODE_PATH="$NODE_MODULES" \
   node "$API_DIR/dist/main.js" > /tmp/api.log 2>&1 &
 API_PID=$!
 
@@ -37,4 +42,4 @@ echo "==> API ready after ${WAITED}s"
 echo "==> Starting web on :$WEB_PORT..."
 cd "$WEB_DIR"
 export NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-http://localhost:$API_PORT}"
-exec ./node_modules/.bin/next start -p "$WEB_PORT"
+exec NODE_PATH="$NODE_MODULES" "$NODE_MODULES/.bin/next" start -p "$WEB_PORT"
