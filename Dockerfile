@@ -27,10 +27,13 @@ RUN printf "legacy-peer-deps=true\nfund=false\naudit=false\nallow-scripts=true\n
 RUN echo "=== NPMRC FIXED ===" && cat /app/final_build/saas_build/.npmrc
 
 # ── STEP 3: Install API deps ──────────────────────────────────────────────────
+# Temporarily rename root package.json so npm doesn't detect workspace
+RUN mv /app/final_build/saas_build/package.json /app/final_build/saas_build/package.json.bak
 RUN echo "=== INSTALLING API DEPS ===" && \
     cd /app/final_build/saas_build/apps/api && \
-    npm install --legacy-peer-deps --no-audit --no-fund 2>&1 || \
-    (cat /root/.npm/_logs/*.log | grep -E "error|Error|WARN|peer" | head -40 && exit 1)
+    npm install --legacy-peer-deps --no-audit --no-fund --no-package-lock 2>&1 || \
+    (cat /root/.npm/_logs/*.log | grep -E "^npm error" | head -30 && exit 1)
+RUN mv /app/final_build/saas_build/package.json.bak /app/final_build/saas_build/package.json
 RUN echo "=== API NODE_MODULES CHECK ===" && \
     ls /app/final_build/saas_build/apps/api/node_modules | wc -l && \
     test -d /app/final_build/saas_build/apps/api/node_modules/@nestjs/core && \
@@ -50,10 +53,13 @@ RUN echo "=== API DIST CHECK ===" && \
     echo "✅ dist/main.js OK" || (echo "❌ dist/main.js MISSING" && exit 1)
 
 # ── STEP 6: Install Web deps ──────────────────────────────────────────────────
+# Temporarily rename root package.json so npm doesn't detect workspace
+RUN mv /app/final_build/saas_build/package.json /app/final_build/saas_build/package.json.bak
 RUN echo "=== INSTALLING WEB DEPS ===" && \
     cd /app/final_build/saas_build/apps/web && \
     npm install --legacy-peer-deps --no-audit --no-fund 2>&1 || \
-    (cat /root/.npm/_logs/*.log | grep -E "error|Error|WARN|peer" | head -40 && exit 1)
+    (cat /root/.npm/_logs/*.log | grep -E "^npm error" | head -30 && exit 1)
+RUN mv /app/final_build/saas_build/package.json.bak /app/final_build/saas_build/package.json
 RUN echo "=== WEB NODE_MODULES CHECK ===" && \
     ls /app/final_build/saas_build/apps/web/node_modules | wc -l && \
     test -d /app/final_build/saas_build/apps/web/node_modules/next && \
