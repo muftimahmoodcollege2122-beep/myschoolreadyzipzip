@@ -27,7 +27,7 @@ let CacheService = CacheService_1 = class CacheService {
     async onModuleInit() {
         this.client = new ioredis_1.default({
             host: this.config.get('REDIS_HOST', 'localhost'),
-            port: this.config.get('REDIS_PORT', 6379),
+            port: parseInt(this.config.get('REDIS_PORT') || '6379', 10),
             password: this.config.get('REDIS_PASSWORD') || undefined,
             db: this.config.get('REDIS_DB', 0),
             keyPrefix: this.PREFIX,

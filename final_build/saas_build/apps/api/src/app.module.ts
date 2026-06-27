@@ -65,7 +65,7 @@ import awsConfig from './config/aws.config';
       useFactory: () => ({
         redis: {
           host:     process.env.REDIS_HOST     ?? 'localhost',
-          port:     +(process.env.REDIS_PORT   ?? 6379),
+          port:     parseInt(process.env.REDIS_PORT || '6379', 10),
           password: process.env.REDIS_PASSWORD ?? undefined,
         },
         defaultJobOptions: {

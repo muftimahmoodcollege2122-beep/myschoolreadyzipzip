@@ -53,7 +53,7 @@ async function bootstrap() {
     const { createAdapter } = await import('@socket.io/redis-adapter').catch(() => ({ createAdapter: null }));
     if (createAdapter && nodeEnv === 'production') {
       const { createClient } = await import('redis');
-      const pubClient = createClient({ url: `redis://:${configService.get('REDIS_PASSWORD','')}@${configService.get('REDIS_HOST','localhost')}:${configService.get('REDIS_PORT',6379)}` });
+      const pubClient = createClient({ url: `redis://:${configService.get('REDIS_PASSWORD','')}@${configService.get('REDIS_HOST','localhost')}:${parseInt(configService.get('REDIS_PORT') || '6379', 10)}` });
       const subClient = pubClient.duplicate();
       await Promise.all([pubClient.connect(), subClient.connect()]);
       app.useWebSocketAdapter(new IoAdapter(app));

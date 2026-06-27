@@ -14,7 +14,7 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
   async onModuleInit(): Promise<void> {
     this.client = new Redis({
       host:     this.config.get('REDIS_HOST', 'localhost'),
-      port:     this.config.get<number>('REDIS_PORT', 6379),
+      port:     parseInt(this.config.get('REDIS_PORT') || '6379', 10),
       password: this.config.get('REDIS_PASSWORD') || undefined,
       db:       this.config.get<number>('REDIS_DB', 0),
       keyPrefix: this.PREFIX,
