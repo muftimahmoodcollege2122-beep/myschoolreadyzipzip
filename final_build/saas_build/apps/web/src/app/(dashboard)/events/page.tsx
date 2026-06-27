@@ -1,11 +1,11 @@
 'use client';
 import React, { useState } from 'react';
-import { useEvents, useCreateEvent, useDeleteEvent, useAnnouncements, useCreateAnnouncement } from '../../../hooks/use-api';
-import { apiClient } from '../../../lib/api-client';
-import { PageHeader } from '../../../components/shared/page-header';
-import { Topbar } from '../../../components/layout/topbar';
-import { Badge } from '../../../components/shared/badge';
-import { Modal } from '../../../components/shared/modal';
+import { useEvents, useCreateEvent, useDeleteEvent, useAnnouncements, useCreateAnnouncement } from '@/hooks/use-api';
+import { apiClient } from '@/lib/api-client';
+import { PageHeader } from '@/components/shared/page-header';
+import { Topbar } from '@/components/layout/topbar';
+import { Badge } from '@/components/shared/badge';
+import { Modal } from '@/components/shared/modal';
 
 const EVENT_EMPTY = { title: '', description: '', startAt: '', endAt: '', venue: '', isPublic: false };
 const ANN_EMPTY = { title: '', content: '', isPinned: false };

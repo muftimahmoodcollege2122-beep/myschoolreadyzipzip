@@ -1,9 +1,9 @@
 'use client';
 import React from 'react';
-import { useDashboard } from '../../../hooks/use-api';
-import { StatCard } from '../../../components/shared/stat-card';
-import { PageHeader } from '../../../components/shared/page-header';
-import { Topbar } from '../../../components/layout/topbar';
+import { useDashboard } from '@/hooks/use-api';
+import { StatCard } from '@/components/shared/stat-card';
+import { PageHeader } from '@/components/shared/page-header';
+import { Topbar } from '@/components/layout/topbar';
 import Link from 'next/link';
 export default function DashboardPage() {
   const { data, isLoading } = useDashboard('default');

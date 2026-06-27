@@ -1,12 +1,12 @@
 'use client';
 import React, { useState } from 'react';
-import { useTeachers, useCreateTeacher } from '../../../hooks/use-api';
-import { DataTable } from '../../../components/shared/data-table';
-import { PageHeader } from '../../../components/shared/page-header';
-import { Badge } from '../../../components/shared/badge';
-import { Modal } from '../../../components/shared/modal';
-import { Topbar } from '../../../components/layout/topbar';
-import type { Teacher } from '../../../types';
+import { useTeachers, useCreateTeacher } from '@/hooks/use-api';
+import { DataTable } from '@/components/shared/data-table';
+import { PageHeader } from '@/components/shared/page-header';
+import { Badge } from '@/components/shared/badge';
+import { Modal } from '@/components/shared/modal';
+import { Topbar } from '@/components/layout/topbar';
+import type { Teacher } from '@/types';
 
 const INIT = { firstName:'', lastName:'', email:'', employeeId:'', joiningDate:'', phone:'', gender:'' };
 

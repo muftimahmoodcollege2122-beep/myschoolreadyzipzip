@@ -1,10 +1,10 @@
 'use client';
 import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { apiClient } from '../../../lib/api-client';
-import { Topbar } from '../../../components/layout/topbar';
-import { PageHeader } from '../../../components/shared/page-header';
-import { Modal } from '../../../components/shared/modal';
+import { apiClient } from '@/lib/api-client';
+import { Topbar } from '@/components/layout/topbar';
+import { PageHeader } from '@/components/shared/page-header';
+import { Modal } from '@/components/shared/modal';
 
 function exportCSV(data: Record<string, any>[], filename: string) {
   if (!data.length) return;

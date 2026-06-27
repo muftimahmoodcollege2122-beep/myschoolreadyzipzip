@@ -1,9 +1,9 @@
 'use client';
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../../../lib/api-client';
-import { Topbar } from '../../../components/layout/topbar';
-import { PageHeader } from '../../../components/shared/page-header';
+import { apiClient } from '@/lib/api-client';
+import { Topbar } from '@/components/layout/topbar';
+import { PageHeader } from '@/components/shared/page-header';
 
 const AUDIENCES = [
   { value: 'ALL_PARENTS',   label: '👨‍👩‍👧 All Parents',    desc: 'Send to all parent accounts' },

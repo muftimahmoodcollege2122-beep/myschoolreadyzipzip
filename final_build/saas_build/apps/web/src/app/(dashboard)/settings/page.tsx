@@ -1,9 +1,9 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { PageHeader } from '../../../components/shared/page-header';
-import { Topbar } from '../../../components/layout/topbar';
-import { Badge } from '../../../components/shared/badge';
-import { useSchoolInfo, useUpdateSchoolInfo } from '../../../hooks/use-api';
+import { PageHeader } from '@/components/shared/page-header';
+import { Topbar } from '@/components/layout/topbar';
+import { Badge } from '@/components/shared/badge';
+import { useSchoolInfo, useUpdateSchoolInfo } from '@/hooks/use-api';
 
 const TABS = [
   { id:'profile', label:'School Profile', icon:'🏫' },

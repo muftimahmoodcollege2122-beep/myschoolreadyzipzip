@@ -2,7 +2,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useAuthStore } from '../../../stores/auth.store';
+import { useAuthStore } from '@/stores/auth.store';
 
 function LoginForm() {
   const router = useRouter();

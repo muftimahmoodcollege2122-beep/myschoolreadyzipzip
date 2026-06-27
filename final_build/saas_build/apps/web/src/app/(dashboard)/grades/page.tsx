@@ -1,10 +1,10 @@
 'use client';
 import React, { useState } from 'react';
-import { useClasses, useSections, useGradebook, useReportCard, useSubmitGrade, useStudents } from '../../../hooks/use-api';
-import { PageHeader } from '../../../components/shared/page-header';
-import { Topbar } from '../../../components/layout/topbar';
-import { Badge } from '../../../components/shared/badge';
-import { Modal } from '../../../components/shared/modal';
+import { useClasses, useSections, useGradebook, useReportCard, useSubmitGrade, useStudents } from '@/hooks/use-api';
+import { PageHeader } from '@/components/shared/page-header';
+import { Topbar } from '@/components/layout/topbar';
+import { Badge } from '@/components/shared/badge';
+import { Modal } from '@/components/shared/modal';
 
 const gradeColor = (pct: number) => pct >= 90 ? 'green' : pct >= 75 ? 'blue' : pct >= 60 ? 'yellow' : 'red';
 const letterGrade = (pct: number) => pct >= 90 ? 'A+' : pct >= 80 ? 'A' : pct >= 70 ? 'B+' : pct >= 60 ? 'B' : pct >= 50 ? 'C' : 'F';

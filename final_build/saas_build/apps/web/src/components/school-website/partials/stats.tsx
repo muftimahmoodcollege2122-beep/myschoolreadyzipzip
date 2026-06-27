@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import type { SchoolTheme } from '../../../types/theme';
+import type { SchoolTheme } from '@/types/theme';
 
 export function SchoolStats({ theme }: { theme: SchoolTheme }) {
   const stats = [

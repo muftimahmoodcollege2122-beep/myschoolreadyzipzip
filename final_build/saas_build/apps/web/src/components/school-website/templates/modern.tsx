@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import type { SchoolTheme } from '../../../types/theme';
+import type { SchoolTheme } from '@/types/theme';
 import { SchoolNav } from '../partials/nav';
 import { SchoolFooter } from '../partials/footer';
 import { SchoolStats } from '../partials/stats';

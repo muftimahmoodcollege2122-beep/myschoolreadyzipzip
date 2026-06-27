@@ -1,11 +1,11 @@
 'use client';
 import React, { useState } from 'react';
-import { useStaff, useCreateStaff } from '../../../hooks/use-api';
-import { PageHeader } from '../../../components/shared/page-header';
-import { Topbar } from '../../../components/layout/topbar';
-import { Badge } from '../../../components/shared/badge';
-import { Modal } from '../../../components/shared/modal';
-import { DataTable } from '../../../components/shared/data-table';
+import { useStaff, useCreateStaff } from '@/hooks/use-api';
+import { PageHeader } from '@/components/shared/page-header';
+import { Topbar } from '@/components/layout/topbar';
+import { Badge } from '@/components/shared/badge';
+import { Modal } from '@/components/shared/modal';
+import { DataTable } from '@/components/shared/data-table';
 
 const DEPARTMENTS = ['Administration','Academic','Finance','IT','Library','Transport','Sports','Counseling','Security','Housekeeping'];
 const DESIGNATIONS = ['Principal','Vice Principal','Head of Department','Senior Teacher','Teacher','Assistant Teacher','Counselor','Librarian','Accountant','IT Technician','Driver','Security Guard','Administrative Officer'];

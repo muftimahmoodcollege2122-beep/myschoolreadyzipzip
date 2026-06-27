@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import type { SchoolTheme } from '../../types/theme';
+import type { SchoolTheme } from '@/types/theme';
 
 const radiusMap = { none: '0px', small: '6px', medium: '12px', large: '20px' };
 const shadowMap = {

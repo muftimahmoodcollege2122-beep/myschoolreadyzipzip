@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import type { SchoolTheme } from '../../../types/theme';
+import type { SchoolTheme } from '@/types/theme';
 
 export function AdmissionForm({ theme, slug, onClose }: { theme: SchoolTheme; slug: string; onClose: () => void }) {
   const [form, setForm] = useState({ studentName: '', fatherName: '', phone: '', email: '', applyingClass: '', previousSchool: '' });

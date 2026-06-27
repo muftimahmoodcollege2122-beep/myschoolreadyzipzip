@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useMemo } from 'react';
-import { useAuthStore } from '../../../stores/auth.store';
+import { useAuthStore } from '@/stores/auth.store';
 
 const COPY_ICON = '📋';
 const CHECK_ICON = '✅';

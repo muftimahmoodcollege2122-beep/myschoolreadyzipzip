@@ -1,8 +1,8 @@
 'use client';
 import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { apiClient } from '../../../lib/api-client';
-import { Topbar } from '../../../components/layout/topbar';
+import { apiClient } from '@/lib/api-client';
+import { Topbar } from '@/components/layout/topbar';
 
 export default function AiAnalyticsPage() {
   const [alertsSent, setAlertsSent] = useState<string[]>([]);

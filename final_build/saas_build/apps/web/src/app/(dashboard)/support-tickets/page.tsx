@@ -1,10 +1,10 @@
 'use client';
 import React, { useState } from 'react';
-import { Topbar } from '../../../components/layout/topbar';
-import { PageHeader } from '../../../components/shared/page-header';
-import { Badge } from '../../../components/shared/badge';
-import { Modal } from '../../../components/shared/modal';
-import { useSupportTickets, useCreateTicket, useTicketStats, useUpdateTicketStatus } from '../../../hooks/use-api';
+import { Topbar } from '@/components/layout/topbar';
+import { PageHeader } from '@/components/shared/page-header';
+import { Badge } from '@/components/shared/badge';
+import { Modal } from '@/components/shared/modal';
+import { useSupportTickets, useCreateTicket, useTicketStats, useUpdateTicketStatus } from '@/hooks/use-api';
 
 const EMPTY = { title: '', description: '', category: 'TECHNICAL', priority: 'MEDIUM' };
 const STATUS_COLOR: Record<string, string> = { OPEN: 'blue', IN_PROGRESS: 'yellow', RESOLVED: 'green', CLOSED: 'gray' };

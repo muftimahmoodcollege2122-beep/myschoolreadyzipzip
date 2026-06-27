@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { apiClient } from '../../../../lib/api-client';
+import { apiClient } from '@/lib/api-client';
 import { useAuthStore } from '../../../../stores/auth.store';
 
 export default function StudentLogin() {

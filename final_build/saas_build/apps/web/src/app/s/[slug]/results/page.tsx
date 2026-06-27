@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { getSchoolTheme } from '../../../../lib/school-data';
-import { ResultsPage } from '../../../../components/school-website/pages/results';
+import { getSchoolTheme } from '@/lib/school-data';
+import { ResultsPage } from '@/components/school-website/pages/results';
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const theme = await getSchoolTheme(params.slug);

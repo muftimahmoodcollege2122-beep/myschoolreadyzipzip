@@ -1,10 +1,10 @@
 'use client';
 import React, { useState } from 'react';
-import { Topbar } from '../../../components/layout/topbar';
-import { PageHeader } from '../../../components/shared/page-header';
-import { Badge } from '../../../components/shared/badge';
-import { Modal } from '../../../components/shared/modal';
-import { useSchoolSection, useCreateSchoolItem, useDeleteSchoolItem } from '../../../hooks/use-api';
+import { Topbar } from '@/components/layout/topbar';
+import { PageHeader } from '@/components/shared/page-header';
+import { Badge } from '@/components/shared/badge';
+import { Modal } from '@/components/shared/modal';
+import { useSchoolSection, useCreateSchoolItem, useDeleteSchoolItem } from '@/hooks/use-api';
 
 const CLUB_ICONS: Record<string, string> = { Science: '🔬', Arts: '🎨', Drama: '🎭', Debate: '🎙️', Music: '🎵', Environment: '🌱', Technology: '💻', Literature: '📚', Math: '🔢', Photography: '📷', Other: '🏛️' };
 const EMPTY = { name: '', type: 'Science', president: '', advisor: '', members: '', meetingDay: 'Monday', description: '', status: 'Active' };

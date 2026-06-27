@@ -1,10 +1,10 @@
 'use client';
 import React, { useState } from 'react';
-import { Topbar } from '../../../components/layout/topbar';
-import { PageHeader } from '../../../components/shared/page-header';
-import { Badge } from '../../../components/shared/badge';
-import { Modal } from '../../../components/shared/modal';
-import { useSchoolSection, useCreateSchoolItem, useDeleteSchoolItem, useUpdateSchoolItem } from '../../../hooks/use-api';
+import { Topbar } from '@/components/layout/topbar';
+import { PageHeader } from '@/components/shared/page-header';
+import { Badge } from '@/components/shared/badge';
+import { Modal } from '@/components/shared/modal';
+import { useSchoolSection, useCreateSchoolItem, useDeleteSchoolItem, useUpdateSchoolItem } from '@/hooks/use-api';
 
 const CATS = ['Main Course', 'Snacks', 'Beverages', 'Desserts', 'Breakfast'];
 const EMPTY = { name: '', category: 'Main Course', price: '', available: true, description: '' };

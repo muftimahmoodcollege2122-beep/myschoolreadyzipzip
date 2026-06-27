@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../../../lib/api-client';
+import { apiClient } from '@/lib/api-client';
 
 const METHOD_COLORS: Record<string, string> = {
   EASYPAISA:     'bg-green-100 text-green-700',

@@ -1,11 +1,11 @@
 'use client';
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../../../lib/api-client';
-import { Topbar } from '../../../components/layout/topbar';
-import { PageHeader } from '../../../components/shared/page-header';
-import { Badge } from '../../../components/shared/badge';
-import { Modal } from '../../../components/shared/modal';
+import { apiClient } from '@/lib/api-client';
+import { Topbar } from '@/components/layout/topbar';
+import { PageHeader } from '@/components/shared/page-header';
+import { Badge } from '@/components/shared/badge';
+import { Modal } from '@/components/shared/modal';
 
 const TYPE_COLOR: Record<string,any> = { POSITIVE:'green', NEGATIVE:'red', NEUTRAL:'gray' };
 const SEV_COLOR:  Record<string,any> = { LOW:'green', MEDIUM:'yellow', HIGH:'red', CRITICAL:'red' };

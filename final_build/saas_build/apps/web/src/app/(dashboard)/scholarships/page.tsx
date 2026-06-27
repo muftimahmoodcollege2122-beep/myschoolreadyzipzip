@@ -1,13 +1,13 @@
 'use client';
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../../../lib/api-client';
-import { Topbar } from '../../../components/layout/topbar';
-import { PageHeader } from '../../../components/shared/page-header';
-import { Modal } from '../../../components/shared/modal';
-import { Badge } from '../../../components/shared/badge';
-import { DataTable } from '../../../components/shared/data-table';
-import { useStudents } from '../../../hooks/use-api';
+import { apiClient } from '@/lib/api-client';
+import { Topbar } from '@/components/layout/topbar';
+import { PageHeader } from '@/components/shared/page-header';
+import { Modal } from '@/components/shared/modal';
+import { Badge } from '@/components/shared/badge';
+import { DataTable } from '@/components/shared/data-table';
+import { useStudents } from '@/hooks/use-api';
 
 const TYPES = ['MERIT','NEED_BASED','SPORTS','SPECIAL','SIBLING','STAFF'];
 

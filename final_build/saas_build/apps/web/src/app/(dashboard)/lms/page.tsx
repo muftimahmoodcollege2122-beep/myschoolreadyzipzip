@@ -1,10 +1,10 @@
 'use client';
 import React, { useState } from 'react';
-import { Topbar } from '../../../components/layout/topbar';
-import { PageHeader } from '../../../components/shared/page-header';
-import { Badge } from '../../../components/shared/badge';
-import { Modal } from '../../../components/shared/modal';
-import { useLmsCourses, useCreateLmsCourse, useUpdateLmsCourse, useDeleteLmsCourse } from '../../../hooks/use-api';
+import { Topbar } from '@/components/layout/topbar';
+import { PageHeader } from '@/components/shared/page-header';
+import { Badge } from '@/components/shared/badge';
+import { Modal } from '@/components/shared/modal';
+import { useLmsCourses, useCreateLmsCourse, useUpdateLmsCourse, useDeleteLmsCourse } from '@/hooks/use-api';
 
 const QUIZ_QUESTIONS = [
   { q:'What is the value of π (pi)?', opts:['3.14159','2.71828','1.41421','1.61803'], correct:0 },

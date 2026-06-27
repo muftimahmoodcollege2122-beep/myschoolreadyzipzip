@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import type { SchoolTheme } from '../../../types/theme';
+import type { SchoolTheme } from '@/types/theme';
 
 const API = process.env.NEXT_PUBLIC_API_URL || '';
 

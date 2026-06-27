@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import type { SchoolTheme } from '../../../types/theme';
+import type { SchoolTheme } from '@/types/theme';
 import { SchoolSubPage } from '../school-sub-page';
 
 export function FeesPage({ theme, slug }: { theme: SchoolTheme; slug: string }) {

@@ -1,11 +1,11 @@
 'use client';
 import React, { useState } from 'react';
-import { useOutstandingFees, useRecordPayment, useCreateInvoice, useFeeRevenue, useStudents } from '../../../hooks/use-api';
-import { DataTable } from '../../../components/shared/data-table';
-import { PageHeader } from '../../../components/shared/page-header';
-import { Badge } from '../../../components/shared/badge';
-import { Modal } from '../../../components/shared/modal';
-import { Topbar } from '../../../components/layout/topbar';
+import { useOutstandingFees, useRecordPayment, useCreateInvoice, useFeeRevenue, useStudents } from '@/hooks/use-api';
+import { DataTable } from '@/components/shared/data-table';
+import { PageHeader } from '@/components/shared/page-header';
+import { Badge } from '@/components/shared/badge';
+import { Modal } from '@/components/shared/modal';
+import { Topbar } from '@/components/layout/topbar';
 
 const SV: Record<string,string> = { PAID:'green', PENDING:'yellow', OVERDUE:'red', PARTIAL:'blue', CANCELLED:'gray' };
 

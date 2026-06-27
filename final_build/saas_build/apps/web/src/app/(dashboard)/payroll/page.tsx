@@ -1,10 +1,10 @@
 'use client';
 import React, { useState } from 'react';
-import { Topbar } from '../../../components/layout/topbar';
-import { PageHeader } from '../../../components/shared/page-header';
-import { Badge } from '../../../components/shared/badge';
-import { Modal } from '../../../components/shared/modal';
-import { useSchoolSection, useCreateSchoolItem, useDeleteSchoolItem, useUpdateSchoolItem } from '../../../hooks/use-api';
+import { Topbar } from '@/components/layout/topbar';
+import { PageHeader } from '@/components/shared/page-header';
+import { Badge } from '@/components/shared/badge';
+import { Modal } from '@/components/shared/modal';
+import { useSchoolSection, useCreateSchoolItem, useDeleteSchoolItem, useUpdateSchoolItem } from '@/hooks/use-api';
 
 const EMPTY = { name: '', designation: '', department: '', basicSalary: '', allowances: '0', deductions: '0', month: new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' }), status: 'PENDING', bankAccount: '' };
 

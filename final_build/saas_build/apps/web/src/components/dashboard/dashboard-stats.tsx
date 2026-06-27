@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '../../lib/api-client';
+import { apiClient } from '@/lib/api-client';
 
 interface StatCard {
   label: string;

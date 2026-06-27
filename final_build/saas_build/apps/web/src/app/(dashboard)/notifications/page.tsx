@@ -1,10 +1,10 @@
 'use client';
 import React, { useState } from 'react';
-import { useNotifications } from '../../../hooks/use-api';
-import { PageHeader } from '../../../components/shared/page-header';
-import { Badge } from '../../../components/shared/badge';
-import { Topbar } from '../../../components/layout/topbar';
-import { apiClient } from '../../../lib/api-client';
+import { useNotifications } from '@/hooks/use-api';
+import { PageHeader } from '@/components/shared/page-header';
+import { Badge } from '@/components/shared/badge';
+import { Topbar } from '@/components/layout/topbar';
+import { apiClient } from '@/lib/api-client';
 import { useQueryClient } from '@tanstack/react-query';
 
 const AUTOMATION_CONFIG = [

@@ -1,11 +1,11 @@
 'use client';
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../../../lib/api-client';
-import { PageHeader } from '../../../components/shared/page-header';
-import { Badge } from '../../../components/shared/badge';
-import { Modal } from '../../../components/shared/modal';
-import { Topbar } from '../../../components/layout/topbar';
+import { apiClient } from '@/lib/api-client';
+import { PageHeader } from '@/components/shared/page-header';
+import { Badge } from '@/components/shared/badge';
+import { Modal } from '@/components/shared/modal';
+import { Topbar } from '@/components/layout/topbar';
 
 const EXAM_TYPES = ['QUIZ','MIDTERM','FINAL','ASSIGNMENT','PROJECT','PRACTICAL'];
 const getStatusVariant = (e: any) => {

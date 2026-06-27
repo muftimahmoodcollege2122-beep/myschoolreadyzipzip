@@ -1,12 +1,12 @@
 'use client';
 import React, { useState } from 'react';
-import { useStudents, useCreateStudent } from '../../../hooks/use-api';
-import { DataTable } from '../../../components/shared/data-table';
-import { PageHeader } from '../../../components/shared/page-header';
-import { Badge } from '../../../components/shared/badge';
-import { Modal } from '../../../components/shared/modal';
-import { Topbar } from '../../../components/layout/topbar';
-import type { Student } from '../../../types';
+import { useStudents, useCreateStudent } from '@/hooks/use-api';
+import { DataTable } from '@/components/shared/data-table';
+import { PageHeader } from '@/components/shared/page-header';
+import { Badge } from '@/components/shared/badge';
+import { Modal } from '@/components/shared/modal';
+import { Topbar } from '@/components/layout/topbar';
+import type { Student } from '@/types';
 const FIELDS = [['firstName','First Name','text'],['lastName','Last Name','text'],['email','Email','email'],['admissionNo','Admission No','text'],['rollNumber','Roll Number','text'],['phone','Phone','tel'],['admissionDate','Admission Date','date']];
 export default function StudentsPage() {
   const [page, setPage] = useState(1);

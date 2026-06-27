@@ -1,10 +1,10 @@
 'use client';
 import React, { useState } from 'react';
-import { useSubjects, useCreateSubject } from '../../../hooks/use-api';
-import { PageHeader } from '../../../components/shared/page-header';
-import { Topbar } from '../../../components/layout/topbar';
-import { Badge } from '../../../components/shared/badge';
-import { Modal } from '../../../components/shared/modal';
+import { useSubjects, useCreateSubject } from '@/hooks/use-api';
+import { PageHeader } from '@/components/shared/page-header';
+import { Topbar } from '@/components/layout/topbar';
+import { Badge } from '@/components/shared/badge';
+import { Modal } from '@/components/shared/modal';
 
 const EMPTY = { name: '', code: '', description: '', isElective: false, creditHours: '1' };
 

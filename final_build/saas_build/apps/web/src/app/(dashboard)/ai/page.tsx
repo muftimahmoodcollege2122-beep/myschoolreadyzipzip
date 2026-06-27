@@ -1,8 +1,8 @@
 'use client';
 import React, { useState } from 'react';
-import { Topbar } from '../../../components/layout/topbar';
-import { PageHeader } from '../../../components/shared/page-header';
-import { useAiAnalytics, useAiPrediction } from '../../../hooks/use-api';
+import { Topbar } from '@/components/layout/topbar';
+import { PageHeader } from '@/components/shared/page-header';
+import { useAiAnalytics, useAiPrediction } from '@/hooks/use-api';
 
 const INSIGHT_CARDS = [
   { type: 'attendance', title: 'Attendance Analytics', icon: '📊', desc: 'AI-powered attendance trend analysis' },

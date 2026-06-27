@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { useRealtime } from '../../hooks/use-realtime';
+import { useRealtime } from '@/hooks/use-realtime';
 import { LiveAlertBanner } from '../shared/live-alert-banner';
 
 /**

@@ -1,11 +1,11 @@
 'use client';
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../../../lib/api-client';
-import { Topbar } from '../../../components/layout/topbar';
-import { PageHeader } from '../../../components/shared/page-header';
-import { Badge } from '../../../components/shared/badge';
-import { Modal } from '../../../components/shared/modal';
+import { apiClient } from '@/lib/api-client';
+import { Topbar } from '@/components/layout/topbar';
+import { PageHeader } from '@/components/shared/page-header';
+import { Badge } from '@/components/shared/badge';
+import { Modal } from '@/components/shared/modal';
 
 const CATS = ['General','Science','Mathematics','History','Literature','Fiction','Reference','Islamic Studies','Urdu','English'];
 const EMPTY_BOOK = { title:'', author:'', isbn:'', publisher:'', category:'General', totalCopies:'1', shelfLocation:'', publishYear:'' };

@@ -59,7 +59,7 @@ const SETUP_STEPS = [
         subtitle: 'Step 1: Login to Dashboard',
         details: [
           'Use credentials from Step 1 to login',
-          'You'll land on the Admin Dashboard',
+          'You will land on the Admin Dashboard',
           'Click "Settings" in the left sidebar',
         ]
       },

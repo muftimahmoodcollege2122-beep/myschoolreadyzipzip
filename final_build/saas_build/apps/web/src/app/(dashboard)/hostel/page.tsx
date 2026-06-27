@@ -1,10 +1,10 @@
 'use client';
 import React, { useState } from 'react';
-import { Topbar } from '../../../components/layout/topbar';
-import { PageHeader } from '../../../components/shared/page-header';
-import { Badge } from '../../../components/shared/badge';
-import { Modal } from '../../../components/shared/modal';
-import { useSchoolSection, useCreateSchoolItem, useDeleteSchoolItem } from '../../../hooks/use-api';
+import { Topbar } from '@/components/layout/topbar';
+import { PageHeader } from '@/components/shared/page-header';
+import { Badge } from '@/components/shared/badge';
+import { Modal } from '@/components/shared/modal';
+import { useSchoolSection, useCreateSchoolItem, useDeleteSchoolItem } from '@/hooks/use-api';
 
 const EMPTY_ROOM = { roomNo: '', floor: '1', type: 'Double', capacity: '2', occupied: '0', status: 'AVAILABLE' };
 const EMPTY_RESIDENT = { studentName: '', rollNo: '', roomNo: '', fromDate: new Date().toISOString().split('T')[0], toDate: '', feePerMonth: '', status: 'ACTIVE' };

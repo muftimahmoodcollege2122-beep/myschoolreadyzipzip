@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { apiClient } from '../../lib/api-client';
+import { apiClient } from '@/lib/api-client';
 import Link from 'next/link';
 
 export default function PaymentVerifyCallback() {

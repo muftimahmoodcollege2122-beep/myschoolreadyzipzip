@@ -1,9 +1,9 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Topbar } from '../../../components/layout/topbar';
-import { PageHeader } from '../../../components/shared/page-header';
-import { Badge } from '../../../components/shared/badge';
-import { useSchoolInfo, useWebsiteSettings, useSaveWebsiteSettings } from '../../../hooks/use-api';
+import { Topbar } from '@/components/layout/topbar';
+import { PageHeader } from '@/components/shared/page-header';
+import { Badge } from '@/components/shared/badge';
+import { useSchoolInfo, useWebsiteSettings, useSaveWebsiteSettings } from '@/hooks/use-api';
 
 const COMPONENTS = [
   { icon: '🦸', label: 'Hero Section', desc: 'Eye-catching banner with CTA' },

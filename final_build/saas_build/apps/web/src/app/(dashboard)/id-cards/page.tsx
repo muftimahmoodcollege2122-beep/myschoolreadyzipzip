@@ -1,11 +1,11 @@
 'use client';
 import React, { useState } from 'react';
-import { Topbar } from '../../../components/layout/topbar';
-import { PageHeader } from '../../../components/shared/page-header';
-import { Badge } from '../../../components/shared/badge';
-import { Modal } from '../../../components/shared/modal';
-import { useSchoolSection, useCreateSchoolItem, useDeleteSchoolItem } from '../../../hooks/use-api';
-import { useStudents } from '../../../hooks/use-api';
+import { Topbar } from '@/components/layout/topbar';
+import { PageHeader } from '@/components/shared/page-header';
+import { Badge } from '@/components/shared/badge';
+import { Modal } from '@/components/shared/modal';
+import { useSchoolSection, useCreateSchoolItem, useDeleteSchoolItem } from '@/hooks/use-api';
+import { useStudents } from '@/hooks/use-api';
 
 const EMPTY = { studentName: '', className: '', rollNo: '', bloodGroup: '', fatherName: '', address: '', emergencyContact: '', status: 'ISSUED', validUntil: `${new Date().getFullYear() + 1}-12-31` };
 

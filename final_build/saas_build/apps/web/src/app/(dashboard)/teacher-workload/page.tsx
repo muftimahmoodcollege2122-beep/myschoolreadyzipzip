@@ -1,9 +1,9 @@
 'use client';
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '../../../lib/api-client';
-import { Topbar } from '../../../components/layout/topbar';
-import { Badge } from '../../../components/shared/badge';
+import { apiClient } from '@/lib/api-client';
+import { Topbar } from '@/components/layout/topbar';
+import { Badge } from '@/components/shared/badge';
 
 const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat'];
 const MAX_PERIODS = 8;

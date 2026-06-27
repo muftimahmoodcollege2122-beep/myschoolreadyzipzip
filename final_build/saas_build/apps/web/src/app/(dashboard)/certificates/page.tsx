@@ -1,10 +1,10 @@
 'use client';
 import React, { useState } from 'react';
-import { Topbar } from '../../../components/layout/topbar';
-import { PageHeader } from '../../../components/shared/page-header';
-import { Badge } from '../../../components/shared/badge';
-import { Modal } from '../../../components/shared/modal';
-import { useSchoolSection, useCreateSchoolItem, useDeleteSchoolItem } from '../../../hooks/use-api';
+import { Topbar } from '@/components/layout/topbar';
+import { PageHeader } from '@/components/shared/page-header';
+import { Badge } from '@/components/shared/badge';
+import { Modal } from '@/components/shared/modal';
+import { useSchoolSection, useCreateSchoolItem, useDeleteSchoolItem } from '@/hooks/use-api';
 
 const CERT_TYPES = ['Merit Certificate', 'Character Certificate', 'Completion Certificate', 'Achievement Certificate', 'Participation Certificate', 'Custom'];
 const EMPTY = { studentName: '', className: '', certType: 'Merit Certificate', issuedDate: new Date().toISOString().split('T')[0], description: '', status: 'ISSUED' };

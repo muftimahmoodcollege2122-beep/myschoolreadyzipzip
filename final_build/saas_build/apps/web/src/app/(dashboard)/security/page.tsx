@@ -1,10 +1,10 @@
 'use client';
 import React, { useState, useMemo } from 'react';
-import { Topbar } from '../../../components/layout/topbar';
-import { PageHeader } from '../../../components/shared/page-header';
-import { Badge } from '../../../components/shared/badge';
-import { Modal } from '../../../components/shared/modal';
-import { useLoginHistory, useIpRestrictions, useSuspiciousActivities, useSecurityDashboard, useAddIpRestriction } from '../../../hooks/use-api';
+import { Topbar } from '@/components/layout/topbar';
+import { PageHeader } from '@/components/shared/page-header';
+import { Badge } from '@/components/shared/badge';
+import { Modal } from '@/components/shared/modal';
+import { useLoginHistory, useIpRestrictions, useSuspiciousActivities, useSecurityDashboard, useAddIpRestriction } from '@/hooks/use-api';
 
 const AUDIT_CATEGORIES = ['All', 'Fee', 'Attendance', 'Grades', 'Students', 'Auth', 'Settings'] as const;
 type AuditCategory = typeof AUDIT_CATEGORIES[number];

@@ -1,11 +1,11 @@
 'use client';
 import React, { useState } from 'react';
-import { apiClient } from '../../../lib/api-client';
-import { Topbar } from '../../../components/layout/topbar';
-import { PageHeader } from '../../../components/shared/page-header';
-import { Badge } from '../../../components/shared/badge';
-import { Modal } from '../../../components/shared/modal';
-import { useLessonPlans, useCreateLessonPlan, useSubmitLessonPlan, useSubjects, useSections } from '../../../hooks/use-api';
+import { apiClient } from '@/lib/api-client';
+import { Topbar } from '@/components/layout/topbar';
+import { PageHeader } from '@/components/shared/page-header';
+import { Badge } from '@/components/shared/badge';
+import { Modal } from '@/components/shared/modal';
+import { useLessonPlans, useCreateLessonPlan, useSubmitLessonPlan, useSubjects, useSections } from '@/hooks/use-api';
 
 const STATUS_COLOR: Record<string, string> = { DRAFT: 'gray', SUBMITTED: 'blue', APPROVED: 'green', REJECTED: 'red' };
 const EMPTY = { title: '', subjectId: '', sectionId: '', week: new Date().toISOString().split('T')[0].substring(0, 7), objectives: '', content: '', resources: '', activities: '', assessment: '' };

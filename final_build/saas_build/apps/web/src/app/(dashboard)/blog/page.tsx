@@ -1,10 +1,10 @@
 'use client';
 import React, { useState } from 'react';
-import { Topbar } from '../../../components/layout/topbar';
-import { PageHeader } from '../../../components/shared/page-header';
-import { Badge } from '../../../components/shared/badge';
-import { Modal } from '../../../components/shared/modal';
-import { useBlogPosts, useCreateBlogPost, usePublishBlogPost } from '../../../hooks/use-api';
+import { Topbar } from '@/components/layout/topbar';
+import { PageHeader } from '@/components/shared/page-header';
+import { Badge } from '@/components/shared/badge';
+import { Modal } from '@/components/shared/modal';
+import { useBlogPosts, useCreateBlogPost, usePublishBlogPost } from '@/hooks/use-api';
 
 const CAT_COLOR: Record<string, string> = { news: 'blue', academic: 'purple', sports: 'green', events: 'orange', announcements: 'yellow' };
 const EMPTY = { title: '', content: '', category: 'news', excerpt: '' };

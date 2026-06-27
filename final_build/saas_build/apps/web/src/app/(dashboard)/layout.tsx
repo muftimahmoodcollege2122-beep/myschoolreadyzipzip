@@ -1,7 +1,7 @@
 import React from 'react';
-import { Sidebar } from '../../components/layout/sidebar';
-import { RealtimeProvider } from '../../components/layout/realtime-provider';
-import { AuthGuard } from '../../components/layout/auth-guard';
+import { Sidebar } from '@/components/layout/sidebar';
+import { RealtimeProvider } from '@/components/layout/realtime-provider';
+import { AuthGuard } from '@/components/layout/auth-guard';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (

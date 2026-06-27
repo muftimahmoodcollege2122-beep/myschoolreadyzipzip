@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import type { SchoolTheme } from '../../types/theme';
+import type { SchoolTheme } from '@/types/theme';
 import { ClassicTemplate } from './templates/classic';
 import { ModernTemplate } from './templates/modern';
 import { BoldTemplate } from './templates/bold';

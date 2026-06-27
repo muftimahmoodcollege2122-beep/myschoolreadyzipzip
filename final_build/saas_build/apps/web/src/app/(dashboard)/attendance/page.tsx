@@ -1,10 +1,10 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { useAttendance, useMarkAttendance, useClasses, useSections } from '../../../hooks/use-api';
-import { PageHeader } from '../../../components/shared/page-header';
-import { Topbar } from '../../../components/layout/topbar';
-import { Badge } from '../../../components/shared/badge';
-import { Modal } from '../../../components/shared/modal';
+import { useAttendance, useMarkAttendance, useClasses, useSections } from '@/hooks/use-api';
+import { PageHeader } from '@/components/shared/page-header';
+import { Topbar } from '@/components/layout/topbar';
+import { Badge } from '@/components/shared/badge';
+import { Modal } from '@/components/shared/modal';
 
 const STATUSES = ['PRESENT','ABSENT','LATE','EXCUSED'] as const;
 type S = typeof STATUSES[number];

@@ -1,10 +1,10 @@
 'use client';
 import React, { useState } from 'react';
-import { Topbar } from '../../../components/layout/topbar';
-import { PageHeader } from '../../../components/shared/page-header';
-import { Badge } from '../../../components/shared/badge';
-import { Modal } from '../../../components/shared/modal';
-import { useBudgets, useExpenses, useCreateBudget, useCreateExpense } from '../../../hooks/use-api';
+import { Topbar } from '@/components/layout/topbar';
+import { PageHeader } from '@/components/shared/page-header';
+import { Badge } from '@/components/shared/badge';
+import { Modal } from '@/components/shared/modal';
+import { useBudgets, useExpenses, useCreateBudget, useCreateExpense } from '@/hooks/use-api';
 
 const CATEGORIES = ['Salaries','Utilities','Maintenance','Equipment','Stationery','Events','Transport','Food','Other'];
 const CAT_COLOR: Record<string, string> = { Salaries: 'bg-blue-500', Utilities: 'bg-yellow-500', Maintenance: 'bg-red-500', Equipment: 'bg-purple-500', Stationery: 'bg-green-500', Events: 'bg-pink-500', Transport: 'bg-orange-500', Food: 'bg-teal-500', Other: 'bg-gray-500' };

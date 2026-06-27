@@ -1,10 +1,10 @@
 'use client';
 import React, { useState } from 'react';
-import { Topbar } from '../../../components/layout/topbar';
-import { PageHeader } from '../../../components/shared/page-header';
-import { Badge } from '../../../components/shared/badge';
-import { Modal } from '../../../components/shared/modal';
-import { useAlumni, useCreateAlumni, useAlumniStats } from '../../../hooks/use-api';
+import { Topbar } from '@/components/layout/topbar';
+import { PageHeader } from '@/components/shared/page-header';
+import { Badge } from '@/components/shared/badge';
+import { Modal } from '@/components/shared/modal';
+import { useAlumni, useCreateAlumni, useAlumniStats } from '@/hooks/use-api';
 
 const EMPTY = { firstName: '', lastName: '', email: '', phone: '', graduationYear: new Date().getFullYear(), degree: '', currentOccupation: '', company: '', city: '', country: 'Pakistan' };
 

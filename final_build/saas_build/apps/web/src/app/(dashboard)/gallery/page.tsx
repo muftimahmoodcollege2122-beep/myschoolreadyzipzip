@@ -1,9 +1,9 @@
 'use client';
 import React, { useState } from 'react';
-import { Topbar } from '../../../components/layout/topbar';
-import { PageHeader } from '../../../components/shared/page-header';
-import { Modal } from '../../../components/shared/modal';
-import { useGalleryAlbums, useCreateGalleryAlbum } from '../../../hooks/use-api';
+import { Topbar } from '@/components/layout/topbar';
+import { PageHeader } from '@/components/shared/page-header';
+import { Modal } from '@/components/shared/modal';
+import { useGalleryAlbums, useCreateGalleryAlbum } from '@/hooks/use-api';
 
 const EMPTY = { title: '', description: '', category: 'events' };
 const ALBUM_EMOJIS = ['🖼️','📸','🎭','⚽','🎓','🏫','🎨','🔬','📚','🎪'];

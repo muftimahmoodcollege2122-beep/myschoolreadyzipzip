@@ -1,15 +1,15 @@
 'use client';
 import React, { useState } from 'react';
-import { Topbar } from '../../../components/layout/topbar';
-import { useAuthStore } from '../../../stores/auth.store';
-import { Badge } from '../../../components/shared/badge';
+import { Topbar } from '@/components/layout/topbar';
+import { useAuthStore } from '@/stores/auth.store';
+import { Badge } from '@/components/shared/badge';
 import {
   useStudents,
   useStudentGrades,
   useStudentAttendance,
   useStudentFees,
   useAnnouncements,
-} from '../../../hooks/use-api';
+} from '@/hooks/use-api';
 import Link from 'next/link';
 
 function Skeleton() {

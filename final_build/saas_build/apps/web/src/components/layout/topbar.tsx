@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
-import { useAuth } from '../../hooks/use-auth';
-import { useNotificationBell } from '../../hooks/use-notification-bell';
+import { useAuth } from '@/hooks/use-auth';
+import { useNotificationBell } from '@/hooks/use-notification-bell';
 import { OnlineIndicator } from '../shared/online-indicator';
 import Link from 'next/link';
 

@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useAuthStore } from '../../stores/auth.store';
+import { useAuthStore } from '@/stores/auth.store';
 
 type NavItem = { href: string; icon: string; label: string; roles: string[] };
 type NavSection = { title: string; items: NavItem[] };

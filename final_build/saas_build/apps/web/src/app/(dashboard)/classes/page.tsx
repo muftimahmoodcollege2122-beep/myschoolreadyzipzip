@@ -1,10 +1,10 @@
 'use client';
 import React, { useState } from 'react';
-import { useClasses, useCreateClass, useCreateSection, useSections } from '../../../hooks/use-api';
-import { PageHeader } from '../../../components/shared/page-header';
-import { Topbar } from '../../../components/layout/topbar';
-import { Modal } from '../../../components/shared/modal';
-import { Badge } from '../../../components/shared/badge';
+import { useClasses, useCreateClass, useCreateSection, useSections } from '@/hooks/use-api';
+import { PageHeader } from '@/components/shared/page-header';
+import { Topbar } from '@/components/layout/topbar';
+import { Modal } from '@/components/shared/modal';
+import { Badge } from '@/components/shared/badge';
 
 export default function ClassesPage() {
   const { data: classes, isLoading } = useClasses();

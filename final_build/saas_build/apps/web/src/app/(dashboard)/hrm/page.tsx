@@ -1,10 +1,10 @@
 'use client';
 import React, { useState } from 'react';
-import { Topbar } from '../../../components/layout/topbar';
-import { PageHeader } from '../../../components/shared/page-header';
-import { Badge } from '../../../components/shared/badge';
-import { Modal } from '../../../components/shared/modal';
-import { useStaff, useLessonPlans, useSubstitutions, useCreateLessonPlan, useCreateSubstitution, useSchoolSection, useCreateSchoolItem } from '../../../hooks/use-api';
+import { Topbar } from '@/components/layout/topbar';
+import { PageHeader } from '@/components/shared/page-header';
+import { Badge } from '@/components/shared/badge';
+import { Modal } from '@/components/shared/modal';
+import { useStaff, useLessonPlans, useSubstitutions, useCreateLessonPlan, useCreateSubstitution, useSchoolSection, useCreateSchoolItem } from '@/hooks/use-api';
 
 const TABS = ['Overview', 'Leave Requests', 'Lesson Plans', 'Substitutions', 'Payroll'];
 const LEAVE_EMPTY = { staffName: '', department: '', leaveType: 'Sick Leave', fromDate: '', toDate: '', reason: '' };

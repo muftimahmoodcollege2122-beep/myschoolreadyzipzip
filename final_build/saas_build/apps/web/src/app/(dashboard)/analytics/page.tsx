@@ -1,10 +1,10 @@
 'use client';
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '../../../lib/api-client';
-import { PageHeader } from '../../../components/shared/page-header';
-import { Topbar } from '../../../components/layout/topbar';
-import { useDashboard, useFeeRevenue, useStudents, useTeachers, useClasses } from '../../../hooks/use-api';
+import { apiClient } from '@/lib/api-client';
+import { PageHeader } from '@/components/shared/page-header';
+import { Topbar } from '@/components/layout/topbar';
+import { useDashboard, useFeeRevenue, useStudents, useTeachers, useClasses } from '@/hooks/use-api';
 
 function Card({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (

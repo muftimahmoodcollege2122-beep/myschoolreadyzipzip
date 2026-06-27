@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import type { SchoolTheme } from '../../../types/theme';
+import type { SchoolTheme } from '@/types/theme';
 import { ThemeProvider } from '../theme-provider';
 import { SchoolFooter } from '../partials/footer';
 

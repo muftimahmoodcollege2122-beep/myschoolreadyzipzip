@@ -1,10 +1,10 @@
 'use client';
 import React, { useState } from 'react';
-import { Topbar } from '../../../components/layout/topbar';
-import { PageHeader } from '../../../components/shared/page-header';
-import { Badge } from '../../../components/shared/badge';
-import { Modal } from '../../../components/shared/modal';
-import { useAnnouncements, useCreateAnnouncement, useDeleteAnnouncement } from '../../../hooks/use-api';
+import { Topbar } from '@/components/layout/topbar';
+import { PageHeader } from '@/components/shared/page-header';
+import { Badge } from '@/components/shared/badge';
+import { Modal } from '@/components/shared/modal';
+import { useAnnouncements, useCreateAnnouncement, useDeleteAnnouncement } from '@/hooks/use-api';
 
 const CAT_ICON: Record<string, string> = { Academic: '📚', Sports: '⚽', Holiday: '🎉', General: '📢', Event: '🎖️', Health: '🏥' };
 

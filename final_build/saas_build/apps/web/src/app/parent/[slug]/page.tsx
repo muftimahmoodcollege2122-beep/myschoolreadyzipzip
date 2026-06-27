@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '../../../lib/api-client';
+import { apiClient } from '@/lib/api-client';
 
 const NAV = [
   { id: 'dashboard',   icon: '📊', label: 'Dashboard'        },
