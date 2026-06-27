@@ -45,7 +45,8 @@ function LoginForm() {
         body: JSON.stringify({ email: email.trim(), password, tenantSlug }),
       });
 
-      const data = await res.json();
+      let data: any = {};
+      try { data = await res.json(); } catch { /* non-JSON response */ }
 
       if (!res.ok) {
         const msg = data?.message;
@@ -72,8 +73,13 @@ function LoginForm() {
 
       window.location.href = '/dashboard';
 
-    } catch {
-      setError('Connection error — please check your internet and try again.');
+    } catch (err: any) {
+      const msg = err?.message || '';
+      if (msg.includes('JSON') || msg.includes('token')) {
+        setError('Server error — the API returned an unexpected response. Please try again.');
+      } else {
+        setError('Connection error — could not reach the server. Please try again in a moment.');
+      }
       setLoading(false);
     }
   };
