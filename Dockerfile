@@ -1,7 +1,7 @@
 FROM node:20-alpine
 RUN apk add --no-cache redis openssl libc6-compat dumb-init wget python3 make g++
 
-RUN echo "2026-06-27-v5"
+RUN echo "2026-06-27-v6"
 
 WORKDIR /app
 
