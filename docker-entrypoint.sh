@@ -6,7 +6,7 @@ API_DIR="$SAAS_DIR/apps/api"
 WEB_DIR="$SAAS_DIR/apps/web"
 NODE_MODULES="$SAAS_DIR/node_modules"
 API_PORT="3001"
-WEB_PORT="${PORT:-5000}"
+WEB_PORT="3000"
 
 echo "==> Starting Redis..."
 redis-server --daemonize yes --logfile /tmp/redis.log --port 6379 --loglevel warning
