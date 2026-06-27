@@ -7,38 +7,35 @@ ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
 
-# Copy full source — includes fixed .npmrc with legacy-peer-deps=true
+# Copy source — context is saas_build/ so this puts saas_build/* at /app/
 COPY . .
 
-# Override .npmrc
-RUN echo "legacy-peer-deps=true" > /app/.npmrc && \
-    echo "fund=false" >> /app/.npmrc && \
-    echo "audit=false" >> /app/.npmrc
+# Debug: show what landed at /app
+RUN echo "=== /app contents ===" && ls /app && echo "=== /app/apps ===" && ls /app/apps 2>/dev/null || echo "no /app/apps"
 
-# Install api deps — full output visible
+# Override .npmrc
+RUN echo "legacy-peer-deps=true" > /app/.npmrc
+
+# Install api deps
 RUN cd /app/apps/api && \
-    PUPPETEER_SKIP_DOWNLOAD=true \
     npm install --legacy-peer-deps --no-audit --no-fund
 
-# Verify @nestjs/core installed
-RUN test -d /app/apps/api/node_modules/@nestjs/core && \
-    echo "✅ @nestjs/core found" || \
-    (echo "❌ FATAL: @nestjs/core missing" && exit 1)
+# Verify @nestjs/core
+RUN test -d /app/apps/api/node_modules/@nestjs/core && echo "✅ @nestjs/core found" || (echo "❌ FATAL" && exit 1)
 
 # Generate Prisma
 RUN cd /app/apps/api && \
     PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1 \
     ./node_modules/.bin/prisma generate --schema=prisma/schema.prisma 2>&1 | tail -3 || true
 
-# dist/ is pre-built and committed — verify
-RUN ls -la /app/apps/api/dist/main.js
+# Verify dist/main.js
+RUN ls /app/apps/api/dist/main.js
 
 # Install web deps
 RUN cd /app/apps/web && \
-    PUPPETEER_SKIP_DOWNLOAD=true \
     npm install --legacy-peer-deps --no-audit --no-fund
 
-# Build Next.js fresh (middleware.ts was fixed)
+# Build Next.js
 RUN cd /app/apps/web && \
     NEXT_PUBLIC_API_URL=http://localhost:3001 \
     ./node_modules/.bin/next build 2>&1 | tail -10 || true
