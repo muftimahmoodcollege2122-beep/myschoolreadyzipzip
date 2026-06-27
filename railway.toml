@@ -1,13 +1,9 @@
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile"
+dockerfilePath = "final_build/saas_build/apps/api/Dockerfile"
 
 [deploy]
-healthcheckPath = "/api/v1/health/live"
-healthcheckTimeout = 120
+healthcheckPath = "/"
+healthcheckTimeout = 180
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
-
-[[deploy.environmentVariables]]
-name = "PORT"
-value = "3001"
