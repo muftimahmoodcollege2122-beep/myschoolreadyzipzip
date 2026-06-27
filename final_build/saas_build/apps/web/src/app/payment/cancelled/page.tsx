@@ -1,9 +1,10 @@
 'use client';
-import React from 'react';
+export const dynamic = 'force-dynamic';
+import React, { Suspense, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
-export default function PaymentCancelled() {
+function PaymentCancelledInner() {
   const params = useSearchParams();
   const plan   = params.get('plan') || 'PROFESSIONAL';
 
@@ -38,5 +39,13 @@ export default function PaymentCancelled() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PaymentCancelled() {
+  return (
+    <Suspense fallback={}>
+      <PaymentCancelledInner />
+    </Suspense>
   );
 }

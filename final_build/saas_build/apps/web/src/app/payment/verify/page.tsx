@@ -1,10 +1,11 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+export const dynamic = 'force-dynamic';
+import React, { Suspense, Suspense }, { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
 import Link from 'next/link';
 
-export default function PaymentVerifyCallback() {
+function PaymentVerifyCallbackInner() {
   const params   = useSearchParams();
   const router   = useRouter();
   const method   = params.get('method');
@@ -88,5 +89,13 @@ export default function PaymentVerifyCallback() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function PaymentVerifyCallback() {
+  return (
+    <Suspense fallback={}>
+      <PaymentVerifyCallbackInner />
+    </Suspense>
   );
 }

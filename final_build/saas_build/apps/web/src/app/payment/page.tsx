@@ -1,5 +1,6 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+export const dynamic = 'force-dynamic';
+import React, { Suspense, Suspense }, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 
@@ -19,7 +20,7 @@ const METHODS: { id: Method; label: string; icon: string; desc: string; color: s
   { id: 'PAYPAL',       label: 'PayPal',          icon: '🌐', desc: 'International — USD equivalent',  color: 'border-sky-500 bg-sky-50'      },
 ];
 
-export default function PaymentPage() {
+function PaymentPageInner() {
   const params   = useSearchParams();
   const router   = useRouter();
   const planKey  = (params.get('plan') || 'PROFESSIONAL').toUpperCase() as keyof typeof PLANS;
@@ -391,5 +392,13 @@ export default function PaymentPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function PaymentPage() {
+  return (
+    <Suspense fallback={}>
+      <PaymentPageInner />
+    </Suspense>
   );
 }
