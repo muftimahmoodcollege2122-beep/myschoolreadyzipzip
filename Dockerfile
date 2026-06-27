@@ -29,7 +29,8 @@ RUN echo "=== NPMRC FIXED ===" && cat /app/final_build/saas_build/.npmrc
 # ── STEP 3: Install API deps ──────────────────────────────────────────────────
 RUN echo "=== INSTALLING API DEPS ===" && \
     cd /app/final_build/saas_build/apps/api && \
-    npm install --legacy-peer-deps --no-audit --no-fund 2>&1
+    npm install --legacy-peer-deps --no-audit --no-fund 2>&1 || \
+    (cat /root/.npm/_logs/*.log | grep -E "error|Error|WARN|peer" | head -40 && exit 1)
 RUN echo "=== API NODE_MODULES CHECK ===" && \
     ls /app/final_build/saas_build/apps/api/node_modules | wc -l && \
     test -d /app/final_build/saas_build/apps/api/node_modules/@nestjs/core && \
@@ -51,7 +52,8 @@ RUN echo "=== API DIST CHECK ===" && \
 # ── STEP 6: Install Web deps ──────────────────────────────────────────────────
 RUN echo "=== INSTALLING WEB DEPS ===" && \
     cd /app/final_build/saas_build/apps/web && \
-    npm install --legacy-peer-deps --no-audit --no-fund 2>&1
+    npm install --legacy-peer-deps --no-audit --no-fund 2>&1 || \
+    (cat /root/.npm/_logs/*.log | grep -E "error|Error|WARN|peer" | head -40 && exit 1)
 RUN echo "=== WEB NODE_MODULES CHECK ===" && \
     ls /app/final_build/saas_build/apps/web/node_modules | wc -l && \
     test -d /app/final_build/saas_build/apps/web/node_modules/next && \
