@@ -5,7 +5,6 @@ const nextConfig = {
   compress: true,
   typescript: { ignoreBuildErrors: true },
   eslint: { ignoreDuringBuilds: true },
-  output: 'standalone',
   experimental: { missingSuspenseWithCSRBailout: false },
   images: {
     remotePatterns: [

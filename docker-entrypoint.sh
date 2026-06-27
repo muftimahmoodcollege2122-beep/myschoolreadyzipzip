@@ -42,6 +42,4 @@ echo "==> API ready after ${WAITED}s"
 echo "==> Starting web on :$WEB_PORT..."
 cd "$WEB_DIR"
 export NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-http://localhost:$API_PORT}"
-export HOSTNAME="0.0.0.0"
-export PORT="$WEB_PORT"
-exec node .next/standalone/server.js
+exec ./node_modules/.bin/next start -p "$WEB_PORT"
