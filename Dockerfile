@@ -31,10 +31,10 @@ RUN cd /app/final_build/saas_build/apps/api && \
 RUN test -f /app/final_build/saas_build/apps/api/dist/main.js && \
     echo "✅ API built" || (echo "❌ API build FAILED" && exit 1)
 
-# Build Next.js — full output so we can see any error
+# Build Next.js web app
 RUN cd /app/final_build/saas_build/apps/web && \
     NEXT_PUBLIC_API_URL=http://localhost:3001 \
-    /app/final_build/saas_build/node_modules/.bin/next build
+    npx next build
 
 ENV NODE_ENV=production
 COPY docker-entrypoint.sh /docker-entrypoint.sh
