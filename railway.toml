@@ -1,6 +1,6 @@
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "final_build/saas_build/apps/api/Dockerfile"
+dockerfilePath = "Dockerfile"
 
 [deploy]
 healthcheckPath = "/"

@@ -1,64 +1,45 @@
 FROM node:20-alpine
-
-RUN apk add --no-cache redis openssl libc6-compat python3 make g++ dumb-init wget
-
-# Cache bust
-RUN echo "2026-06-27-v2"
+RUN apk add --no-cache redis openssl libc6-compat dumb-init wget
 
 WORKDIR /app
 
-ENV NEXT_TELEMETRY_DISABLED=1
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-ENV CHROME_SKIP_DOWNLOAD=true
 ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
 
-# Enable yarn via corepack (built into Node 20)
-RUN corepack enable && corepack prepare yarn@1.22.22 --activate
+# COPY . . puts repo root at /app/
+# So saas_build is at /app/final_build/saas_build/
+COPY . .
 
-# Copy source
-COPY final_build/saas_build/ .
+# Fix .npmrc
+RUN echo "legacy-peer-deps=true" > /app/final_build/saas_build/.npmrc && \
+    echo "fund=false" >> /app/final_build/saas_build/.npmrc && \
+    echo "audit=false" >> /app/final_build/saas_build/.npmrc
 
-# ── Install ALL workspace deps from root (single yarn install) ────────────────
-RUN yarn install --frozen-lockfile --ignore-scripts --non-interactive 2>&1 | tail -5 || \
-    yarn install --ignore-scripts --non-interactive 2>&1 | tail -5
+# Install API deps
+RUN cd /app/final_build/saas_build/apps/api && \
+    npm install --legacy-peer-deps --no-audit --no-fund
 
-# Verify key binaries exist
-RUN test -f /app/apps/api/node_modules/.bin/tsc    && echo "tsc    OK" || \
-    test -f /app/node_modules/.bin/tsc             && echo "tsc    OK (root)" || \
-    (echo "ERROR: tsc not found" && find /app -name "tsc" -path "*/bin/*" 2>/dev/null | head -3)
+# Verify
+RUN test -d /app/final_build/saas_build/apps/api/node_modules/@nestjs/core && \
+    echo "✅ @nestjs/core found" || (echo "❌ FATAL: @nestjs/core missing" && exit 1)
 
-RUN test -f /app/apps/api/node_modules/.bin/nest   && echo "nest   OK" || \
-    test -f /app/node_modules/.bin/nest            && echo "nest   OK (root)" || \
-    echo "WARN: nest not found"
+# Generate Prisma
+RUN cd /app/final_build/saas_build/apps/api && \
+    PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1 \
+    ./node_modules/.bin/prisma generate --schema=prisma/schema.prisma 2>&1 | tail -3 || true
 
-# ── Prisma postinstall scripts ────────────────────────────────────────────────
-RUN cd /app/apps/api && \
-    node node_modules/prisma/scripts/preinstall-entry.js     2>/dev/null || true && \
-    node node_modules/@prisma/engines/scripts/postinstall.js 2>/dev/null || true && \
-    node node_modules/@prisma/client/scripts/postinstall.js  2>/dev/null || true
+# Verify dist/main.js
+RUN ls /app/final_build/saas_build/apps/api/dist/main.js
 
-# ── Prisma generate ───────────────────────────────────────────────────────────
-RUN cd /app/apps/api && \
-    node_modules/.bin/prisma generate --schema=prisma/schema.prisma 2>&1 | tail -5 || \
-    echo "Prisma generate skipped"
+# Install web deps
+RUN cd /app/final_build/saas_build/apps/web && \
+    npm install --legacy-peer-deps --no-audit --no-fund
 
-# ── Compile API ───────────────────────────────────────────────────────────────
-RUN cd /app/apps/api && \
-    (test -f node_modules/.bin/nest && node_modules/.bin/nest build 2>&1 | tail -10) || \
-    (test -f node_modules/.bin/tsc  && node_modules/.bin/tsc -p tsconfig.json --skipLibCheck --noEmitOnError false 2>&1 | tail -10) || \
-    (echo "Trying root node_modules..." && \
-     /app/node_modules/.bin/tsc -p tsconfig.json --skipLibCheck --noEmitOnError false 2>&1 | tail -10)
-
-# ── Verify dist ───────────────────────────────────────────────────────────────
-RUN ls -lh /app/apps/api/dist/main.js && echo "Build OK"
-
-# ── Build web app ─────────────────────────────────────────────────────────────
-RUN cd /app/apps/web && \
+# Build Next.js
+RUN cd /app/final_build/saas_build/apps/web && \
     NEXT_PUBLIC_API_URL=http://localhost:3001 \
-    node_modules/.bin/next build 2>&1 | tail -10 || \
-    /app/node_modules/.bin/next build 2>&1 | tail -10 || \
-    true
+    ./node_modules/.bin/next build 2>&1 | tail -10 || true
 
 ENV NODE_ENV=production
 
