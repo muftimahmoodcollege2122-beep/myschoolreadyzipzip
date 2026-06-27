@@ -25,9 +25,10 @@
       "dom"
     ],
     "strict": false,
-    "types": [],
-    "typeRoots": [
-      "./node_modules/@types"
+    "ignoreDeprecations": "6.0",
+    "strictPropertyInitialization": false,
+    "types": [
+      "node"
     ]
   },
   "include": [
