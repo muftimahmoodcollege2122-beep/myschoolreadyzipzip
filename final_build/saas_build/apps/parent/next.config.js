@@ -1,5 +1,5 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {
+const nextConfig: any = {
   output: 'standalone',
   reactStrictMode: false,
   poweredByHeader: false,
