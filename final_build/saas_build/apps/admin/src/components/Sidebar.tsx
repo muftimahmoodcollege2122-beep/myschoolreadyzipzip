@@ -1,0 +1,113 @@
+'use client';
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { useAdminAuth } from '../stores/auth.store';
+import { clearTokens } from '../lib/api-client';
+
+const NAV_SECTIONS = [
+  {
+    label: 'Management',
+    items: [
+      { icon: '📊', label: 'Dashboard',     href: '/dashboard' },
+      { icon: '👩‍🎓', label: 'Students',      href: '/dashboard/students' },
+      { icon: '👨‍🏫', label: 'Teachers',      href: '/dashboard/teachers' },
+      { icon: '📚', label: 'Classes',        href: '/dashboard/classes' },
+      { icon: '📦', label: 'Subjects',       href: '/dashboard/subjects' },
+      { icon: '📝', label: 'Attendance',     href: '/dashboard/attendance' },
+      { icon: '📋', label: 'Exams',          href: '/dashboard/exams' },
+      { icon: '💰', label: 'Fees',           href: '/dashboard/fees' },
+      { icon: '💬', label: 'Announcements',  href: '/dashboard/announcements' },
+      { icon: '📈', label: 'Reports',        href: '/dashboard/reports' },
+    ],
+  },
+  {
+    label: 'Customization',
+    items: [
+      { icon: '🌐', label: 'Website Builder',   href: '/dashboard/website-builder' },
+      { icon: '📄', label: 'Page Builder',      href: '/dashboard/website-builder/pages' },
+      { icon: '🎛️', label: 'Portal Controls',  href: '/dashboard/settings/portals' },
+      { icon: '🧭', label: 'Nav Builder',       href: '/dashboard/settings/nav-builder' },
+      { icon: '🎨', label: 'Portal Branding',   href: '/dashboard/settings/portal-branding' },
+      { icon: '📢', label: 'Alert Banners',     href: '/dashboard/settings/alert-banners' },
+      { icon: '🧩', label: 'Dashboard Widgets', href: '/dashboard/settings/dashboard-widgets' },
+      { icon: '🏷️', label: 'Label Overrides',  href: '/dashboard/settings/labels' },
+    ],
+  },
+  {
+    label: 'Configuration',
+    items: [
+      { icon: '⚙️', label: 'Settings', href: '/dashboard/settings' },
+    ],
+  },
+];
+
+export function Sidebar() {
+  const pathname = usePathname();
+  const router   = useRouter();
+  const { user, slug, clear } = useAdminAuth();
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+
+  const logout = () => { clearTokens(); clear(); router.push('/login'); };
+
+  const toggleSection = (label: string) =>
+    setCollapsed(p => { const n = new Set(p); n.has(label) ? n.delete(label) : n.add(label); return n; });
+
+  return (
+    <aside className="w-64 min-h-screen bg-slate-900 text-white flex flex-col fixed left-0 top-0 z-40 shadow-xl">
+      <div className="px-6 py-5 border-b border-slate-700">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center text-lg flex-shrink-0">🏫</div>
+          <div className="min-w-0">
+            <p className="font-bold text-sm truncate">{slug?.toUpperCase() || 'ADMIN'}</p>
+            <p className="text-slate-400 text-xs">Admin Dashboard</p>
+          </div>
+        </div>
+      </div>
+
+      <nav className="flex-1 px-3 py-3 overflow-y-auto space-y-4">
+        {NAV_SECTIONS.map(section => (
+          <div key={section.label}>
+            <button onClick={() => toggleSection(section.label)}
+              className="w-full flex items-center justify-between px-2 py-1 text-xs font-bold text-slate-500 uppercase tracking-wider hover:text-slate-300 transition-colors">
+              <span>{section.label}</span>
+              <span className="text-slate-600">{collapsed.has(section.label) ? '▸' : '▾'}</span>
+            </button>
+            {!collapsed.has(section.label) && (
+              <div className="mt-1 space-y-0.5">
+                {section.items.map(item => {
+                  const active = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
+                  return (
+                    <Link key={item.href} href={item.href}
+                      className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+                        active ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                      }`}>
+                      <span className="text-base">{item.icon}</span>
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ))}
+      </nav>
+
+      <div className="px-4 py-4 border-t border-slate-700">
+        <div className="flex items-center gap-3 mb-3 px-2">
+          <div className="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center text-sm font-bold">
+            {user?.name?.[0] || 'A'}
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-medium truncate">{user?.name || 'Admin'}</p>
+            <p className="text-slate-500 text-xs truncate">{user?.email || ''}</p>
+          </div>
+        </div>
+        <button onClick={logout}
+          className="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-slate-400 hover:bg-red-900 hover:text-red-300 transition-all">
+          🚪 Sign Out
+        </button>
+      </div>
+    </aside>
+  );
+}

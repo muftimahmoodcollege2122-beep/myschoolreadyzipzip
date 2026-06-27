@@ -41,11 +41,3 @@ replit.nix
 # Misc
 *.zip
 attached_assets/
-final_build/saas_build/apps/admin/
-final_build/saas_build/apps/parent/
-final_build/saas_build/apps/student/
-final_build/saas_build/apps/teacher/
-final_build/saas_build/apps/web/.next/
-final_build/saas_build/apps/api/node_modules/
-final_build/saas_build/apps/web/node_modules/
-final_build/saas_build/node_modules/
