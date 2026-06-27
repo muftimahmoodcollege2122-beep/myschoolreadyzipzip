@@ -1,6 +1,6 @@
 'use client';
 export const dynamic = 'force-dynamic';
-import React, { Suspense, Suspense }, { useState, useEffect } from 'react';
+import React, { Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 
@@ -395,10 +395,6 @@ function PaymentPageInner() {
   );
 }
 
-export default function PaymentPage() {
-  return (
-    <Suspense fallback={}>
-      <PaymentPageInner />
-    </Suspense>
-  );
+export default function PaymentPageInnerPage() {
+  return <Suspense fallback={null}><PaymentPageInner /></Suspense>;
 }

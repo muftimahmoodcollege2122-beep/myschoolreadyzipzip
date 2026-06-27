@@ -1,6 +1,6 @@
 'use client';
 export const dynamic = 'force-dynamic';
-import React, { Suspense, Suspense }, { useEffect, useState } from 'react';
+import React, { Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
 import Link from 'next/link';
@@ -92,10 +92,6 @@ function PaymentVerifyCallbackInner() {
   );
 }
 
-export default function PaymentVerifyCallback() {
-  return (
-    <Suspense fallback={}>
-      <PaymentVerifyCallbackInner />
-    </Suspense>
-  );
+export default function PaymentVerifyPage() {
+  return <Suspense fallback={null}><PaymentVerifyCallbackInner /></Suspense>;
 }
