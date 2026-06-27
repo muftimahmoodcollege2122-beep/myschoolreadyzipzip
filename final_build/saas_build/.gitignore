@@ -13,3 +13,4 @@ coverage/
 *.tfstate.backup
 terraform.tfvars
 prisma/migrations/migration_lock.toml
+final_build/saas_build/apps/api/dist/
