@@ -3,8 +3,8 @@ set -e
 
 API_DIR="/app/final_build/saas_build/apps/api"
 WEB_DIR="/app/final_build/saas_build/apps/web"
-API_PORT="3001"
-WEB_PORT="${PORT:-5000}"
+API_PORT="3099"
+WEB_PORT="${PORT:-3001}"
 
 echo "==> Starting Redis..."
 redis-server --daemonize yes --logfile /tmp/redis.log --port 6379 --loglevel warning
