@@ -8,73 +8,48 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Copy full repo — lands at /app/
 COPY . .
 
-# ── STEP 1: Show environment ───────────────────────────────────────────────────
-RUN echo "=== NODE VERSION ===" && node --version && npm --version
-RUN echo "=== REPO STRUCTURE ===" && ls /app && echo "---" && ls /app/final_build/saas_build/
-RUN echo "=== API DIR ===" && ls /app/final_build/saas_build/apps/api/
-RUN echo "=== WEB DIR ===" && ls /app/final_build/saas_build/apps/web/
-RUN echo "=== NPMRC ===" && cat /app/final_build/saas_build/.npmrc
-
-# ── STEP 2: Fix .npmrc ────────────────────────────────────────────────────────
+# Write .npmrc files for api and web (overrides any inherited settings)
 RUN printf "legacy-peer-deps=true\nfund=false\naudit=false\nallow-scripts=true\n" \
-    > /app/final_build/saas_build/.npmrc && \
-    printf "legacy-peer-deps=true\nfund=false\naudit=false\n" \
     > /app/final_build/saas_build/apps/api/.npmrc && \
-    printf "legacy-peer-deps=true\nfund=false\naudit=false\n" \
+    printf "legacy-peer-deps=true\nfund=false\naudit=false\nallow-scripts=true\n" \
     > /app/final_build/saas_build/apps/web/.npmrc
-RUN echo "=== NPMRC FIXED ===" && cat /app/final_build/saas_build/.npmrc
 
-# ── STEP 3: Install API deps ──────────────────────────────────────────────────
-# Temporarily rename root package.json so npm doesn't detect workspace
-RUN mv /app/final_build/saas_build/package.json /app/final_build/saas_build/package.json.bak
-RUN echo "=== INSTALLING API DEPS ===" && \
+# ── API ───────────────────────────────────────────────────────────────────────
+RUN echo "=== Installing API deps ===" && \
     cd /app/final_build/saas_build/apps/api && \
-    npm install --legacy-peer-deps --no-audit --no-fund --no-package-lock 2>&1 || \
-    (cat /root/.npm/_logs/*.log | grep -E "^npm error" | head -30 && exit 1)
-RUN mv /app/final_build/saas_build/package.json.bak /app/final_build/saas_build/package.json
-RUN echo "=== API NODE_MODULES CHECK ===" && \
-    ls /app/final_build/saas_build/apps/api/node_modules | wc -l && \
-    test -d /app/final_build/saas_build/apps/api/node_modules/@nestjs/core && \
-    echo "✅ @nestjs/core OK" || echo "❌ @nestjs/core MISSING"
+    npm install --legacy-peer-deps --no-audit --no-fund 2>&1 | tail -5
 
-# ── STEP 4: Prisma ────────────────────────────────────────────────────────────
-RUN echo "=== GENERATING PRISMA ===" && \
-    cd /app/final_build/saas_build/apps/api && \
+RUN test -d /app/final_build/saas_build/apps/api/node_modules/@nestjs/core && \
+    echo "✅ @nestjs/core OK" || (echo "❌ FATAL: @nestjs/core missing" && exit 1)
+
+RUN cd /app/final_build/saas_build/apps/api && \
     PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1 \
-    ./node_modules/.bin/prisma generate --schema=prisma/schema.prisma 2>&1 || \
-    echo "⚠️ Prisma generate failed (non-fatal)"
+    ./node_modules/.bin/prisma generate --schema=prisma/schema.prisma 2>&1 | tail -3 || true
 
-# ── STEP 5: API dist ──────────────────────────────────────────────────────────
-RUN echo "=== API DIST CHECK ===" && \
-    ls /app/final_build/saas_build/apps/api/dist/ && \
-    test -f /app/final_build/saas_build/apps/api/dist/main.js && \
-    echo "✅ dist/main.js OK" || (echo "❌ dist/main.js MISSING" && exit 1)
+RUN test -f /app/final_build/saas_build/apps/api/dist/main.js && \
+    echo "✅ dist/main.js OK" || (echo "❌ FATAL: dist/main.js missing" && exit 1)
 
-# ── STEP 6: Install Web deps ──────────────────────────────────────────────────
-# Temporarily rename root package.json so npm doesn't detect workspace
-RUN mv /app/final_build/saas_build/package.json /app/final_build/saas_build/package.json.bak
-RUN echo "=== INSTALLING WEB DEPS ===" && \
+# ── WEB ───────────────────────────────────────────────────────────────────────
+RUN echo "=== Installing Web deps ===" && \
     cd /app/final_build/saas_build/apps/web && \
-    npm install --legacy-peer-deps --no-audit --no-fund 2>&1 || \
-    (cat /root/.npm/_logs/*.log | grep -E "^npm error" | head -30 && exit 1)
-RUN mv /app/final_build/saas_build/package.json.bak /app/final_build/saas_build/package.json
-RUN echo "=== WEB NODE_MODULES CHECK ===" && \
-    ls /app/final_build/saas_build/apps/web/node_modules | wc -l && \
-    test -d /app/final_build/saas_build/apps/web/node_modules/next && \
-    echo "✅ next OK" || echo "❌ next MISSING" && \
-    test -d /app/final_build/saas_build/apps/web/node_modules/@tanstack && \
-    echo "✅ @tanstack OK" || echo "❌ @tanstack MISSING"
+    npm install --legacy-peer-deps --no-audit --no-fund 2>&1 | tail -5
 
-# ── STEP 7: Build Next.js ─────────────────────────────────────────────────────
-RUN echo "=== BUILDING NEXT.JS ===" && \
+RUN test -d /app/final_build/saas_build/apps/web/node_modules/next && \
+    echo "✅ next OK" || (echo "❌ FATAL: next missing" && exit 1)
+
+RUN test -d /app/final_build/saas_build/apps/web/node_modules/@tanstack && \
+    echo "✅ @tanstack OK" || (echo "❌ FATAL: @tanstack missing" && exit 1)
+
+RUN echo "=== Building Next.js ===" && \
     cd /app/final_build/saas_build/apps/web && \
-    NEXT_PUBLIC_API_URL=http://localhost:3001 \
+    NEXT_PUBLIC_API_URL=/api/v1 \
     ./node_modules/.bin/next build 2>&1
-RUN echo "=== NEXT BUILD CHECK ===" && \
-    test -f /app/final_build/saas_build/apps/web/.next/BUILD_ID && \
-    echo "✅ .next/BUILD_ID OK" || (echo "❌ Next.js build FAILED" && exit 1)
+
+RUN test -f /app/final_build/saas_build/apps/web/.next/BUILD_ID && \
+    echo "✅ Next.js built OK" || (echo "❌ FATAL: Next.js build failed" && exit 1)
 
 ENV NODE_ENV=production
 

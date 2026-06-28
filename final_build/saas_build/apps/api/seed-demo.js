@@ -1,5 +1,6 @@
-const { PrismaClient } = require('./node_modules/@prisma/client');
-const bcrypt = require('./node_modules/bcryptjs');
+const path = require('path');
+const { PrismaClient } = require(path.join(__dirname, 'node_modules/@prisma/client'));
+const bcrypt = require(path.join(__dirname, 'node_modules/bcryptjs'));
 const crypto = require('crypto');
 
 async function seed() {
