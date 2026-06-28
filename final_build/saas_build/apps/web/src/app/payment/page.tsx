@@ -1,6 +1,6 @@
 'use client';
 export const dynamic = 'force-dynamic';
-import React, { Suspense } from 'react';
+import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 
@@ -59,7 +59,7 @@ function PaymentPageInner() {
       const res = await fetch('/api/v1/payments/initiate', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ method, plan: planKey, tenantId, email, schoolName: school, phone }),
+        body: JSON.stringify({ method, plan: planKey, email, schoolName: school, phone }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to initiate payment');
