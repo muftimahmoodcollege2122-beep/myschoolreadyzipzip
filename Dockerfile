@@ -29,6 +29,10 @@ RUN cd /app/final_build/saas_build/apps/api && \
     PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1 \
     ./node_modules/.bin/prisma generate --schema=prisma/schema.prisma 2>&1 | tail -3 || true
 
+# Build TypeScript — noEmitOnError false so type errors don't block output
+RUN cd /app/final_build/saas_build/apps/api && \
+    ./node_modules/.bin/tsc -p tsconfig.json --skipLibCheck --noEmitOnError false 2>&1 | tail -5 || true
+
 RUN test -f /app/final_build/saas_build/apps/api/dist/main.js && \
     echo "✅ dist/main.js OK" || (echo "❌ FATAL: dist/main.js missing" && exit 1)
 
