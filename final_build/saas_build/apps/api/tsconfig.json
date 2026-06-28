@@ -25,7 +25,6 @@
       "dom"
     ],
     "strict": false,
-    "ignoreDeprecations": "6.0",
     "strictPropertyInitialization": false,
     "types": [
       "node"
