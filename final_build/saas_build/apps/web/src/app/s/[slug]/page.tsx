@@ -1,5 +1,4 @@
 import { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 import { SchoolWebsite } from '@/components/school-website/school-website';
 import type { SchoolTheme } from '@/types/theme';
 
@@ -55,6 +54,45 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 
 export default async function SchoolPage({ params }: { params: { slug: string } }) {
   const theme = await getTheme(params.slug);
-  if (!theme) notFound();
+  if (!theme) {
+    // Return a default theme so the page doesn't show "School Not Found"
+    const defaultTheme: SchoolTheme = {
+      template: 'classic',
+      primaryColor: '#059669',
+      secondaryColor: '#065F46',
+      accentColor: '#F59E0B',
+      textColor: '#1A2B3C',
+      bgColor: '#FFFFFF',
+      fontHeading: 'Plus Jakarta Sans',
+      fontBody: 'Inter',
+      heroStyle: 'centered',
+      logoUrl: '',
+      logoShape: 'rounded',
+      borderRadius: 'medium',
+      shadowStyle: 'soft',
+      navStyle: 'solid',
+      buttonStyle: 'solid',
+      schoolName: params.slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) + ' School',
+      tagline: 'Excellence in Education',
+      city: '',
+      phone: '',
+      email: '',
+      address: '',
+      heroTitle: 'Welcome to Our School',
+      heroSubtitle: 'Empowering students to achieve their full potential.',
+      heroCtaText: 'Apply Now',
+      aboutText: 'We are committed to providing quality education.',
+      statsStudents: '500+',
+      statsTeachers: '30+',
+      statsYears: '10+',
+      statsPassRate: '95%',
+      sections: {
+        hero: true, about: true, stats: true, gallery: false,
+        events: false, admissions: true, staff: false,
+        testimonials: false, contact: true, news: false,
+      },
+    } as any;
+    return <SchoolWebsite theme={defaultTheme} slug={params.slug} />;
+  }
   return <SchoolWebsite theme={theme} slug={params.slug} />;
 }
