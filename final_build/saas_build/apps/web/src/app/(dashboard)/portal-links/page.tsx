@@ -41,18 +41,33 @@ export default function PortalLinksPage() {
   const user = useAuthStore(s => s.user) as any;
   const slug = user?.school?.slug || user?.tenantSlug || 'your-school';
 
+  const currentBase = typeof window !== 'undefined'
+    ? `${window.location.protocol}//${window.location.host}`
+    : '';
+
   const devUrls = useMemo(() => {
-    const base = typeof window !== 'undefined'
-      ? window.location.hostname.replace(/^\d+-/, '')
-      : 'localhost';
-    const isReplit = base.endsWith('.replit.dev') || base.endsWith('.repl.co');
+    const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+    const isReplit  = hostname.endsWith('.replit.dev') || hostname.endsWith('.repl.co');
+    const isLocal   = hostname === 'localhost' || hostname === '127.0.0.1';
+
     if (isReplit) {
+      const base = hostname.replace(/^\d+-/, '');
       return {
         web:     `https://${base}`,
         admin:   `https://8080-${base}`,
         teacher: `https://3002-${base}`,
         student: `https://3003-${base}`,
         parent:  `https://4200-${base}`,
+      };
+    }
+    if (!isLocal) {
+      // Railway or any single-domain production — all portals on same base URL
+      return {
+        web:     currentBase,
+        admin:   currentBase,
+        teacher: currentBase,
+        student: currentBase,
+        parent:  currentBase,
       };
     }
     return {
@@ -62,18 +77,25 @@ export default function PortalLinksPage() {
       student: 'http://localhost:3003',
       parent:  'http://localhost:4200',
     };
-  }, []);
+  }, [currentBase]);
 
-  const isProd = !devUrls.teacher; // empty string means production
+  const hostname    = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+  const isLocal     = hostname === 'localhost' || hostname === '127.0.0.1';
+  const isReplit    = hostname.endsWith('.replit.dev') || hostname.endsWith('.repl.co');
+  const isSingleDomain = !isLocal && !isReplit;
+
+  const isProd = isSingleDomain && !devUrls.teacher.includes('localhost');
 
   const prodBase = `https://${slug}.myschool.pk`;
+
+  const base = isSingleDomain ? currentBase : '';
 
   const PORTALS = [
     {
       icon:     '🌐',
       label:    'School Website',
       desc:     'Public-facing website for parents and prospective students',
-      url:      isProd ? prodBase : devUrls.web,
+      url:      isSingleDomain ? `${base}/s/${slug}` : devUrls.web,
       loginUrl: null,
       color:    'border-blue-200 bg-blue-50',
       badge:    'bg-blue-600',
@@ -82,35 +104,35 @@ export default function PortalLinksPage() {
       icon:     '🏫',
       label:    'Admin Dashboard',
       desc:     'Full control panel for school administrators',
-      url:      isProd ? `${prodBase}/dashboard` : `${devUrls.admin}/dashboard`,
-      loginUrl: isProd ? `${prodBase}/login` : `${devUrls.admin}/login`,
+      url:      isSingleDomain ? `${base}/dashboard` : `${devUrls.admin}/dashboard`,
+      loginUrl: isSingleDomain ? `${base}/login` : `${devUrls.admin}/login`,
       color:    'border-indigo-200 bg-indigo-50',
       badge:    'bg-indigo-600',
     },
     {
-      icon:     '👨‍🏫',
+      icon:     '👨\u200d🏫',
       label:    'Teacher Portal',
       desc:     'Mark attendance, enter grades, manage classes and apply for leave',
-      url:      isProd ? `${prodBase}/t/${slug}` : `${devUrls.teacher}/dashboard`,
-      loginUrl: isProd ? `${prodBase}/t/${slug}/login` : `${devUrls.teacher}/login`,
+      url:      isSingleDomain ? `${base}/t/${slug}` : `${devUrls.teacher}/dashboard`,
+      loginUrl: isSingleDomain ? `${base}/t/${slug}/login` : `${devUrls.teacher}/login`,
       color:    'border-teal-200 bg-teal-50',
       badge:    'bg-teal-600',
     },
     {
-      icon:     '👩‍🎓',
+      icon:     '👩\u200d🎓',
       label:    'Student Portal',
       desc:     'View grades, attendance, timetable, LMS courses and fee status',
-      url:      isProd ? `${prodBase}/learn/${slug}` : `${devUrls.student}/dashboard`,
-      loginUrl: isProd ? `${prodBase}/learn/${slug}/login` : `${devUrls.student}/login`,
+      url:      isSingleDomain ? `${base}/learn/${slug}` : `${devUrls.student}/dashboard`,
+      loginUrl: isSingleDomain ? `${base}/learn/${slug}/login` : `${devUrls.student}/login`,
       color:    'border-violet-200 bg-violet-50',
       badge:    'bg-violet-600',
     },
     {
-      icon:     '👨‍👩‍👧',
+      icon:     '👨\u200d👩\u200d👧',
       label:    'Parent Portal',
       desc:     "Monitor your child's progress, attendance, fees and school notices",
-      url:      isProd ? `${prodBase}/parent/${slug}` : `${devUrls.parent}/dashboard`,
-      loginUrl: isProd ? `${prodBase}/parent/${slug}/login` : `${devUrls.parent}/login`,
+      url:      isSingleDomain ? `${base}/parent/${slug}` : `${devUrls.parent}/dashboard`,
+      loginUrl: isSingleDomain ? `${base}/parent/${slug}/login` : `${devUrls.parent}/login`,
       color:    'border-rose-200 bg-rose-50',
       badge:    'bg-rose-600',
     },
@@ -118,9 +140,9 @@ export default function PortalLinksPage() {
 
   const [shareTab, setShareTab] = useState<'sms' | 'email' | 'whatsapp'>('whatsapp');
 
-  const teacherLogin = isProd ? `${prodBase}/t/${slug}/login` : `${devUrls.teacher}/login`;
-  const studentLogin = isProd ? `${prodBase}/learn/${slug}/login` : `${devUrls.student}/login`;
-  const parentLogin  = isProd ? `${prodBase}/parent/${slug}/login` : `${devUrls.parent}/login`;
+  const teacherLogin = isSingleDomain ? `${currentBase}/t/${slug}/login`     : `${devUrls.teacher}/login`;
+  const studentLogin = isSingleDomain ? `${currentBase}/learn/${slug}/login`  : `${devUrls.student}/login`;
+  const parentLogin  = isSingleDomain ? `${currentBase}/parent/${slug}/login` : `${devUrls.parent}/login`;
 
   const shareMessages = {
     whatsapp: `Dear Parents/Students,\n\nWelcome to ${slug.replace(/-/g, ' ')} School Management Portal! 🎓\n\nYour dedicated portals are now live:\n\n👩‍🎓 Student Portal: ${studentLogin}\n👨‍👩‍👧 Parent Portal: ${parentLogin}\n\nLogin with the credentials shared by your school.\nPowered by EduOS`,
