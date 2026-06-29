@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { SchoolWebsite } from '@/components/school-website/school-website';
 import type { SchoolTheme } from '@/types/theme';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3099';
 
 async function getTheme(slug: string): Promise<SchoolTheme | null> {
   try {
