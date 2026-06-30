@@ -1,12 +1,16 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { CacheService } from '../../common/cache/cache.service';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 @Injectable()
 export class SchoolDataService {
   private readonly logger = new Logger(SchoolDataService.name);
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cache: CacheService,
+  ) {}
 
   private async resolveSchoolId(tenantId: string, sid?: string): Promise<string | undefined> {
     if (sid && UUID_RE.test(sid)) return sid;
@@ -220,6 +224,29 @@ export class SchoolDataService {
     const school = await this.getSchool(tenantId);
     const settings = (school.settings as any) || {};
     await this.prisma.school.update({ where: { id: school.id }, data: { settings: { ...settings, website: dto } } });
+
+    // Also sync to tenant.settings.theme — this is what the public school website (themes.service) reads
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+    if (tenant) {
+      const tenantSettings = (tenant.settings as any) || {};
+      const existingTheme = tenantSettings.theme || {};
+      const newTheme = {
+        ...existingTheme,
+        ...(dto.theme && typeof dto.theme === 'object' ? dto.theme : {}),
+        preset: dto.theme?.preset ?? existingTheme.preset,
+        template: dto.theme?.template ?? dto.template ?? existingTheme.template,
+        primaryColor: dto.theme?.primaryColor ?? dto.primaryColor ?? existingTheme.primaryColor,
+        secondaryColor: dto.theme?.secondaryColor ?? dto.secondaryColor ?? existingTheme.secondaryColor,
+        accentColor: dto.theme?.accentColor ?? dto.accentColor ?? existingTheme.accentColor,
+      };
+      await this.prisma.tenant.update({
+        where: { id: tenantId },
+        data: { settings: { ...tenantSettings, theme: newTheme, components: dto.components ?? tenantSettings.components } },
+      });
+      // Invalidate the public website theme cache so changes show immediately
+      await this.cache.del(`theme:${tenant.slug}`).catch(() => {});
+    }
+
     return { success: true, ...dto };
   }
 
