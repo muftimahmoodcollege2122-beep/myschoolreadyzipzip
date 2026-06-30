@@ -23,6 +23,10 @@ export class TeachersController {
   findOne(@Param('id', ParseUUIDPipe) id: string, @TenantId() tid: string) { return this.svc.findOne(id, tid); }
   @Get(':id/schedule') @Roles('SCHOOL_ADMIN','TEACHER')
   schedule(@Param('id', ParseUUIDPipe) id: string, @TenantId() tid: string) { return this.svc.getTeacherSchedule(id, tid); }
+  @Get('leaves/my') @Roles('TEACHER','SCHOOL_ADMIN')
+  myLeaves(@TenantId() tid: string, @CurrentUser() u: any) { return this.svc.myLeaveRequests(u.sub, tid); }
+  @Post('leaves') @Roles('TEACHER','SCHOOL_ADMIN')
+  requestMyLeave(@TenantId() tid: string, @CurrentUser() u: any, @Body() dto: any) { return this.svc.requestMyLeave(u.sub, tid, dto); }
   @Post(':id/leaves') @Roles('TEACHER','SCHOOL_ADMIN')
   requestLeave(@Param('id', ParseUUIDPipe) id: string, @TenantId() tid: string, @Body() dto: any) { return this.svc.requestLeave(id, tid, dto); }
   @Post('leaves/:id/approve') @Roles('SCHOOL_ADMIN')

@@ -68,7 +68,11 @@ export const useAttendance = (sectionId: string, date: string) =>
 
 export const useMarkAttendance = () => {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (dto: any) => apiClient.post('/attendance', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['attendance'] }) });
+  return useMutation({
+    mutationFn: ({ sectionId, records }: { sectionId: string; records: any[] }) =>
+      apiClient.post(`/attendance/section/${sectionId}`, records),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['attendance'] }),
+  });
 };
 
 export const useAttendanceReport = (sectionId: string, from: string, to: string) =>
@@ -128,7 +132,7 @@ function hasAuthToken() {
 }
 
 export const useNotifications = (page = 1) =>
-  useQuery({ queryKey: ['notifications', page], queryFn: () => apiClient.get(`/notifications?page=${page}&limit=20`), refetchInterval: 30000, enabled: hasAuthToken(), retry: false });
+  useQuery({ queryKey: ['notifications', page], queryFn: () => apiClient.get(`/notifications/my?page=${page}&limit=20`), refetchInterval: 30000, enabled: hasAuthToken(), retry: false });
 
 export const useUnreadCount = () =>
   useQuery({ queryKey: ['notifications-unread'], queryFn: () => apiClient.get('/notifications/unread-count'), refetchInterval: 30000, enabled: hasAuthToken(), retry: false });
@@ -266,7 +270,7 @@ export const useDeleteRoute = () => {
 
 // ── Timetable ─────────────────────────────────────────────────────────────────
 export const useTimetable = (sectionId: string) =>
-  useQuery({ queryKey: ['timetable', sectionId], queryFn: () => apiClient.get(`/timetable?sectionId=${sectionId}`), enabled: !!sectionId, staleTime: 10*60*1000 });
+  useQuery({ queryKey: ['timetable', sectionId], queryFn: () => apiClient.get(`/timetable/section/${sectionId}`), enabled: !!sectionId, staleTime: 10*60*1000 });
 
 // ── Analytics ─────────────────────────────────────────────────────────────────
 export const useAnalytics = () =>
@@ -355,13 +359,13 @@ export const useCreateDiscount = () => {
 
 // ── Student Records ──────────────────────────────────────────────────────────
 export const useStudentBehaviors = (studentId?: string) =>
-  useQuery({ queryKey: ['behaviors', studentId], queryFn: () => apiClient.get(`/student-records/behavior?${qs({ studentId })}`), enabled: !!studentId });
+  useQuery({ queryKey: ['behaviors', studentId], queryFn: () => apiClient.get(`/student-records/behavior/${studentId}`), enabled: !!studentId });
 
 export const useStudentMedical = (studentId?: string) =>
-  useQuery({ queryKey: ['medical', studentId], queryFn: () => apiClient.get(`/student-records/medical?${qs({ studentId })}`), enabled: !!studentId });
+  useQuery({ queryKey: ['medical', studentId], queryFn: () => apiClient.get(`/student-records/medical/${studentId}`), enabled: !!studentId });
 
 export const useStudentAchievements = (studentId?: string) =>
-  useQuery({ queryKey: ['achievements', studentId], queryFn: () => apiClient.get(`/student-records/achievements?${qs({ studentId })}`), enabled: !!studentId });
+  useQuery({ queryKey: ['achievements', studentId], queryFn: () => apiClient.get(`/student-records/achievements/${studentId}`), enabled: !!studentId });
 
 export const useCreateBehavior = () => {
   const qc = useQueryClient();
@@ -375,49 +379,49 @@ export const useCreateAchievement = () => {
 
 // ── HR Extended ──────────────────────────────────────────────────────────────
 export const useLessonPlans = (params: any = {}) =>
-  useQuery({ queryKey: ['lesson-plans', params], queryFn: () => apiClient.get(`/hr-extended/lesson-plans?${qs(params)}`) });
+  useQuery({ queryKey: ['lesson-plans', params], queryFn: () => apiClient.get(`/hr/lesson-plans?${qs(params)}`) });
 
 export const useSubstitutions = () =>
-  useQuery({ queryKey: ['substitutions'], queryFn: () => apiClient.get('/hr-extended/substitutions') });
+  useQuery({ queryKey: ['substitutions'], queryFn: () => apiClient.get('/hr/substitutions') });
 
 export const useTrainingRecords = () =>
-  useQuery({ queryKey: ['training'], queryFn: () => apiClient.get('/hr-extended/training') });
+  useQuery({ queryKey: ['training'], queryFn: () => apiClient.get('/hr/training') });
 
 export const useCreateLessonPlan = () => {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (dto: any) => apiClient.post('/hr-extended/lesson-plans', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['lesson-plans'] }) });
+  return useMutation({ mutationFn: (dto: any) => apiClient.post('/hr/lesson-plans', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['lesson-plans'] }) });
 };
 
 export const useApproveLessonPlan = () => {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (id: string) => apiClient.put(`/hr-extended/lesson-plans/${id}/approve`, {}), onSuccess: () => qc.invalidateQueries({ queryKey: ['lesson-plans'] }) });
+  return useMutation({ mutationFn: (id: string) => apiClient.put(`/hr/lesson-plans/${id}/approve`, {}), onSuccess: () => qc.invalidateQueries({ queryKey: ['lesson-plans'] }) });
 };
 
 export const useCreateSubstitution = () => {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (dto: any) => apiClient.post('/hr-extended/substitutions', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['substitutions'] }) });
+  return useMutation({ mutationFn: (dto: any) => apiClient.post('/hr/substitutions', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['substitutions'] }) });
 };
 
 // ── Content ──────────────────────────────────────────────────────────────────
 export const useBlogPosts = (params: any = {}) =>
-  useQuery({ queryKey: ['blog-posts', params], queryFn: () => apiClient.get(`/content/blog?${qs(params)}`) });
+  useQuery({ queryKey: ['blog-posts', params], queryFn: () => apiClient.get(`/content/posts?${qs(params)}`) });
 
 export const useGalleryAlbums = () =>
-  useQuery({ queryKey: ['gallery-albums'], queryFn: () => apiClient.get('/content/gallery'), staleTime: 5*60*1000 });
+  useQuery({ queryKey: ['gallery-albums'], queryFn: () => apiClient.get('/content/albums'), staleTime: 5*60*1000 });
 
 export const useCreateBlogPost = () => {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (dto: any) => apiClient.post('/content/blog', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['blog-posts'] }) });
+  return useMutation({ mutationFn: (dto: any) => apiClient.post('/content/posts', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['blog-posts'] }) });
 };
 
 export const usePublishBlogPost = () => {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (id: string) => apiClient.put(`/content/blog/${id}/publish`, {}), onSuccess: () => qc.invalidateQueries({ queryKey: ['blog-posts'] }) });
+  return useMutation({ mutationFn: (id: string) => apiClient.put(`/content/posts/${id}`, { status: 'PUBLISHED' }), onSuccess: () => qc.invalidateQueries({ queryKey: ['blog-posts'] }) });
 };
 
 export const useCreateGalleryAlbum = () => {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (dto: any) => apiClient.post('/content/gallery', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['gallery-albums'] }) });
+  return useMutation({ mutationFn: (dto: any) => apiClient.post('/content/albums', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['gallery-albums'] }) });
 };
 
 // ── Security ─────────────────────────────────────────────────────────────────
@@ -428,7 +432,7 @@ export const useIpRestrictions = () =>
   useQuery({ queryKey: ['ip-restrictions'], queryFn: () => apiClient.get('/security/ip-restrictions') });
 
 export const useSuspiciousActivities = () =>
-  useQuery({ queryKey: ['suspicious'], queryFn: () => apiClient.get('/security/suspicious-activities') });
+  useQuery({ queryKey: ['suspicious'], queryFn: () => apiClient.get('/security/suspicious') });
 
 export const useSecurityDashboard = () =>
   useQuery({ queryKey: ['security-dashboard'], queryFn: () => apiClient.get('/security/dashboard'), staleTime: 2*60*1000 });
@@ -465,7 +469,7 @@ export const useAiAnalytics = (type: string) =>
   useQuery({ queryKey: ['ai-analytics', type], queryFn: () => apiClient.get(`/ai-analytics/${type}`), staleTime: 10*60*1000 });
 
 export const useAiPrediction = () =>
-  useMutation({ mutationFn: (dto: any) => apiClient.post('/ai-analytics/predict', dto) });
+  useMutation({ mutationFn: (dto: any) => apiClient.post('/ai-analytics/generate-report', dto) });
 
 // ── Alumni ───────────────────────────────────────────────────────────────────
 export const useAlumni = (params: any = {}) =>
@@ -522,25 +526,6 @@ export const useSaveWebsiteSettings = () => {
   return useMutation({ mutationFn: (dto: any) => apiClient.put('/school/website-settings', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['website-settings'] }) });
 };
 
-// ── Generic School Section CRUD ───────────────────────────────────────────────
-export const useSchoolSection = (section: string) =>
-  useQuery({ queryKey: ['school-section', section], queryFn: () => apiClient.get(`/school/section/${section}`), staleTime: 2*60*1000 });
-
-export const useCreateSchoolItem = (section: string) => {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: (dto: any) => apiClient.post(`/school/section/${section}`, dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['school-section', section] }) });
-};
-
-export const useUpdateSchoolItem = (section: string) => {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: ({ id, ...dto }: any) => apiClient.put(`/school/section/${section}/${id}`, dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['school-section', section] }) });
-};
-
-export const useDeleteSchoolItem = (section: string) => {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: (id: string) => apiClient.delete(`/school/section/${section}/${id}`), onSuccess: () => qc.invalidateQueries({ queryKey: ['school-section', section] }) });
-};
-
 // ── Delete Announcement ───────────────────────────────────────────────────────
 export const useDeleteAnnouncement = () => {
   const qc = useQueryClient();
@@ -570,16 +555,16 @@ export const usePortalAnnouncements = (slug: string) =>
   useQuery({ queryKey: ['portal-notices', slug], queryFn: () => apiClient.get(`/school/announcements?tenantSlug=${slug}&limit=10`), enabled: !!slug, staleTime: 5 * 60 * 1000 });
 
 export const useMyLeaveRequests = () =>
-  useQuery({ queryKey: ['my-leave-requests'], queryFn: () => apiClient.get('/hr-extended/leave-requests/my'), staleTime: 2 * 60 * 1000 });
+  useQuery({ queryKey: ['my-leave-requests'], queryFn: () => apiClient.get('/teachers/leaves/my'), staleTime: 2 * 60 * 1000 });
 
 export const useSubmitLeaveRequest = () => {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (dto: any) => apiClient.post('/hr-extended/leave-requests', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['my-leave-requests'] }) });
+  return useMutation({ mutationFn: (dto: any) => apiClient.post('/teachers/leaves', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['my-leave-requests'] }) });
 };
 
 
 export const useTeacherStats = (slug: string) =>
-  useQuery({ queryKey: ['teacher-stats', slug], queryFn: () => apiClient.get(`/dashboard/stats?tenantSlug=${slug}`), enabled: !!slug, staleTime: 5 * 60 * 1000 });
+  useQuery({ queryKey: ['teacher-stats', slug], queryFn: () => apiClient.get('/dashboard'), enabled: !!slug, staleTime: 5 * 60 * 1000 });
 
 export const useCreateBudget = () => {
   const qc = useQueryClient();
@@ -587,16 +572,16 @@ export const useCreateBudget = () => {
 };
 
 export const useCommunicationThreads = (_params: any = {}) =>
-  useQuery({ queryKey: ['comm-threads'], queryFn: () => apiClient.get('/communications/threads'), staleTime: 2 * 60 * 1000, retry: false });
+  useQuery({ queryKey: ['comm-threads'], queryFn: () => apiClient.get('/communication/threads'), staleTime: 2 * 60 * 1000, retry: false });
 
 export const useCreateThread = () => {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (dto: any) => apiClient.post('/communications/threads', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['comm-threads'] }) });
+  return useMutation({ mutationFn: (dto: any) => apiClient.post('/communication/messages', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['comm-threads'] }) });
 };
 
 export const useSubmitLessonPlan = () => {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (id: string) => apiClient.patch(`/lesson-plans/${id}/submit`, {}), onSuccess: () => qc.invalidateQueries({ queryKey: ['lesson-plans'] }) });
+  return useMutation({ mutationFn: (id: string) => apiClient.put(`/hr/lesson-plans/${id}/submit`, {}), onSuccess: () => qc.invalidateQueries({ queryKey: ['lesson-plans'] }) });
 };
 
 // ── Portal Settings ────────────────────────────────────────────────────────────

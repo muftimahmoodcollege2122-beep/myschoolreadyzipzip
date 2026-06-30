@@ -25,6 +25,16 @@ export class AttendanceController {
     return this.svc.markSectionAttendance(sectionId, tid, u.sub, records);
   }
 
+  @Get('section/:sectionId') @Roles('SCHOOL_ADMIN', 'TEACHER')
+  @ApiOperation({ summary: 'Get attendance already marked for a section on a given date' })
+  sectionForDate(
+    @Param('sectionId', ParseUUIDPipe) sectionId: string,
+    @Query('date') date: string,
+    @TenantId() tid: string,
+  ) {
+    return this.svc.getSectionAttendanceForDate(sectionId, tid, date);
+  }
+
   @Get('section/:sectionId/report') @Roles('SCHOOL_ADMIN', 'TEACHER')
   @ApiOperation({ summary: 'Get section attendance report' })
   sectionReport(

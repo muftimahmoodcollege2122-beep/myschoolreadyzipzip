@@ -72,4 +72,19 @@ export class TeachersService {
   async approveLeave(leaveId: string, tenantId: string, approverId: string) {
     return this.prisma.leaveRequest.update({ where: { id: leaveId }, data: { status: 'APPROVED', approvedBy: approverId, approvedAt: new Date() } });
   }
+
+  async myLeaveRequests(userId: string, tenantId: string) {
+    const teacher = await this.findByUserId(userId, tenantId);
+    if (!teacher) return [];
+    return this.prisma.leaveRequest.findMany({
+      where: { teacherId: teacher.id, tenantId },
+      orderBy: { startDate: 'desc' },
+    });
+  }
+
+  async requestMyLeave(userId: string, tenantId: string, dto: any) {
+    const teacher = await this.findByUserId(userId, tenantId);
+    if (!teacher) throw new NotFoundException('Teacher profile not found for current user');
+    return this.requestLeave(teacher.id, tenantId, dto);
+  }
 }

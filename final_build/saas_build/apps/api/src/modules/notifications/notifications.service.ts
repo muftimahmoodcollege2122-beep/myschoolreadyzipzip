@@ -142,6 +142,13 @@ export class NotificationsService {
     });
   }
 
+  async getUnreadCount(userId: string, tenantId: string) {
+    const count = await this.prisma.notification.count({
+      where: { userId, tenantId, readAt: null },
+    });
+    return { count };
+  }
+
   async markAsRead(id: string, userId: string, tenantId: string) {
     return this.prisma.notification.updateMany({
       where: { id, userId, tenantId },

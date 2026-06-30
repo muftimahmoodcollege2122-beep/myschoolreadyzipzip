@@ -87,6 +87,20 @@ export class AttendanceService {
     return { marked: records.length, absentCount, lateCount };
   }
 
+  async getSectionAttendanceForDate(sectionId: string, tenantId: string, date: string) {
+    const targetDate = date ? new Date(date) : new Date();
+    targetDate.setHours(0, 0, 0, 0);
+    const nextDay = new Date(targetDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+
+    const records = await this.prisma.attendance.findMany({
+      where: { sectionId, tenantId, date: { gte: targetDate, lt: nextDay } },
+      include: { student: { include: { user: { include: { profile: true } } } } },
+      orderBy: { student: { rollNumber: 'asc' } as any },
+    });
+    return { date: targetDate.toISOString().split('T')[0], sectionId, records };
+  }
+
   async getStudentAttendance(studentId: string, tenantId: string, startDate: Date, endDate: Date) {
     const records = await this.prisma.attendance.findMany({
       where: { studentId, tenantId, date: { gte: startDate, lte: endDate } },

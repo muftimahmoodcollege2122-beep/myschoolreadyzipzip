@@ -33,7 +33,8 @@ export default function AttendancePage() {
 
   const { data: classes } = useClasses();
   const { data: allSections } = useSections();
-  const { data: records, isLoading } = useAttendance(sectionId, date);
+  const { data: attendanceData, isLoading } = useAttendance(sectionId, date);
+  const records = (attendanceData as any)?.records ?? [];
   const mark = useMarkAttendance();
 
   const classList: any[] = Array.isArray(classes) ? classes : [];

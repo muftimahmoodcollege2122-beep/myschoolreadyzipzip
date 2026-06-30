@@ -19,6 +19,12 @@ export class NotificationsController {
     return this.svc.getUserNotifications(u.sub, tid, Number(limit));
   }
 
+  @Get('unread-count') @Roles('SCHOOL_ADMIN','TEACHER','STUDENT','PARENT')
+  @ApiOperation({ summary: 'Get count of unread notifications' })
+  getUnreadCount(@CurrentUser() u: any, @TenantId() tid: string) {
+    return this.svc.getUnreadCount(u.sub, tid);
+  }
+
   @Post(':id/read') @Roles('SCHOOL_ADMIN','TEACHER','STUDENT','PARENT')
   markRead(@Param('id') id: string, @CurrentUser() u: any, @TenantId() tid: string) {
     return this.svc.markAsRead(id, u.sub, tid);
