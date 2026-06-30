@@ -19,8 +19,22 @@ export class SchoolDataService {
   }
 
   private async getSchool(tenantId: string) {
-    const s = await this.prisma.school.findFirst({ where: { tenantId } });
-    if (!s) throw new NotFoundException('School not found');
+    let s = await this.prisma.school.findFirst({ where: { tenantId } });
+    if (!s) {
+      const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+      s = await this.prisma.school.create({
+        data: {
+          tenantId,
+          name: tenant?.name || 'My School',
+          code: (tenant?.slug || 'school').toUpperCase(),
+          address: {},
+          email: '',
+          timezone: 'Asia/Karachi',
+          locale: 'en',
+          academicYear: `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`,
+        },
+      });
+    }
     return s;
   }
 
