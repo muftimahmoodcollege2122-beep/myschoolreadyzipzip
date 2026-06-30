@@ -51,13 +51,38 @@ export default function WebsiteBuilderPage() {
 
   useEffect(() => {
     if (!wsData) return;
-    if (wsData.theme !== undefined) setSelectedTheme(wsData.theme);
-    if (wsData.components) setAddedComponents(wsData.components);
+    // wsData.theme is now { primaryColor, secondaryColor } from the backend (not an index number)
+    // Match it to the closest THEMES preset index instead of overwriting state with the raw object
+    if (wsData.theme && typeof wsData.theme === 'object' && wsData.theme.primaryColor) {
+      const idx = THEMES.findIndex(t => t.primary.toLowerCase() === wsData.theme.primaryColor.toLowerCase());
+      if (idx >= 0) setSelectedTheme(idx);
+    } else if (typeof wsData.theme === 'number') {
+      setSelectedTheme(wsData.theme);
+    }
+
+    // wsData.components is now { hero: true, about: true, ... } section flags (not a string array)
+    // Convert back to the array of labels the UI expects
+    if (wsData.components && typeof wsData.components === 'object' && !Array.isArray(wsData.components)) {
+      const sectionToLabel: Record<string, string> = {
+        hero: 'Hero Section', about: 'About Us', stats: 'Statistics', events: 'Events',
+        contact: 'Contact', gallery: 'Gallery', admissions: 'Admissions', staff: 'Staff',
+        testimonials: 'Testimonials', news: 'News',
+      };
+      const labels = Object.entries(wsData.components)
+        .filter(([, v]) => v === true)
+        .map(([k]) => sectionToLabel[k])
+        .filter(Boolean) as string[];
+      if (labels.length > 0) setAddedComponents(labels);
+    } else if (Array.isArray(wsData.components)) {
+      setAddedComponents(wsData.components);
+    }
   }, [wsData]);
 
   const toggleComponent = (label: string) => {
     setAddedComponents(prev => prev.includes(label) ? prev.filter(c=>c!==label) : [...prev, label]);
   };
+
+  const activeTheme = THEMES[selectedTheme] || THEMES[0];
 
   const COMPONENT_TO_SECTION: Record<string, string> = {
     'Hero Section': 'hero',
@@ -75,7 +100,7 @@ export default function WebsiteBuilderPage() {
   const handlePublish = async () => {
     setPublishStatus('saving');
     try {
-      const theme = THEMES[selectedTheme];
+      const theme = activeTheme;
       // Build the sections object the public site expects: { hero: true, about: true, ... }
       const sectionFlags: Record<string, boolean> = {};
       Object.values(COMPONENT_TO_SECTION).forEach(key => { sectionFlags[key] = false; });
@@ -176,12 +201,12 @@ export default function WebsiteBuilderPage() {
                 </div>
                 <div className="overflow-y-auto max-h-[520px]">
                   {addedComponents.includes('Hero Section') && (
-                    <div className="py-10 px-6 text-center" style={{background:`linear-gradient(135deg, ${THEMES[selectedTheme].primary}, ${THEMES[selectedTheme].secondary})`}}>
+                    <div className="py-10 px-6 text-center" style={{background:`linear-gradient(135deg, ${activeTheme.primary}, ${activeTheme.secondary})`}}>
                       <p className="text-white/60 text-xs font-medium mb-2">{school?.name ?? 'MySchool Academy'}</p>
                       <h1 className="text-white font-black text-2xl mb-3">Shaping Future Leaders</h1>
                       <p className="text-white/70 text-sm mb-5">Excellence in Education Since 1995</p>
                       <div className="flex gap-2 justify-center">
-                        <button className="px-4 py-2 bg-white text-sm font-bold rounded-lg" style={{color:THEMES[selectedTheme].primary}}>Apply Now</button>
+                        <button className="px-4 py-2 bg-white text-sm font-bold rounded-lg" style={{color:activeTheme.primary}}>Apply Now</button>
                         <button className="px-4 py-2 bg-white/20 text-white text-sm font-bold rounded-lg border border-white/30">Learn More</button>
                       </div>
                     </div>
@@ -205,7 +230,7 @@ export default function WebsiteBuilderPage() {
                       <div className="space-y-2">
                         {[{t:'Annual Sports Day',d:'Jun 15'},{t:'Parent-Teacher Meeting',d:'Jun 20'},{t:'Science Exhibition',d:'Jun 28'}].map(e=>(
                           <div key={e.t} className="flex items-center gap-3 bg-white rounded-xl px-3 py-2 border border-gray-100">
-                            <div className="w-8 h-8 rounded-lg flex flex-col items-center justify-center text-white font-black text-xs" style={{background:THEMES[selectedTheme].primary}}>
+                            <div className="w-8 h-8 rounded-lg flex flex-col items-center justify-center text-white font-black text-xs" style={{background:activeTheme.primary}}>
                               <span className="text-[9px]">JUN</span><span>{e.d.split(' ')[1]}</span>
                             </div>
                             <p className="text-xs font-semibold text-gray-800">{e.t}</p>
