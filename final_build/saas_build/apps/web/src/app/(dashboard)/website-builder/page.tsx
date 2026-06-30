@@ -59,10 +59,39 @@ export default function WebsiteBuilderPage() {
     setAddedComponents(prev => prev.includes(label) ? prev.filter(c=>c!==label) : [...prev, label]);
   };
 
+  const COMPONENT_TO_SECTION: Record<string, string> = {
+    'Hero Section': 'hero',
+    'About Us': 'about',
+    'Statistics': 'stats',
+    'Events': 'events',
+    'Contact': 'contact',
+    'Gallery': 'gallery',
+    'Admissions': 'admissions',
+    'Staff': 'staff',
+    'Testimonials': 'testimonials',
+    'News': 'news',
+  };
+
   const handlePublish = async () => {
     setPublishStatus('saving');
     try {
-      await saveSettings.mutateAsync({ theme: selectedTheme, components: addedComponents, publishedAt: new Date().toISOString() });
+      const theme = THEMES[selectedTheme];
+      // Build the sections object the public site expects: { hero: true, about: true, ... }
+      const sectionFlags: Record<string, boolean> = {};
+      Object.values(COMPONENT_TO_SECTION).forEach(key => { sectionFlags[key] = false; });
+      addedComponents.forEach(label => {
+        const key = COMPONENT_TO_SECTION[label];
+        if (key) sectionFlags[key] = true;
+      });
+
+      await saveSettings.mutateAsync({
+        theme: {
+          primaryColor: theme.primary,
+          secondaryColor: theme.secondary,
+        },
+        components: sectionFlags,
+        publishedAt: new Date().toISOString(),
+      });
       setPublishStatus('saved');
       setTimeout(() => setPublishStatus('idle'), 3000);
     } catch {

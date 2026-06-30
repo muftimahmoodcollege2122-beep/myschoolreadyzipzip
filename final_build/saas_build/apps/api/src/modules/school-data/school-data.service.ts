@@ -225,26 +225,50 @@ export class SchoolDataService {
     const settings = (school.settings as any) || {};
     await this.prisma.school.update({ where: { id: school.id }, data: { settings: { ...settings, website: dto } } });
 
-    // Also sync to tenant.settings.theme — this is what the public school website (themes.service) reads
     const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
     if (tenant) {
       const tenantSettings = (tenant.settings as any) || {};
+
+      // 1. Sync theme/colors/template — read by ThemesService.getSchoolTheme()
       const existingTheme = tenantSettings.theme || {};
+      const incomingTheme = dto.theme || {};
       const newTheme = {
         ...existingTheme,
-        ...(dto.theme && typeof dto.theme === 'object' ? dto.theme : {}),
-        preset: dto.theme?.preset ?? existingTheme.preset,
-        template: dto.theme?.template ?? dto.template ?? existingTheme.template,
-        primaryColor: dto.theme?.primaryColor ?? dto.primaryColor ?? existingTheme.primaryColor,
-        secondaryColor: dto.theme?.secondaryColor ?? dto.secondaryColor ?? existingTheme.secondaryColor,
-        accentColor: dto.theme?.accentColor ?? dto.accentColor ?? existingTheme.accentColor,
+        ...(typeof incomingTheme === 'object' ? incomingTheme : {}),
       };
+
+      // 2. Sync portalSettings.website — read by ThemesService.getPortalSettingsBySlug()
+      // dto.components is now { hero: true, about: true, stats: false, ... } from website-builder
+      const existingPortalSettings = tenantSettings.portalSettings || {};
+      const existingWebsite = existingPortalSettings.website || {};
+      const sectionFlags = (dto.components && typeof dto.components === 'object') ? dto.components : {};
+      const newWebsite = {
+        ...existingWebsite,
+        ...sectionFlags,
+        heroTitle:     dto.heroTitle     ?? existingWebsite.heroTitle,
+        heroSubtitle:  dto.heroSubtitle  ?? existingWebsite.heroSubtitle,
+        heroCtaText:   dto.heroCtaText   ?? existingWebsite.heroCtaText,
+        aboutText:     dto.aboutText     ?? existingWebsite.aboutText,
+        statsStudents: dto.statsStudents ?? existingWebsite.statsStudents,
+        statsTeachers: dto.statsTeachers ?? existingWebsite.statsTeachers,
+        statsYears:    dto.statsYears    ?? existingWebsite.statsYears,
+        statsPassRate: dto.statsPassRate ?? existingWebsite.statsPassRate,
+      };
+
       await this.prisma.tenant.update({
         where: { id: tenantId },
-        data: { settings: { ...tenantSettings, theme: newTheme, components: dto.components ?? tenantSettings.components } },
+        data: {
+          settings: {
+            ...tenantSettings,
+            theme: newTheme,
+            portalSettings: { ...existingPortalSettings, website: newWebsite },
+          },
+        },
       });
-      // Invalidate the public website theme cache so changes show immediately
+
+      // Invalidate both caches the public website reads from
       await this.cache.del(`theme:${tenant.slug}`).catch(() => {});
+      await this.cache.del(`portal-settings:${tenantId}`).catch(() => {});
     }
 
     return { success: true, ...dto };
