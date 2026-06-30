@@ -1,17 +1,20 @@
 import { Metadata } from 'next';
+import { unstable_noStore as noStore } from 'next/cache';
 import { SchoolWebsite } from '@/components/school-website/school-website';
 import type { SchoolTheme } from '@/types/theme';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
 const API = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3099';
 
 async function getTheme(slug: string): Promise<SchoolTheme | null> {
+  noStore();
   try {
     const [themeRes, psRes] = await Promise.all([
-      fetch(`${API}/api/v1/themes/school/${slug}`, { cache: 'no-store' }),
-      fetch(`${API}/api/v1/themes/portal-settings/slug/${slug}`, { cache: 'no-store' }),
+      fetch(`${API}/api/v1/themes/school/${slug}`, { cache: 'no-store', headers: { 'x-no-cache': Date.now().toString() } }),
+      fetch(`${API}/api/v1/themes/portal-settings/slug/${slug}`, { cache: 'no-store', headers: { 'x-no-cache': Date.now().toString() } }),
     ]);
     if (!themeRes.ok) return null;
     const theme: SchoolTheme = await themeRes.json();
