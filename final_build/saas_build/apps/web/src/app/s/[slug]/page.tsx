@@ -2,6 +2,9 @@ import { Metadata } from 'next';
 import { SchoolWebsite } from '@/components/school-website/school-website';
 import type { SchoolTheme } from '@/types/theme';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const API = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3099';
 
 async function getTheme(slug: string): Promise<SchoolTheme | null> {
