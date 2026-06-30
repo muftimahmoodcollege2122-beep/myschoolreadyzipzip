@@ -23,7 +23,7 @@ export class S3StorageService {
       // No hardcoded credentials — ever
     });
     this.bucket = config.get('AWS_S3_BUCKET', 'local-storage-placeholder');
-    this.presignExpirySeconds = config.get('AWS_S3_PRESIGN_EXPIRY', 900); // 15 min default
+    this.presignExpirySeconds = parseInt(config.get('AWS_S3_PRESIGN_EXPIRY') || '900', 10); // 15 min default
   }
 
   /**

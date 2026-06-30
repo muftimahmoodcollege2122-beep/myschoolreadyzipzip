@@ -16,7 +16,7 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
       host:     this.config.get('REDIS_HOST', 'localhost'),
       port:     parseInt(this.config.get('REDIS_PORT') || '6379', 10),
       password: this.config.get('REDIS_PASSWORD') || undefined,
-      db:       this.config.get<number>('REDIS_DB', 0),
+      db:       parseInt(this.config.get('REDIS_DB') || '0', 10),
       keyPrefix: this.PREFIX,
       enableReadyCheck: true,
       maxRetriesPerRequest: 2,       // fail fast — don't queue up behind a dead Redis

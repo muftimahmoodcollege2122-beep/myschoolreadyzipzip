@@ -24,7 +24,7 @@ async function bootstrap() {
   });
 
   const configService = app.get(ConfigService);
-  const port = configService.get<number>('PORT', 3001);
+  const port = parseInt(configService.get('PORT') || '3001', 10);
   const nodeEnv = configService.get<string>('NODE_ENV', 'development');
 
   // Security headers

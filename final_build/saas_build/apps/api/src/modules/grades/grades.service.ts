@@ -4,7 +4,7 @@ import { AuditService } from '../../common/audit/audit.service';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { CreateGradeDto } from './dto/create-grade.dto';
-import { ExamType } from '../../common/prisma-enums';;
+import { ExamType } from '../../common/prisma-enums';
 
 export interface SubjectGradeSummary {
   subjectId: string;

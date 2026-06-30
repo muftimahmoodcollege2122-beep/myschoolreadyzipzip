@@ -32,11 +32,11 @@ export default function StudentsPage() {
     { key: 'name', header: 'Student', render: (s: Student) => (
       <div className="flex items-center gap-2.5">
         <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
-          {s.user.profile.firstName[0]}{s.user.profile.lastName[0]}
+          {s.user?.profile?.firstName?.[0] ?? '?'}{s.user?.profile?.lastName?.[0] ?? ''}
         </div>
         <div>
-          <p className="font-semibold text-sm">{s.user.profile.firstName} {s.user.profile.lastName}</p>
-          <p className="text-xs text-gray-400">{s.user.email}</p>
+          <p className="font-semibold text-sm">{s.user?.profile?.firstName} {s.user?.profile?.lastName}</p>
+          <p className="text-xs text-gray-400">{s.user?.email}</p>
         </div>
       </div>
     )},

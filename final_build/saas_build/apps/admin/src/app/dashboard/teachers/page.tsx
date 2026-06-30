@@ -41,17 +41,17 @@ export default function TeachersPage() {
     { key:'name', header:'Teacher', render:(t:Teacher)=>(
       <div className="flex items-center gap-2.5">
         <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-xs">
-          {t.user.profile.firstName[0]}{t.user.profile.lastName[0]}
+          {t.user?.profile?.firstName?.[0] ?? '?'}{t.user?.profile?.lastName?.[0] ?? ''}
         </div>
         <div>
-          <p className="font-semibold text-sm">{t.user.profile.firstName} {t.user.profile.lastName}</p>
-          <p className="text-xs text-gray-400">{t.user.email}</p>
+          <p className="font-semibold text-sm">{t.user?.profile?.firstName} {t.user?.profile?.lastName}</p>
+          <p className="text-xs text-gray-400">{t.user?.email}</p>
         </div>
       </div>
     )},
     { key:'employeeId', header:'Employee ID', render:(t:Teacher)=><span className="font-mono text-xs text-gray-600">{t.employeeId}</span> },
     { key:'department', header:'Department', render:(t:Teacher)=><span className="text-sm">{(t as any).department?.name ?? '—'}</span> },
-    { key:'phone', header:'Phone', render:(t:Teacher)=><span className="text-xs text-gray-500">{t.user.profile.phone ?? '—'}</span> },
+    { key:'phone', header:'Phone', render:(t:Teacher)=><span className="text-xs text-gray-500">{t.user?.profile?.phone ?? '—'}</span> },
     { key:'joined', header:'Joined', render:(t:Teacher)=><span className="text-xs text-gray-400">{new Date(t.joiningDate).toLocaleDateString('en-PK')}</span> },
     { key:'status', header:'Status', render:(t:Teacher)=><Badge variant={t.isActive?'green':'red'}>{t.isActive?'Active':'Inactive'}</Badge> },
   ];

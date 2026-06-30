@@ -1,6 +1,6 @@
 import { IsUUID, IsEnum, IsOptional, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { AttendanceStatus } from '../../../common/prisma-enums';;
+import { AttendanceStatus } from '../../../common/prisma-enums';
 
 export class MarkAttendanceDto {
   @ApiProperty() @IsUUID() studentId: string;

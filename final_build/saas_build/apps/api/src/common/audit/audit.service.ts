@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
-import { AuditAction } from '../prisma-enums';;
+import { AuditAction } from '../prisma-enums';
 
 export interface AuditLogEntry {
   tenantId: string;
