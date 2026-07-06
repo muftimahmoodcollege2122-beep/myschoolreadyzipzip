@@ -1,3 +1,11 @@
+/**
+ * Timetable service — class scheduling and period management.
+ * createTimetable(): assigns subjects, teachers, and time slots to sections
+ * getTimetable(): weekly schedule for a class section or teacher
+ * detectConflicts(): checks for double-booking of teacher or classroom
+ * publishTimetable(): makes schedule visible to students and parents
+ */
+
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 

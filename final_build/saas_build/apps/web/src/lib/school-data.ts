@@ -1,3 +1,10 @@
+/**
+ * Server-side school data fetching utilities.
+ * getSchoolTheme(slug): fetches school branding (colors, logo, name) for the public school website.
+ * Used by all pages under /s/[slug]/* routes.
+ * Results cached at edge for fast school website loads.
+ */
+
 import type { SchoolTheme } from '../types/theme';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';

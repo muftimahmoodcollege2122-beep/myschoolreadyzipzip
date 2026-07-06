@@ -1,3 +1,11 @@
+/**
+ * Transport service — school bus route and vehicle management.
+ * createRoute(): defines bus route with stops and timing
+ * assignStudent(): assigns student to a bus route
+ * trackVehicle(): real-time GPS location update for a vehicle
+ * getRouteStudents(): list of students on a specific route
+ */
+
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 

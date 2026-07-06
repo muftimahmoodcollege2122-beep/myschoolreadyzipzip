@@ -1,3 +1,9 @@
+/**
+ * PII scrubber interceptor — removes sensitive fields from API responses before they leave the server.
+ * Scrubs: passwordHash, refreshToken, secretKey, cardNumber, bankAccount.
+ * Ensures personal data never leaks via API responses even if accidentally included.
+ */
+
 import { Injectable, NestInterceptor, ExecutionContext, CallHandler, Logger } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';

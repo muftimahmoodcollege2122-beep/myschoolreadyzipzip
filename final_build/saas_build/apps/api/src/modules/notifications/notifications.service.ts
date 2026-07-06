@@ -1,3 +1,11 @@
+/**
+ * Notifications service — multi-channel school communications.
+ * send(): creates in-app notification + triggers WhatsApp/SMS/email
+ * broadcastToAudience(): send to all students, all teachers, or all parents
+ * markRead(): marks notification as read
+ * Channels: in-app (real-time via Socket.io), WhatsApp (Twilio), SMS, email (SES)
+ */
+
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectQueue } from '@nestjs/bull';

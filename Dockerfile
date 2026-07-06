@@ -1,3 +1,27 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# MySchool Docker Build
+# ─────────────────────────────────────────────────────────────────────────────
+# Single-container deployment: API (NestJS) + Web (Next.js) + Redis run together.
+#
+# Build stages:
+#   1. Install: npm install at workspace root (hoists all deps to saas_build/node_modules/)
+#   2. Generate Prisma client from apps/api/prisma/schema.prisma
+#   3. Build API: tsc → apps/api/dist/main.js
+#   4. Build Web: next build → apps/web/.next/
+#
+# Runtime (docker-entrypoint.sh):
+#   1. Start Redis on port 6379 (daemonized)
+#   2. Run Prisma db push to sync schema
+#   3. Run seed-demo.js to create demo tenant
+#   4. Start API on port 3001 (background)
+#   5. Wait for API health check at /api/v1/health/live
+#   6. Start Next.js web on port 3000 (foreground, this is the exposed public port)
+#
+# Ports:
+#   - 3000: Next.js web (public, exposed to Railway)
+#   - 3001: NestJS API (internal, proxied via Next.js rewrites)
+#   - 6379: Redis (internal only)
+# ─────────────────────────────────────────────────────────────────────────────
 FROM node:20-alpine
 RUN apk add --no-cache redis openssl libc6-compat dumb-init wget
 

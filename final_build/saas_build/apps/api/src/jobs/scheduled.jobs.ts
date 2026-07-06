@@ -1,3 +1,11 @@
+/**
+ * Scheduled background jobs — cron tasks that run automatically.
+ * Jobs: fee overdue reminders (daily 8am), attendance summary (daily 11pm),
+ * exam notifications (daily 7am), birthday wishes, leave balance reset (yearly),
+ * library overdue alerts (daily 9am), dropout risk analysis (weekly Sunday).
+ * Uses NestJS @Cron decorator with node-cron syntax.
+ */
+
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../database/prisma.service';

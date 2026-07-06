@@ -1,3 +1,9 @@
+/**
+ * Entry point of the MySchool NestJS API.
+ * Bootstraps the app, sets up global pipes, guards, filters, Swagger docs, CORS, Helmet security headers,
+ * compression, WebSocket adapter, and starts listening on the configured PORT.
+ */
+
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';

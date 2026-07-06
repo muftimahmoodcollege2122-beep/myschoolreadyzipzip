@@ -1,3 +1,12 @@
+/**
+ * Bull queue processor for async tenant provisioning.
+ * When a new school signs up, this runs in background to:
+ * 1. Create default Grade 1-12 classes
+ * 2. Seed 10 default subjects (Math, English, Urdu, Science, etc.)
+ * 3. Warm the tenant Redis cache for instant first request
+ * Runs asynchronously so signup API response is instant.
+ */
+
 import { Processor, Process, OnQueueFailed, OnQueueCompleted } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bull';

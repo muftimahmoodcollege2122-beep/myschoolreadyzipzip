@@ -1,4 +1,12 @@
 'use client';
+/**
+ * School signup/onboarding page — new school registration flow.
+ * Step 1: School info (name, address, phone)
+ * Step 2: Admin account (name, email, password)
+ * Step 3: Plan selection (STARTER/PROFESSIONAL/ENTERPRISE)
+ * Step 4: Payment initiation (JazzCash/EasyPaisa/bank transfer)
+ * On success: redirects to admin dashboard with demo data pre-loaded.
+ */
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';

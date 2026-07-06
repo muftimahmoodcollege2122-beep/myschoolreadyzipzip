@@ -1,3 +1,7 @@
+/**
+ * School Contact page — school address, phone, email, Google Maps embed.
+ */
+
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getSchoolTheme } from '@/lib/school-data';

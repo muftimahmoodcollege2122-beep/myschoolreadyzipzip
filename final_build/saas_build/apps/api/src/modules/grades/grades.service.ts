@@ -1,3 +1,12 @@
+/**
+ * Grades service — exam results, report cards, and academic performance.
+ * submitGrade(): teacher submits marks for a student in a subject
+ * getGradebook(): full class gradebook with all subjects
+ * generateReportCard(): creates per-student academic report
+ * getClassRanking(): sorts students by total marks
+ * calculateGPA(): converts marks to GPA based on grading scale
+ */
+
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../../common/audit/audit.service';

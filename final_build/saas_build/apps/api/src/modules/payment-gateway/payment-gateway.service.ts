@@ -1,3 +1,12 @@
+/**
+ * Payment gateway service — processes fee payments through Pakistani payment channels.
+ * initiateJazzCash(): generates JazzCash payment URL/hash for mobile wallet payment
+ * initiateEasyPaisa(): generates EasyPaisa OTP-based payment request
+ * initiateBankTransfer(): generates bank reference number for manual transfer
+ * verifyPayment(): confirms payment status and marks invoice as paid
+ * All payment records saved with transaction ID for reconciliation.
+ */
+
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../database/prisma.service';

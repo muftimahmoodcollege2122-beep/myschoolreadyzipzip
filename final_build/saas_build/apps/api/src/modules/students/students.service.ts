@@ -1,3 +1,13 @@
+/**
+ * Students service — full student lifecycle management.
+ * create(): enrolls student, creates user account, checks plan limits
+ * findAll(): paginated list with search, class/section filters
+ * findOne(): single student with enrollments, attendance summary, fee status
+ * update(): update personal info, contact details
+ * deactivate(): soft-delete (sets isActive=false, deletedAt)
+ * erasePersonalData(): GDPR/PDPA right-to-erasure — anonymizes PII
+ */
+
 import {
   Injectable,
   NotFoundException,

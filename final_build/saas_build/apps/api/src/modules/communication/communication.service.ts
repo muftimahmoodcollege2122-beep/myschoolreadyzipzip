@@ -1,3 +1,11 @@
+/**
+ * Communication service — school-wide messaging and announcements.
+ * sendAnnouncement(): posts announcement to all users of selected roles
+ * sendWhatsApp(): sends WhatsApp message via Twilio to parent phone numbers
+ * sendSMS(): sends SMS via gateway for critical alerts
+ * sendEmail(): sends transactional email via AWS SES
+ */
+
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';

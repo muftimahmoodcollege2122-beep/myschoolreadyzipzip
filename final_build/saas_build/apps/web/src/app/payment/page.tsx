@@ -1,4 +1,10 @@
 'use client';
+/**
+ * Fee payment page — handles school subscription payment.
+ * Supports: JazzCash wallet, EasyPaisa wallet, bank transfer.
+ * Shows QR codes and account numbers for manual transfers.
+ * Marked force-dynamic (no static prerender) because it reads URL search params.
+ */
 export const dynamic = 'force-dynamic';
 import React, { useState, Suspense } from 'react';
 import Link from 'next/link';

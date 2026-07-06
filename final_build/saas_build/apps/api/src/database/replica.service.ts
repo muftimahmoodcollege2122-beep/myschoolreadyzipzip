@@ -1,3 +1,10 @@
+/**
+ * Read replica Prisma client — routes heavy read queries (reports, analytics, exports)
+ * to a read replica to take load off the primary DB.
+ * Falls back to primary DB if DATABASE_REPLICA_URL is not set (safe in dev).
+ * Used by: DashboardService, ReportsService, AiAnalyticsService.
+ */
+
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 

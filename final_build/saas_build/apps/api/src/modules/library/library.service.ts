@@ -1,3 +1,12 @@
+/**
+ * Library service — book catalog and issue/return management.
+ * addBook(): adds book to catalog with ISBN, author, shelf location
+ * issueBook(): assigns book to a student with due date
+ * returnBook(): marks book as returned, calculates fine if overdue
+ * searchBooks(): full-text search across title, author, ISBN
+ * getOverdueBooks(): list of books past due date for reminder alerts
+ */
+
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 

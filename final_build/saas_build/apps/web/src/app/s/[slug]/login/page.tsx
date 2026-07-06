@@ -1,3 +1,8 @@
+/**
+ * School portal login page — login for students, teachers, parents under a specific school.
+ * Submits to /auth/login with tenantSlug. Redirects to appropriate portal based on role.
+ */
+
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getSchoolTheme } from '@/lib/school-data';

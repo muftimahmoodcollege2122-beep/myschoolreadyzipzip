@@ -1,3 +1,12 @@
+/**
+ * Authentication service — handles login, registration, token management.
+ * login(): validates credentials, returns accessToken (15min) + refreshToken (7 days)
+ * register(): creates new user + school under a tenant
+ * refresh(): rotates refresh token and issues new access token
+ * logout(): invalidates refresh token
+ * Passwords hashed with bcrypt (12 rounds). JWT signed with RS256.
+ */
+
 import { Injectable, UnauthorizedException, ForbiddenException, BadRequestException, ConflictException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';

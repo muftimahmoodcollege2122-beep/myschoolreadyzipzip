@@ -1,3 +1,13 @@
+/**
+ * Auth REST controller — public endpoints (no JWT required).
+ * POST /auth/login — email + password → tokens
+ * POST /auth/register — new school signup
+ * POST /auth/refresh — rotate tokens
+ * POST /auth/logout — invalidate session
+ * POST /auth/forgot-password — send reset email
+ * POST /auth/reset-password — set new password with token
+ */
+
 import { Controller, Post, Get, Body, UseGuards, Req, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { AuthService } from './auth.service';

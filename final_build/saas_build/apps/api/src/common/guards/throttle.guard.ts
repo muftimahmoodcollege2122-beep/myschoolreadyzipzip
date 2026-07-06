@@ -1,3 +1,10 @@
+/**
+ * Rate limiting guard — prevents API abuse at scale.
+ * Uses Redis INCR to count requests per tenant + per IP per route.
+ * Default: 60 requests/minute. Can be overridden with @Throttle(limit, windowSec).
+ * Skipped with @SkipThrottle() for internal/webhook routes.
+ */
+
 import { Injectable, CanActivate, ExecutionContext, HttpException, HttpStatus } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { CacheService } from '../cache/cache.service';

@@ -1,3 +1,10 @@
+/**
+ * Themes service — per-school branding and visual customization.
+ * getTheme(): returns school colors, logo, fonts for public website
+ * updateTheme(): admin updates school branding settings
+ * Each tenant has isolated theme — used by the school public website (apps/web/src/app/s/[slug]/)
+ */
+
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CacheService } from '../../common/cache/cache.service';

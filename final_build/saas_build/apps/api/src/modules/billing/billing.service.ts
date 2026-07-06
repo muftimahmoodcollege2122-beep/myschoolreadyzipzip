@@ -1,3 +1,12 @@
+/**
+ * Billing service — SaaS subscription management.
+ * createSubscription(): assigns a plan to a tenant (STARTER/PROFESSIONAL/ENTERPRISE)
+ * upgradeplan(): moves tenant to higher tier, updates planLimits
+ * checkLimits(): validates if tenant is within plan limits (student count, feature access)
+ * cancelSubscription(): marks tenant as CANCELLED, schedules data retention
+ * Integrates with Stripe for international payments.
+ */
+
 import { Injectable, Logger, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../database/prisma.service';

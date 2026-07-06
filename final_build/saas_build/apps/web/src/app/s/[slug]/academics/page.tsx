@@ -1,3 +1,7 @@
+/**
+ * School Academics page — lists classes, subjects, curriculum offered by the school.
+ */
+
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getSchoolTheme } from '@/lib/school-data';

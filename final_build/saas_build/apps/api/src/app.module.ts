@@ -1,3 +1,9 @@
+/**
+ * Root NestJS module — wires together every feature module, middleware, and global providers.
+ * Registers: ConfigModule (env vars), ScheduleModule (cron jobs), BullModule (queues),
+ * TenantContextMiddleware (resolves school tenant per request), and all 30+ feature modules.
+ */
+
 import { Module, MiddlewareConsumer, RequestMethod } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';

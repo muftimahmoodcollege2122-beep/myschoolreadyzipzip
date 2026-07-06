@@ -1,3 +1,14 @@
+/**
+ * Students REST controller — manages enrolled students.
+ * POST /students — enroll new student (SCHOOL_ADMIN only, rate limited 30/min)
+ * GET /students — paginated list with search and filters
+ * GET /students/me — current logged-in student's own record
+ * GET /students/:id — single student details
+ * PATCH /students/:id — update student info
+ * DELETE /students/:id — deactivate student
+ * DELETE /students/:id/personal-data — GDPR erasure
+ */
+
 import {
   Controller,
   Get,

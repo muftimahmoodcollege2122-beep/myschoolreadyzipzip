@@ -1,3 +1,11 @@
+/**
+ * Exams service — examination scheduling and result management.
+ * createExam(): schedules an exam for a class/subject
+ * getUpcomingExams(): exams in the next 30 days
+ * publishResults(): makes results visible to students/parents
+ * generateHallTicket(): PDF hall ticket for a student
+ */
+
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 

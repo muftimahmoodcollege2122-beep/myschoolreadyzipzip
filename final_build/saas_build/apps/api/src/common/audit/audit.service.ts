@@ -1,3 +1,9 @@
+/**
+ * Audit log service — records every create/update/delete action with who did it, when, and what changed.
+ * Stores in AuditLog table: tenantId, userId, action, entityType, entityId, changes (JSON diff).
+ * Used for compliance, debugging, and admin activity monitoring.
+ */
+
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditAction } from '../prisma-enums';

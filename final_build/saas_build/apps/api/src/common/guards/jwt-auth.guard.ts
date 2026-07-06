@@ -1,3 +1,10 @@
+/**
+ * JWT authentication guard — applied globally to all routes.
+ * Verifies the Bearer token from Authorization header.
+ * Skips routes marked with @Public() decorator (login, signup, webhooks).
+ * On success, attaches decoded user payload to req.user.
+ */
+
 import { Injectable, ExecutionContext, UnauthorizedException, CanActivate, ForbiddenException, Logger } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';

@@ -1,3 +1,10 @@
+/**
+ * Real-time module — WebSocket gateway powered by Socket.io + Redis adapter.
+ * Enables: live attendance updates, real-time notifications, chat, exam result broadcasts.
+ * Redis pub/sub adapter allows WebSocket events to work across multiple API pods (horizontal scaling).
+ * Rooms are tenant-scoped: users only receive events for their school.
+ */
+
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';

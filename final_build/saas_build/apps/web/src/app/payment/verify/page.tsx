@@ -1,4 +1,10 @@
 'use client';
+/**
+ * Payment verification callback page — confirms payment after redirect from gateway.
+ * Reads: paymentId, transactionId from URL params.
+ * Calls /payments/verify API to confirm and activate subscription.
+ * Redirects to admin dashboard on success.
+ */
 export const dynamic = 'force-dynamic';
 import React, { Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';

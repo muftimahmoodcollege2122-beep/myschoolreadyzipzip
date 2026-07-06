@@ -1,3 +1,9 @@
+/**
+ * @TenantId() parameter decorator — extracts the resolved tenant UUID from req.tenantContext.
+ * Used in every controller to get the current school's tenant ID without manual req access.
+ * Throws if tenantContext is not set (middleware not applied).
+ */
+
 import { createParamDecorator, ExecutionContext, SetMetadata } from '@nestjs/common';
 
 export const IS_PUBLIC_KEY = 'isPublic';

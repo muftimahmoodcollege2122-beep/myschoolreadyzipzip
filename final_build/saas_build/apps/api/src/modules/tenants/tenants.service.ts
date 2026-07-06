@@ -1,3 +1,12 @@
+/**
+ * Tenants service — school onboarding and multi-tenancy management.
+ * create(): provisions a new school tenant (slug, schema, Redis cache warm-up)
+ * Queues async provisioning job (Bull) to seed default classes and subjects
+ * updateCustomDomain(): links custom domain to tenant for white-label
+ * suspend(): deactivates tenant on non-payment
+ * getUsageStats(): returns student count, storage used vs plan limits
+ */
+
 import { Injectable, ConflictException, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CacheService } from '../../common/cache/cache.service';

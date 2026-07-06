@@ -1,3 +1,10 @@
+/**
+ * AWS S3 file storage service — handles all file uploads for the platform.
+ * Used for: student photos, documents, fee receipts, report cards, gallery images.
+ * Generates pre-signed URLs for secure direct browser uploads.
+ * Organizes files by tenant: uploads/{tenantSlug}/{category}/{filename}.
+ */
+
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {

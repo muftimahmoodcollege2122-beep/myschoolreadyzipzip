@@ -1,3 +1,11 @@
+/**
+ * Tenant resolution middleware — runs on EVERY request.
+ * Resolves the school tenant from: x-tenant-id header → subdomain → custom domain.
+ * Uses L1 in-memory cache (30s) + L2 Redis cache (10min) to avoid DB hits on every request.
+ * Attaches tenantContext to req object and sets PostgreSQL RLS variable.
+ * Critical for multi-tenancy — without this, all module queries would return data across all schools.
+ */
+
 import { Injectable, NestMiddleware, UnauthorizedException, ForbiddenException, Logger } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { PrismaService } from '../../database/prisma.service';

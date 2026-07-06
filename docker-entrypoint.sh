@@ -1,4 +1,22 @@
 #!/bin/sh
+# ─────────────────────────────────────────────────────────────────────────────
+# docker-entrypoint.sh — MySchool container startup script
+# ─────────────────────────────────────────────────────────────────────────────
+# Execution order:
+#   1. Start Redis (daemonized on port 6379)
+#   2. Run Prisma migration (db push) to sync DB schema
+#   3. Run seed-demo.js — creates demo school tenant if not exists
+#   4. Start NestJS API on port 3001 (background process)
+#   5. Poll /api/v1/health/live until API is ready (max 60s)
+#      → if API dies during startup, prints last 40 log lines and exits
+#   6. Start Next.js production server on port 3000 (foreground — keeps container alive)
+#
+# Environment variables required:
+#   DATABASE_URL  — PostgreSQL connection string
+#   JWT_ACCESS_SECRET  — 64-char random string
+#   JWT_REFRESH_SECRET — 64-char random string
+#   NODE_ENV=production
+# ─────────────────────────────────────────────────────────────────────────────
 set -e
 
 API_DIR="/app/final_build/saas_build/apps/api"

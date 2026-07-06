@@ -1,3 +1,12 @@
+/**
+ * Dashboard service — aggregates key metrics for the admin dashboard.
+ * getSchoolDashboard(): total students, teachers, today's attendance, outstanding fees, upcoming exams
+ * getPlatformStats(): super-admin view of all tenants, total schools, students across platform
+ * All queries run on READ REPLICA to avoid load on primary DB.
+ * Results cached in Redis for 5 minutes (300s TTL).
+ * Each query has 3-second timeout to prevent slow DB from blocking the dashboard.
+ */
+
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { ReplicaService } from '../../database/replica.service';

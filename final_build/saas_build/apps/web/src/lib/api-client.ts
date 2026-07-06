@@ -1,3 +1,11 @@
+/**
+ * Centralized Axios HTTP client for all API calls.
+ * Automatically attaches: Authorization header (JWT from localStorage),
+ * X-Tenant-ID header (school slug from localStorage).
+ * Intercepts 401 responses to trigger token refresh.
+ * Base URL: NEXT_PUBLIC_API_URL (defaults to http://localhost:3001).
+ */
+
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 const BASE_URL = typeof window !== 'undefined'

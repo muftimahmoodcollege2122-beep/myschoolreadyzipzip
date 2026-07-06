@@ -1,3 +1,10 @@
+/**
+ * Global HTTP exception filter — catches all exceptions and returns consistent JSON error responses.
+ * Format: { statusCode, message, error, timestamp, path, correlationId }.
+ * Never leaks stack traces or internal error details in production.
+ * Logs all 5xx errors for monitoring.
+ */
+
 import {
   ExceptionFilter,
   Catch,

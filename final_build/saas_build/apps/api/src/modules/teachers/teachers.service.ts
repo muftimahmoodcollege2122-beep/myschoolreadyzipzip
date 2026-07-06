@@ -1,3 +1,12 @@
+/**
+ * Teachers service — teacher hiring, scheduling, and leave management.
+ * create(): onboards teacher with subject assignments and class sections
+ * findAll(): paginated teacher list with search
+ * getTeacherSchedule(): returns timetable for a specific teacher
+ * requestLeave(): submit leave application
+ * approveLeave(): SCHOOL_ADMIN approves/rejects leave requests
+ */
+
 import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../../common/audit/audit.service';

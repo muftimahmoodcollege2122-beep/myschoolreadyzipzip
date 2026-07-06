@@ -1,3 +1,8 @@
+/**
+ * School About page — shows school history, mission, vision, faculty highlights.
+ * Part of the per-tenant school website. All content managed from admin dashboard.
+ */
+
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getSchoolTheme } from '@/lib/school-data';

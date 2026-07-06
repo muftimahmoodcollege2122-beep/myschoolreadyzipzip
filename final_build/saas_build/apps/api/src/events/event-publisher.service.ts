@@ -1,3 +1,10 @@
+/**
+ * Event publisher service — implements outbox pattern for reliable event delivery.
+ * Saves events to OutboxEvent table first (guaranteed), then publishes to Kafka.
+ * If Kafka is down, a relay job retries pending outbox events every 30 seconds.
+ * Events: student.enrolled, fee.paid, attendance.marked, tenant.provisioned, etc.
+ */
+
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../database/prisma.service';

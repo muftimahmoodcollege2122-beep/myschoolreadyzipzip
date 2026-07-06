@@ -1,3 +1,10 @@
+/**
+ * School public homepage — tenant-specific school website at /s/{schoolSlug}.
+ * Shows: school hero banner, announcements, upcoming events, stats.
+ * Fetches school theme and branding from API using the slug.
+ * Publicly accessible — visible to prospective students and parents.
+ */
+
 import { Metadata } from 'next';
 import { unstable_noStore as noStore } from 'next/cache';
 import { SchoolWebsite } from '@/components/school-website/school-website';

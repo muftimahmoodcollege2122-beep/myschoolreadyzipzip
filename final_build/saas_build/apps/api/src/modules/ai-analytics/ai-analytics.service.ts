@@ -1,3 +1,11 @@
+/**
+ * AI analytics service — predictive insights for school management.
+ * predictDropoutRisk(): identifies students at risk based on attendance + grades
+ * analyzeFeeCollection(): forecasts fee collection based on historical patterns
+ * generateInsights(): weekly AI-generated performance summary for admin
+ * Uses simple statistical models (no external AI API dependency in production).
+ */
+
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 

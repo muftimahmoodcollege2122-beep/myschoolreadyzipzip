@@ -1,3 +1,11 @@
+/**
+ * Security service — monitors suspicious activity and enforces access policies.
+ * logLoginAttempt(): records login success/failure with IP and device
+ * addIpRestriction(): blocks specific IP ranges from accessing tenant
+ * detectSuspiciousActivity(): flags unusual patterns (too many failed logins, off-hours access)
+ * getSecurityDashboard(): summary of recent security events
+ */
+
 import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../../common/audit/audit.service';

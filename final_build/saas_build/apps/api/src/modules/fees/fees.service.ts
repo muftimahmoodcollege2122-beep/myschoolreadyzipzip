@@ -1,3 +1,13 @@
+/**
+ * Fee management service — billing, payments, and financial tracking.
+ * createInvoice(): generates fee invoice for a student
+ * recordPayment(): records JazzCash/EasyPaisa/bank payment against invoice
+ * getOutstandingFees(): list of unpaid invoices with aging
+ * generateReceipt(): creates PDF receipt for a payment
+ * applyDiscount(): applies scholarship or fee waiver
+ * sendReminders(): WhatsApp/SMS to parents with overdue fees
+ */
+
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../../common/audit/audit.service';

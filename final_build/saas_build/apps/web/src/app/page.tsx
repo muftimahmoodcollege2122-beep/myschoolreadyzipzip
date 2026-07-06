@@ -1,4 +1,10 @@
 'use client';
+/**
+ * MySchool marketing homepage — the main landing page at myschool.pk.
+ * Sections: Hero, Features, Pricing, Testimonials, FAQ, CTA, Footer.
+ * Server-rendered for SEO. No authentication required.
+ * Pricing: STARTER (PKR 2,999/mo), PROFESSIONAL (PKR 5,999/mo), ENTERPRISE (PKR 9,999/mo).
+ */
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 

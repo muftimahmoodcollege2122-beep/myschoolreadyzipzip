@@ -1,4 +1,10 @@
 'use client';
+/**
+ * Terms of Service page — legal terms for using MySchool.
+ * Covers: service description, subscription/payment terms, acceptable use,
+ * data ownership, liability, governing law (Pakistan).
+ * Static page, no authentication required.
+ */
 import React from 'react';
 import Link from 'next/link';
 

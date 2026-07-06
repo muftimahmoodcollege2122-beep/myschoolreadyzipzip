@@ -1,4 +1,10 @@
 'use client';
+/**
+ * Privacy Policy page — legal privacy policy for MySchool platform.
+ * Covers: data collection, security, student data protection, PDPA compliance,
+ * retention, user rights, and contact information.
+ * Static page, no authentication required.
+ */
 import React from 'react';
 import Link from 'next/link';
 

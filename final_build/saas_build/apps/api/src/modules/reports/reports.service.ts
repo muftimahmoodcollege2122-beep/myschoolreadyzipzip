@@ -1,3 +1,12 @@
+/**
+ * Reports service — generates PDF and Excel reports.
+ * generateAttendanceReport(): monthly attendance per class/student
+ * generateFeeReport(): fee collection summary with outstanding
+ * generateResultReport(): exam result analysis per subject/class
+ * generateStaffReport(): HR report with leave, payroll summary
+ * All heavy reports run on READ REPLICA with streaming for large datasets.
+ */
+
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectQueue } from '@nestjs/bull';

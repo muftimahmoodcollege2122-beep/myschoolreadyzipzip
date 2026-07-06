@@ -1,3 +1,12 @@
+/**
+ * Prisma ORM service — wraps PrismaClient with:
+ * - Connection pooling (5 connections/prod, 10/dev)
+ * - Auto-retry on startup (5 attempts with exponential backoff)
+ * - Soft-delete middleware (delete → update deletedAt)
+ * - Slow query logging (>200ms logged as warning)
+ * - Per-request RLS helper: queryTenantScoped() sets PostgreSQL session variable
+ */
+
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 

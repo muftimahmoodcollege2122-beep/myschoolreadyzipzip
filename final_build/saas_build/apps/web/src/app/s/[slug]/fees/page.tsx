@@ -1,3 +1,8 @@
+/**
+ * School Fee Structure page — publicly displays the school's fee schedule.
+ * Students/parents can also initiate fee payment from this page.
+ */
+
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getSchoolTheme } from '@/lib/school-data';

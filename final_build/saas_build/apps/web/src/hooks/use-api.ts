@@ -1,4 +1,11 @@
 'use client';
+/**
+ * Central React Query hooks file — every API call in the web app goes through here.
+ * Pattern: useXxx() for GET queries, useCreateXxx()/useUpdateXxx()/useDeleteXxx() for mutations.
+ * All hooks automatically handle: loading state, error state, cache invalidation.
+ * Organized by module: students, teachers, fees, attendance, grades, exams,
+ * notifications, dashboard, library, transport, events, billing, AI, alumni, etc.
+ */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../lib/api-client';
 import type { PaginatedResponse, Student, Invoice, Teacher, Exam, DashboardStats } from '../types';

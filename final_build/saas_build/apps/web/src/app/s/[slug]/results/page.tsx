@@ -1,3 +1,7 @@
+/**
+ * School Results page — students can check exam results after login.
+ */
+
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getSchoolTheme } from '@/lib/school-data';

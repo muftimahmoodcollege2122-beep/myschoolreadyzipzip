@@ -1,3 +1,12 @@
+/**
+ * Redis cache service — wraps ioredis with:
+ * - Circuit breaker: if Redis is down, all cache calls return null (graceful degradation)
+ * - SCAN instead of KEYS (non-blocking, safe at 100k schools)
+ * - mget/mset pipeline (batch reads/writes in one Redis round trip)
+ * - remember() helper: cache-aside pattern for any function
+ * - increment() for rate limiting counters
+ */
+
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';

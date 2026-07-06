@@ -1,3 +1,9 @@
+/**
+ * Role-based authorization guard — checks req.user.role against @Roles() decorator.
+ * Roles: SUPER_ADMIN, SCHOOL_ADMIN, TEACHER, STUDENT, PARENT, ACCOUNTANT.
+ * Must be used after JwtAuthGuard (needs req.user to be set).
+ */
+
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators/tenant-id.decorator';

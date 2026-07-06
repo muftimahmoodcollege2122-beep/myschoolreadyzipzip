@@ -1,3 +1,12 @@
+/**
+ * Attendance service — daily student and teacher attendance tracking.
+ * markAttendance(): bulk mark present/absent/late for a class section
+ * getAttendance(): attendance records with date range filters
+ * getAttendanceSummary(): per-student attendance percentage
+ * getDashboardStats(): today's present/absent/late counts for dashboard
+ * Fires attendance.marked event via EventPublisher for real-time updates.
+ */
+
 import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { EventPublisher } from '../../events/event-publisher.service';

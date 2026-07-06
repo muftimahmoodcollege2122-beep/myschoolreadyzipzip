@@ -1,3 +1,10 @@
+/**
+ * Subscription plan guard — enforces feature limits based on tenant tier.
+ * Tiers: STARTER, PROFESSIONAL, ENTERPRISE.
+ * Used with @RequirePlan('PROFESSIONAL') decorator on premium endpoints.
+ * Checks planLimits from tenantContext (resolved by TenantContextMiddleware).
+ */
+
 import { Injectable, ForbiddenException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CacheService } from '../cache/cache.service';
