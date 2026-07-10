@@ -59,7 +59,9 @@ export class DashboardService {
     // All queries go to replica — primary is only for writes
     const db = this.replica;
 
-    const [totalStudents, totalTeachers, upcomingExams, pendingFeeAgg, recentNotifications, todayAttendance] =
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    const [totalStudents, totalTeachers, upcomingExams, pendingFeeAgg, recentNotifications, todayAttendance, newAdmissionsThisMonth] =
       await Promise.all([
         withTimeout(db.student.count({ where: schoolFilter }), 3000, 0),
         withTimeout(db.teacher.count({ where: schoolFilter }), 3000, 0),
@@ -80,6 +82,7 @@ export class DashboardService {
           where: { tenantId, date: today },
           _count: { status: true },
         }), 3000, []),
+        withTimeout(db.student.count({ where: { ...schoolFilter, admissionDate: { gte: monthStart } } }), 3000, 0),
       ]);
 
     const present = (todayAttendance as any[]).find(r => r.status === 'PRESENT')?._count.status ?? 0;
@@ -90,6 +93,7 @@ export class DashboardService {
     const result = {
       totalStudents,
       totalTeachers,
+      newAdmissionsThisMonth,
       schoolId: resolvedSchoolId,
       attendance: { present, absent, late, total, rate: total > 0 ? Math.round((present / total) * 100) : 0 },
       fees: { outstanding: Number((pendingFeeAgg as any)._sum?.amount ?? 0), invoiceCount: (pendingFeeAgg as any)._count?.id ?? 0 },

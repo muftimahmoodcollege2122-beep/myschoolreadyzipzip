@@ -30,7 +30,7 @@ export interface Exam {
   section: { name: string; class: { name: string } };
 }
 export interface DashboardStats {
-  totalStudents: number; totalTeachers: number;
+  totalStudents: number; totalTeachers: number; newAdmissionsThisMonth: number;
   attendance: { present: number; absent: number; total: number; rate: number };
   fees: { outstanding: number; invoiceCount: number };
   upcomingExams: Exam[];

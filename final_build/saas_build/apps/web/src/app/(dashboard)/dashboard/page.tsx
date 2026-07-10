@@ -16,7 +16,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-4 gap-5 mb-6">{[...Array(4)].map((_,i)=><div key={i} className="h-28 bg-gray-100 rounded-xl animate-pulse"/>)}</div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
-            <StatCard title="Total Students" value={data?.totalStudents??0} icon="👩‍🎓" color="blue" trend={{ value: 5, label: 'this month' }}/>
+            <StatCard title="Total Students" value={data?.totalStudents??0} icon="👩‍🎓" color="blue" trend={data && data.newAdmissionsThisMonth > 0 ? { value: data.newAdmissionsThisMonth, label: 'new this month', unit: '' } : undefined}/>
             <StatCard title="Today's Attendance" value={`${data?.attendance.rate??0}%`} icon="✅" color="green"/>
             <StatCard title="Outstanding Fees" value={`Rs. ${((data?.fees.outstanding??0)/1000).toFixed(0)}K`} icon="💰" color="yellow"/>
             <StatCard title="Total Teachers" value={data?.totalTeachers??0} icon="👨‍🏫" color="purple"/>
