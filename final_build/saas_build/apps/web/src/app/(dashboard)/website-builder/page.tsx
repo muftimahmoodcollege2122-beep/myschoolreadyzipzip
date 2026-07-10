@@ -37,10 +37,22 @@ const PAGES_BUILT = [
 
 const DEFAULT_COMPONENTS = ['Hero Section', 'About Us', 'Statistics', 'Events', 'Contact'];
 
+const CONTENT_DEFAULTS = {
+  heroTitle: 'Shaping Future Leaders',
+  heroSubtitle: 'Excellence in Education Since 1995',
+  heroCtaText: 'Apply Now',
+  aboutText: 'Founded in 1995, we are committed to providing quality education that nurtures intellectual growth, character development, and holistic learning experiences for every student.',
+  statsStudents: '2,500+',
+  statsTeachers: '120+',
+  statsYears: '30+',
+  statsPassRate: '98%',
+};
+
 export default function WebsiteBuilderPage() {
   const [view, setView] = useState<'builder'|'pages'|'settings'>('builder');
   const [selectedTheme, setSelectedTheme] = useState(0);
   const [addedComponents, setAddedComponents] = useState(DEFAULT_COMPONENTS);
+  const [content, setContent] = useState(CONTENT_DEFAULTS);
   const [publishStatus, setPublishStatus] = useState<'idle'|'saving'|'saved'>('idle');
 
   const { data: schoolInfo } = useSchoolInfo();
@@ -65,8 +77,8 @@ export default function WebsiteBuilderPage() {
     if (wsData.components && typeof wsData.components === 'object' && !Array.isArray(wsData.components)) {
       const sectionToLabel: Record<string, string> = {
         hero: 'Hero Section', about: 'About Us', stats: 'Statistics', events: 'Events',
-        contact: 'Contact', gallery: 'Gallery', admissions: 'Admissions', staff: 'Staff',
-        testimonials: 'Testimonials', news: 'News',
+        contact: 'Contact', gallery: 'Photo Gallery', admissions: 'Admissions', staff: 'Our Staff',
+        testimonials: 'Testimonials', news: 'News Ticker',
       };
       const labels = Object.entries(wsData.components)
         .filter(([, v]) => v === true)
@@ -76,10 +88,25 @@ export default function WebsiteBuilderPage() {
     } else if (Array.isArray(wsData.components)) {
       setAddedComponents(wsData.components);
     }
+
+    setContent(prev => ({
+      heroTitle:     wsData.heroTitle     ?? prev.heroTitle,
+      heroSubtitle:  wsData.heroSubtitle  ?? prev.heroSubtitle,
+      heroCtaText:   wsData.heroCtaText   ?? prev.heroCtaText,
+      aboutText:     wsData.aboutText     ?? prev.aboutText,
+      statsStudents: wsData.statsStudents ?? prev.statsStudents,
+      statsTeachers: wsData.statsTeachers ?? prev.statsTeachers,
+      statsYears:    wsData.statsYears    ?? prev.statsYears,
+      statsPassRate: wsData.statsPassRate ?? prev.statsPassRate,
+    }));
   }, [wsData]);
 
   const toggleComponent = (label: string) => {
     setAddedComponents(prev => prev.includes(label) ? prev.filter(c=>c!==label) : [...prev, label]);
+  };
+
+  const setField = (field: keyof typeof CONTENT_DEFAULTS) => (e: React.ChangeEvent<HTMLInputElement|HTMLTextAreaElement>) => {
+    setContent(prev => ({ ...prev, [field]: e.target.value }));
   };
 
   const activeTheme = THEMES[selectedTheme] || THEMES[0];
@@ -90,11 +117,11 @@ export default function WebsiteBuilderPage() {
     'Statistics': 'stats',
     'Events': 'events',
     'Contact': 'contact',
-    'Gallery': 'gallery',
+    'Photo Gallery': 'gallery',
     'Admissions': 'admissions',
-    'Staff': 'staff',
+    'Our Staff': 'staff',
     'Testimonials': 'testimonials',
-    'News': 'news',
+    'News Ticker': 'news',
   };
 
   const handlePublish = async () => {
@@ -115,6 +142,7 @@ export default function WebsiteBuilderPage() {
           secondaryColor: theme.secondary,
         },
         components: sectionFlags,
+        ...content,
         publishedAt: new Date().toISOString(),
       });
       setPublishStatus('saved');
@@ -203,25 +231,28 @@ export default function WebsiteBuilderPage() {
                   {addedComponents.includes('Hero Section') && (
                     <div className="py-10 px-6 text-center" style={{background:`linear-gradient(135deg, ${activeTheme.primary}, ${activeTheme.secondary})`}}>
                       <p className="text-white/60 text-xs font-medium mb-2">{school?.name ?? 'MySchool Academy'}</p>
-                      <h1 className="text-white font-black text-2xl mb-3">Shaping Future Leaders</h1>
-                      <p className="text-white/70 text-sm mb-5">Excellence in Education Since 1995</p>
+                      <input value={content.heroTitle} onChange={setField('heroTitle')} className="bg-transparent text-white font-black text-2xl mb-3 text-center w-full outline-none border-b border-transparent focus:border-white/40"/>
+                      <input value={content.heroSubtitle} onChange={setField('heroSubtitle')} className="bg-transparent text-white/70 text-sm mb-5 text-center w-full outline-none border-b border-transparent focus:border-white/40"/>
                       <div className="flex gap-2 justify-center">
-                        <button className="px-4 py-2 bg-white text-sm font-bold rounded-lg" style={{color:activeTheme.primary}}>Apply Now</button>
+                        <input value={content.heroCtaText} onChange={setField('heroCtaText')} className="px-4 py-2 bg-white text-sm font-bold rounded-lg text-center outline-none" style={{color:activeTheme.primary, width: `${Math.max(content.heroCtaText.length+4, 8)}ch`}}/>
                         <button className="px-4 py-2 bg-white/20 text-white text-sm font-bold rounded-lg border border-white/30">Learn More</button>
                       </div>
                     </div>
                   )}
                   {addedComponents.includes('Statistics') && (
                     <div className="grid grid-cols-4 py-4 px-6 bg-gray-50 border-b border-gray-100">
-                      {[{v:'2,500+',l:'Students'},{v:'120+',l:'Teachers'},{v:'30+',l:'Years'},{v:'98%',l:'Pass Rate'}].map(s=>(
-                        <div key={s.l} className="text-center"><p className="font-black text-gray-900 text-xl">{s.v}</p><p className="text-gray-400 text-xs">{s.l}</p></div>
+                      {[{k:'statsStudents' as const,l:'Students'},{k:'statsTeachers' as const,l:'Teachers'},{k:'statsYears' as const,l:'Years'},{k:'statsPassRate' as const,l:'Pass Rate'}].map(s=>(
+                        <div key={s.l} className="text-center">
+                          <input value={content[s.k]} onChange={setField(s.k)} className="font-black text-gray-900 text-xl text-center w-full outline-none bg-transparent border-b border-transparent focus:border-gray-300"/>
+                          <p className="text-gray-400 text-xs">{s.l}</p>
+                        </div>
                       ))}
                     </div>
                   )}
                   {addedComponents.includes('About Us') && (
                     <div className="px-6 py-5">
                       <h2 className="font-black text-lg text-gray-900 mb-2">About Our School</h2>
-                      <p className="text-gray-500 text-xs leading-relaxed">Founded in 1995, we are committed to providing quality education that nurtures intellectual growth, character development, and holistic learning experiences for every student.</p>
+                      <textarea value={content.aboutText} onChange={setField('aboutText')} rows={3} className="text-gray-500 text-xs leading-relaxed w-full outline-none resize-none border border-transparent focus:border-gray-200 rounded-lg p-1 -m-1"/>
                     </div>
                   )}
                   {addedComponents.includes('Events') && (
