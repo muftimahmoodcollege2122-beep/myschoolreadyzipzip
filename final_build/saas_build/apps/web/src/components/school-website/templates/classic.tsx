@@ -33,7 +33,7 @@ export function ClassicTemplate({ theme, slug }: { theme: SchoolTheme; slug: str
 
       {theme.sections?.about !== false && (
       <section className="section-padding" style={{ background: '#fff' }}>
-        <div className="container" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, alignItems: 'center' }}>
+        <div className="container" style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr)', gap: 40, alignItems: 'center' }} data-responsive-2col>
           <div>
             <span style={{ color: theme.primaryColor, fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>About Us</span>
             <h2 style={{ fontSize: 'clamp(1.8rem,3vw,2.5rem)', fontFamily: 'var(--font-heading)', margin: '12px 0 20px', color: theme.secondaryColor }}>Shaping Tomorrow's Leaders Since {theme.established}</h2>

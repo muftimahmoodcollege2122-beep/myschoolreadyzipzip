@@ -9,6 +9,8 @@ import { TenantId } from '../../common/decorators/tenant-id.decorator';
 @ApiTags('AI Analytics') @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Controller('ai-analytics')
 export class AiAnalyticsController {
   constructor(private readonly svc: AiAnalyticsService) {}
+  @Get('dashboard') @Roles('SCHOOL_ADMIN') getDashboard(@TenantId() tid: string, @Query('schoolId') sid?: string) { return this.svc.getSchoolPerformanceDashboard(tid); }
+  @Post('predict') @Roles('SCHOOL_ADMIN','TEACHER') predict(@Body() dto: any, @TenantId() tid: string) { return this.svc.getPerformancePrediction(tid, dto.studentId); }
   @Get('dropout-risk') @Roles('SCHOOL_ADMIN') getDropoutRisk(@TenantId() tid: string, @Query('schoolId') sid?: string) { return this.svc.getDropoutRiskStudents(tid, sid); }
   @Get('performance/:studentId') @Roles('SCHOOL_ADMIN','TEACHER','PARENT','STUDENT') getPerformancePrediction(@Query('studentId') sid: string, @TenantId() tid: string) { return this.svc.getPerformancePrediction(tid, sid); }
   @Get('attendance') @Roles('SCHOOL_ADMIN','TEACHER') getAttendanceAnalytics(@TenantId() tid: string, @Query('schoolId') sid?: string) { return this.svc.getAttendanceAnalytics(tid, sid); }

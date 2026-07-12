@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { SchoolDataService } from './school-data.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -16,6 +16,25 @@ export class SchoolDataController {
 
   @Put('info') @Roles('SCHOOL_ADMIN')
   updateSchool(@TenantId() tid: string, @Body() dto: any) { return this.svc.updateSchoolInfo(tid, dto); }
+
+  @Get('stats') @Roles('SCHOOL_ADMIN','TEACHER')
+  @ApiOperation({ summary: 'Real counts backing the dashboard stat cards: students, teachers, classes, overdue invoices' })
+  getStats(@TenantId() tid: string, @Query('schoolId') sid?: string) { return this.svc.getSchoolStats(tid, sid); }
+
+  // ── Generic Section CRUD — used by: academic-calendar, canteen, certificates,
+  // clubs, documents, duty-roster, hostel, id-cards, inventory, medical, notices,
+  // parents, payroll, research, sports
+  @Get('section/:section') @Roles('SCHOOL_ADMIN','TEACHER','STUDENT','PARENT')
+  getSection(@TenantId() tid: string, @Param('section') section: string) { return this.svc.getSection(tid, section); }
+
+  @Post('section/:section') @Roles('SCHOOL_ADMIN','TEACHER')
+  createSectionItem(@TenantId() tid: string, @Param('section') section: string, @Body() dto: any) { return this.svc.createSectionItem(tid, section, dto); }
+
+  @Put('section/:section/:itemId') @Roles('SCHOOL_ADMIN','TEACHER')
+  updateSectionItem(@TenantId() tid: string, @Param('section') section: string, @Param('itemId') itemId: string, @Body() dto: any) { return this.svc.updateSectionItem(tid, section, itemId, dto); }
+
+  @Delete('section/:section/:itemId') @Roles('SCHOOL_ADMIN','TEACHER')
+  deleteSectionItem(@TenantId() tid: string, @Param('section') section: string, @Param('itemId') itemId: string) { return this.svc.deleteSectionItem(tid, section, itemId); }
 
   // Classes
   @Get('classes') @Roles('SCHOOL_ADMIN','TEACHER','STUDENT')
