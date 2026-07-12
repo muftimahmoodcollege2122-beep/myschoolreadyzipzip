@@ -15,11 +15,16 @@ import { CreateInvoiceDto, RecordPaymentDto } from './dto/create-invoice.dto';
 import { FeeStatus } from '../../common/prisma-enums';
 import { randomUUID } from 'crypto';
 import dayjs from 'dayjs';
+import { FeesRealtimeInterceptor } from './fees.realtime.interceptor';
 
 @Injectable()
 export class FeesService {
   private readonly logger = new Logger(FeesService.name);
-  constructor(private readonly prisma: PrismaService, private readonly audit: AuditService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+    private readonly realtimeInterceptor: FeesRealtimeInterceptor,
+  ) {}
 
   async createInvoice(dto: CreateInvoiceDto, tenantId: string): Promise<any> {
     const structure = await this.prisma.feeStructure.findFirst({ where: { id: dto.feeStructureId, tenantId, isActive: true } });
@@ -100,8 +105,10 @@ export class FeesService {
     const outstanding = Number(invoice.amount) + Number(invoice.fine ?? 0) - Number(invoice.discount ?? 0) - Number(invoice.amountPaid ?? 0);
     if (dto.amount > outstanding) throw new BadRequestException(`Payment ${dto.amount} exceeds outstanding ${outstanding}`);
 
+    let createdPaymentId = '';
     await this.prisma.$transaction(async tx => {
-      await tx.payment.create({ data: { invoiceId: dto.invoiceId, tenantId, amount: dto.amount, method: dto.method as any, transactionRef: dto.transactionRef ?? null, processedBy: processedById } });
+      const payment = await tx.payment.create({ data: { invoiceId: dto.invoiceId, tenantId, amount: dto.amount, method: dto.method as any, transactionRef: dto.transactionRef ?? null, processedBy: processedById } });
+      createdPaymentId = payment.id;
       const newPaid = Number(invoice.amountPaid ?? 0) + dto.amount;
       const newOutstanding = Number(invoice.amount) + Number(invoice.fine ?? 0) - Number(invoice.discount ?? 0) - newPaid;
       const newStatus = newOutstanding <= 0 ? FeeStatus.PAID : 'PARTIAL' as any;
@@ -110,6 +117,22 @@ export class FeesService {
     });
 
     await this.audit.log({ tenantId, userId: processedById, action: 'CREATE', entity: 'Payment', entityId: dto.invoiceId, after: { amount: dto.amount, method: dto.method } });
+
+    // Fire live update to fees pages + dashboard, best-effort (never blocks/breaks the payment)
+    this.prisma.student.findFirst({
+      where: { id: invoice.studentId, tenantId },
+      include: { user: { include: { profile: true } } },
+    }).then(student => {
+      const studentName = student ? `${student.user.profile?.firstName ?? ''} ${student.user.profile?.lastName ?? ''}`.trim() : 'Student';
+      return this.realtimeInterceptor.afterPaymentRecorded(tenantId, {
+        invoiceId: dto.invoiceId,
+        studentId: invoice.studentId,
+        studentName,
+        amount: dto.amount,
+        paymentMethod: dto.method,
+        receiptNumber: createdPaymentId,
+      });
+    }).catch(err => this.logger.warn(`Real-time fee payment broadcast failed: ${err.message}`));
   }
 
   async getStudentFeeSummary(studentId: string, tenantId: string): Promise<any> {

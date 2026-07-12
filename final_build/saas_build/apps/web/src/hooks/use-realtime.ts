@@ -51,6 +51,7 @@ export function useRealtime() {
     // ── Live attendance updates (for teachers viewing their own sheet) ────
     socket.on('attendance:marked', () => {
       qc.invalidateQueries({ queryKey: ['attendance'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
     });
 
     // ── Parent: child absent alert ─────────────────────────────────────────
@@ -64,6 +65,7 @@ export function useRealtime() {
     // ── Fee payment confirmation ───────────────────────────────────────────
     socket.on('fee:payment_confirmed', () => {
       qc.invalidateQueries({ queryKey: ['fees'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
     });
 
     // ── Exam results published ─────────────────────────────────────────────

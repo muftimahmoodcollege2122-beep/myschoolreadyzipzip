@@ -39,5 +39,8 @@ export class AttendanceRealtimeInterceptor {
     );
 
     await this.realtime.onAttendanceMarked(tenantId, events);
+    // Admins are in the SCHOOL_ADMIN role room, not the section room —
+    // broadcast separately so their dashboard live-refreshes too.
+    this.realtime.broadcastDashboardUpdate(tenantId, {});
   }
 }

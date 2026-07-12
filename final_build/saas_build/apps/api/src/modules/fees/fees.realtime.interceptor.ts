@@ -17,5 +17,8 @@ export class FeesRealtimeInterceptor {
     },
   ) {
     await this.realtime.onFeePaymentRecorded(tenantId, payload);
+    // Admins aren't in the student/parent rooms this emits to —
+    // broadcast separately so their dashboard live-refreshes too.
+    this.realtime.broadcastDashboardUpdate(tenantId, {});
   }
 }

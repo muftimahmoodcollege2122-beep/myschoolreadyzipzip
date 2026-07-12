@@ -12,6 +12,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { EventPublisher } from '../../events/event-publisher.service';
 import { AuditService } from '../../common/audit/audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { AttendanceRealtimeInterceptor } from './attendance.realtime.interceptor';
 import { MarkAttendanceDto } from './dto/mark-attendance.dto';
 import { AttendanceReportQueryDto } from './dto/attendance-report-query.dto';
 import { AttendanceStatus } from '../../common/prisma-enums';
@@ -36,6 +37,7 @@ export class AttendanceService {
     private readonly events: EventPublisher,
     private readonly audit: AuditService,
     private readonly notifications: NotificationsService,
+    private readonly realtimeInterceptor: AttendanceRealtimeInterceptor,
   ) {}
 
   async markSectionAttendance(
@@ -93,6 +95,20 @@ export class AttendanceService {
     const lateCount   = records.filter(r => r.status === AttendanceStatus.LATE).length;
 
     this.logger.log(`Attendance marked for section ${sectionId}: ${records.length} students (${absentCount} absent, ${lateCount} late)`);
+
+    // Fire live update to the section room + dashboard, best-effort (never blocks/breaks the save)
+    this.prisma.teacher.findFirst({
+      where: { id: teacherId, tenantId },
+      include: { user: { include: { profile: true } } },
+    }).then(teacher => {
+      const markedByName = teacher ? `${teacher.user.profile?.firstName ?? ''} ${teacher.user.profile?.lastName ?? ''}`.trim() : 'Teacher';
+      return this.realtimeInterceptor.afterBulkMark(
+        tenantId,
+        records.map(r => ({ studentId: r.studentId, status: r.status, sectionId, date: date.toISOString() })),
+        markedByName,
+      );
+    }).catch(err => this.logger.warn(`Real-time attendance broadcast failed: ${err.message}`));
+
     return { marked: records.length, absentCount, lateCount };
   }
 
