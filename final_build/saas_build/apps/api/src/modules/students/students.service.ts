@@ -32,7 +32,7 @@ export class StudentsService {
 
   private async resolveSchoolId(tenantId: string, schoolId?: string): Promise<string | undefined> {
     if (schoolId && UUID_RE.test(schoolId)) return schoolId;
-    const school = await this.prisma.school.findFirst({ where: { tenantId }, select: { id: true } });
+    const school = await this.prisma.school.findFirst({ where: { tenantId }, orderBy: { createdAt: 'asc' }, select: { id: true } });
     return school?.id;
   }
 
@@ -50,7 +50,7 @@ export class StudentsService {
     createdById: string,
   ): Promise<any> {
     if (!schoolId) {
-      const school = await this.prisma.school.findFirst({ where: { tenantId } });
+      const school = await this.prisma.school.findFirst({ where: { tenantId }, orderBy: { createdAt: 'asc' } });
       if (!school) throw new Error('School not found for this tenant');
       schoolId = school.id;
     }

@@ -42,7 +42,7 @@ export class TenantProvisioningProcessor {
     const academicYear = `${year}-${year + 1}`;
 
     // 2. Seed default grade structure
-    const school = await this.prisma.school.findFirst({ where: { tenantId } });
+    const school = await this.prisma.school.findFirst({ where: { tenantId }, orderBy: { createdAt: 'asc' } });
     if (!school) throw new Error(`School not found for tenant ${tenantId}`);
 
     await job.progress(30);

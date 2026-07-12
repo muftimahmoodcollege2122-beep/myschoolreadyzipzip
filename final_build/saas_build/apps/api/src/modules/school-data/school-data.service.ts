@@ -14,12 +14,12 @@ export class SchoolDataService {
 
   private async resolveSchoolId(tenantId: string, sid?: string): Promise<string | undefined> {
     if (sid && UUID_RE.test(sid)) return sid;
-    const s = await this.prisma.school.findFirst({ where: { tenantId }, select: { id: true } });
+    const s = await this.prisma.school.findFirst({ where: { tenantId }, orderBy: { createdAt: 'asc' }, select: { id: true } });
     return s?.id;
   }
 
   private async getSchool(tenantId: string) {
-    let s = await this.prisma.school.findFirst({ where: { tenantId } });
+    let s = await this.prisma.school.findFirst({ where: { tenantId }, orderBy: { createdAt: 'asc' } });
     if (!s) {
       const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
       s = await this.prisma.school.create({
@@ -40,7 +40,7 @@ export class SchoolDataService {
 
   // ── Generic Section CRUD (stores arrays in school.settings[section]) ─────────
   async getSection(tenantId: string, section: string) {
-    const school = await this.prisma.school.findFirst({ where: { tenantId }, select: { settings: true } });
+    const school = await this.prisma.school.findFirst({ where: { tenantId }, orderBy: { createdAt: 'asc' }, select: { settings: true } });
     if (!school) return [];
     const data = (school.settings as any)?.[section];
     return Array.isArray(data) ? data : [];
@@ -170,7 +170,7 @@ export class SchoolDataService {
 
   // ── School overview ────────────────────────────────────────────────────────
   async getSchoolInfo(tenantId: string) {
-    return this.prisma.school.findFirst({ where: { tenantId } });
+    return this.prisma.school.findFirst({ where: { tenantId }, orderBy: { createdAt: 'asc' } });
   }
 
   async updateSchoolInfo(tenantId: string, dto: any) {
@@ -193,7 +193,7 @@ export class SchoolDataService {
 
   // ── LMS ────────────────────────────────────────────────────────────────────
   async getLmsData(tenantId: string) {
-    const school = await this.prisma.school.findFirst({ where: { tenantId }, select: { settings: true } });
+    const school = await this.prisma.school.findFirst({ where: { tenantId }, orderBy: { createdAt: 'asc' }, select: { settings: true } });
     if (!school) return { courses: [] };
     return { courses: ((school.settings as any)?.lms?.courses) || [] };
   }
@@ -229,7 +229,7 @@ export class SchoolDataService {
 
   // ── Website Settings ────────────────────────────────────────────────────────
   async getWebsiteSettings(tenantId: string) {
-    const school = await this.prisma.school.findFirst({ where: { tenantId }, select: { settings: true } });
+    const school = await this.prisma.school.findFirst({ where: { tenantId }, orderBy: { createdAt: 'asc' }, select: { settings: true } });
     if (!school) return {};
     return (school.settings as any)?.website || {};
   }
@@ -291,7 +291,7 @@ export class SchoolDataService {
   // ── Backup ─────────────────────────────────────────────────────────────────
   async getBackup(tenantId: string) {
     const [school, students, teachers, classes, subjects, sections, announcements, events] = await Promise.all([
-      this.prisma.school.findFirst({ where: { tenantId } }),
+      this.prisma.school.findFirst({ where: { tenantId }, orderBy: { createdAt: 'asc' } }),
       this.prisma.student.findMany({ where: { tenantId }, include: { user: { include: { profile: true } } } }),
       this.prisma.teacher.findMany({ where: { tenantId }, include: { user: { include: { profile: true } } } }),
       this.prisma.class.findMany({ where: { tenantId } }),

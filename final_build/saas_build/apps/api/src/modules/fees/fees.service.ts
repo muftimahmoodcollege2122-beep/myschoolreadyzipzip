@@ -33,7 +33,7 @@ export class FeesService {
   }
 
   async createDirectInvoice(dto: { studentId: string; description: string; amount: number; dueDate: string; category?: string }, tenantId: string): Promise<any> {
-    const school = await this.prisma.school.findFirst({ where: { tenantId } });
+    const school = await this.prisma.school.findFirst({ where: { tenantId }, orderBy: { createdAt: 'asc' } });
     if (!school) throw new NotFoundException('School not found');
 
     const student = await this.prisma.student.findFirst({ where: { id: dto.studentId, tenantId } });

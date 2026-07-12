@@ -17,7 +17,7 @@ export class ExamsService {
   async create(dto: any, tenantId: string, createdById: string) {
     let schoolId = dto.schoolId;
     if (!schoolId) {
-      const school = await this.prisma.school.findFirst({ where: { tenantId } });
+      const school = await this.prisma.school.findFirst({ where: { tenantId }, orderBy: { createdAt: 'asc' } });
       if (!school) throw new NotFoundException('School not found for this tenant');
       schoolId = school.id;
     }
