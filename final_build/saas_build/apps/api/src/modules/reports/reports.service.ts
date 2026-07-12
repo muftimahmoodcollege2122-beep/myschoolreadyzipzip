@@ -337,4 +337,78 @@ export class ReportsService {
 </body>
 </html>`;
   }
+
+  /**
+   * Real per-teacher performance metrics for the Analytics dashboard.
+   * Returns null for any metric where there isn't enough underlying data yet
+   * (no published exams, no attendance records, no lesson plans) rather than
+   * fabricating a number — the frontend should show "Not enough data" in that case.
+   */
+  async getTeacherPerformance(tenantId: string) {
+    const teachers = await this.prisma.teacher.findMany({
+      where: { tenantId, isActive: true },
+      include: {
+        user: { include: { profile: true } },
+        department: true,
+        subjects: { include: { subject: true, class: { include: { sections: { include: { students: true } } } } } },
+      },
+    });
+
+    return Promise.all(teachers.map(async (t) => {
+      const subjectIds = [...new Set(t.subjects.map(cs => cs.subjectId))];
+      const classIds = [...new Set(t.subjects.map(cs => cs.classId))];
+
+      const studentsCount = new Set(
+        t.subjects.flatMap(cs => cs.class.sections.flatMap(sec => sec.students.map(e => e.studentId))),
+      ).size;
+
+      const exams = subjectIds.length
+        ? await this.prisma.exam.findMany({
+            where: { tenantId, subjectId: { in: subjectIds }, isPublished: true },
+            include: { results: true },
+          })
+        : [];
+
+      let totalResults = 0, passCount = 0, marksSum = 0, marksMaxSum = 0;
+      for (const exam of exams) {
+        for (const r of exam.results) {
+          if (r.isAbsent) continue;
+          totalResults++;
+          if (Number(r.marksObtained) >= Number(exam.passingMarks)) passCount++;
+          marksSum += Number(r.marksObtained);
+          marksMaxSum += Number(exam.maxMarks);
+        }
+      }
+      const passRate = totalResults > 0 ? Math.round((passCount / totalResults) * 100) : null;
+      const avgMarksPct = marksMaxSum > 0 ? Math.round((marksSum / marksMaxSum) * 100) : null;
+
+      const since = new Date(Date.now() - 90 * 86400000);
+      const attendanceRecords = await this.prisma.teacherAttendance.findMany({
+        where: { teacherId: t.id, tenantId, date: { gte: since } },
+      });
+      const presentCount = attendanceRecords.filter(a => a.status === 'PRESENT' || a.status === 'LATE').length;
+      const attendanceRate = attendanceRecords.length > 0 ? Math.round((presentCount / attendanceRecords.length) * 100) : null;
+
+      const lessonPlans = await this.prisma.lessonPlan.findMany({
+        where: { tenantId, teacherId: t.id },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+      });
+      const completedCount = lessonPlans.filter(lp => lp.status === 'APPROVED' || lp.status === 'SUBMITTED').length;
+      const lessonCompletionRate = lessonPlans.length > 0 ? Math.round((completedCount / lessonPlans.length) * 100) : null;
+
+      return {
+        id: t.id,
+        name: `${t.user.profile?.firstName ?? ''} ${t.user.profile?.lastName ?? ''}`.trim() || 'Unnamed Teacher',
+        department: t.department?.name ?? 'Unassigned',
+        subjectsCount: subjectIds.length,
+        sectionsCount: classIds.length,
+        studentsCount,
+        passRate,
+        avgMarksPct,
+        attendanceRate,
+        lessonCompletionRate,
+      };
+    }));
+  }
 }

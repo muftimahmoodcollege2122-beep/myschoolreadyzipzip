@@ -4,7 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { PageHeader } from '@/components/shared/page-header';
 import { Topbar } from '@/components/layout/topbar';
-import { useDashboard, useFeeRevenue, useStudents, useTeachers, useClasses } from '@/hooks/use-api';
+import { useDashboard, useFeeRevenue, useStudents, useTeachers, useClasses, useTeacherPerformance } from '@/hooks/use-api';
+import type { TeacherPerformance } from '@/types';
 
 function Card({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
@@ -58,18 +59,23 @@ function Donut({ segments }: { segments: { label: string; value: number; color: 
   );
 }
 
-const TEACHER_PERFORMANCE = [
-  { name: 'Ms. Fatima Malik',    dept: 'Science',     subjects: 3, sections: 4, passRate: 94, avgMarks: 78, attendance: 98, lessonCompletion: 92, students: 120 },
-  { name: 'Mr. Imran Ahmed',     dept: 'Mathematics', subjects: 2, sections: 3, passRate: 88, avgMarks: 74, attendance: 95, lessonCompletion: 85, students: 90 },
-  { name: 'Ms. Zara Khan',       dept: 'English',     subjects: 2, sections: 4, passRate: 91, avgMarks: 80, attendance: 100, lessonCompletion: 97, students: 118 },
-  { name: 'Mr. Rehman Tariq',    dept: 'Social Std',  subjects: 2, sections: 3, passRate: 82, avgMarks: 68, attendance: 90, lessonCompletion: 78, students: 87 },
-  { name: 'Ms. Aisha Siddiqui', dept: 'Computer',    subjects: 1, sections: 5, passRate: 96, avgMarks: 85, attendance: 97, lessonCompletion: 100, students: 145 },
-  { name: 'Mr. Bilal Hassan',    dept: 'Islamiyat',   subjects: 1, sections: 6, passRate: 99, avgMarks: 88, attendance: 99, lessonCompletion: 95, students: 172 },
-  { name: 'Ms. Hira Baig',       dept: 'Urdu',        subjects: 2, sections: 4, passRate: 87, avgMarks: 72, attendance: 93, lessonCompletion: 82, students: 115 },
-];
+// Composite score is computed only from metrics that have real underlying data
+// (published exams, teacher attendance records, submitted lesson plans).
+// Returns null if a teacher has none of these yet, rather than faking a number.
+function perfScore(t: TeacherPerformance): number | null {
+  const parts: { v: number; w: number }[] = [];
+  if (t.passRate !== null) parts.push({ v: t.passRate, w: 0.35 });
+  if (t.avgMarksPct !== null) parts.push({ v: t.avgMarksPct, w: 0.25 });
+  if (t.attendanceRate !== null) parts.push({ v: t.attendanceRate, w: 0.25 });
+  if (t.lessonCompletionRate !== null) parts.push({ v: t.lessonCompletionRate, w: 0.15 });
+  if (parts.length === 0) return null;
+  const totalWeight = parts.reduce((s, p) => s + p.w, 0);
+  return Math.round(parts.reduce((s, p) => s + p.v * p.w, 0) / totalWeight);
+}
 
-function perfScore(t: typeof TEACHER_PERFORMANCE[0]) {
-  return Math.round((t.passRate * 0.35) + (t.avgMarks * 0.25) + (t.attendance * 0.25) + (t.lessonCompletion * 0.15));
+function Metric({ value, suffix = '%', color }: { value: number | null; suffix?: string; color?: (v: number) => string }) {
+  if (value === null) return <span className="text-xs text-gray-300 italic">No data</span>;
+  return <span className={`text-sm font-bold ${color ? color(value) : 'text-gray-700'}`}>{value}{suffix}</span>;
 }
 
 export default function AnalyticsPage() {
@@ -81,6 +87,7 @@ export default function AnalyticsPage() {
   const { data: studentsData } = useStudents({ limit: 200 });
   const { data: teachersData } = useTeachers({ limit: 100 });
   const { data: classes } = useClasses();
+  const { data: teacherPerf } = useTeacherPerformance();
 
   const db = dashboard as any;
   const rev = revenue as any;
@@ -102,26 +109,32 @@ export default function AnalyticsPage() {
   const maxEnroll = Math.max(1, ...classEnrollment.map(c=>c.value));
 
   const KPI = [
-    { label: 'Total Students', value: totalStudents, change: '+12%', icon: '👩‍🎓', color: 'bg-blue-50 text-blue-700' },
-    { label: 'Teachers', value: totalTeachers, change: '+3%', icon: '👨‍🏫', color: 'bg-purple-50 text-purple-700' },
+    { label: 'Total Students', value: totalStudents, change: db && db.newAdmissionsThisMonth > 0 ? `+${db.newAdmissionsThisMonth} this month` : 'No new admissions this month', icon: '👩‍🎓', color: 'bg-blue-50 text-blue-700' },
+    { label: 'Teachers', value: totalTeachers, change: `${teachers.filter((t:any)=>t.isActive!==false).length} active`, icon: '👨‍🏫', color: 'bg-purple-50 text-purple-700' },
     { label: "Today's Attendance", value: `${attendanceRate}%`, change: attendanceRate >= 85 ? '✅ Good' : '⚠ Low', icon: '✅', color: 'bg-green-50 text-green-700' },
     { label: 'Fee Collection Rate', value: `${collectionRate}%`, change: collectionRate >= 80 ? '✅ On track' : '⚠ Below target', icon: '💰', color: 'bg-yellow-50 text-yellow-700' },
     { label: 'Total Classes', value: classList.length, change: `${classList.reduce((s:number,c:any)=>s+(c.sections?.length??0),0)} sections`, icon: '🏫', color: 'bg-indigo-50 text-indigo-700' },
     { label: 'Student:Teacher Ratio', value: totalTeachers ? `${Math.round(totalStudents/totalTeachers)}:1` : 'N/A', change: 'per teacher', icon: '📊', color: 'bg-orange-50 text-orange-700' },
   ];
 
-  const sortedTeachers = [...TEACHER_PERFORMANCE].sort((a, b) => {
-    if (teacherSort === 'score') return perfScore(b) - perfScore(a);
-    if (teacherSort === 'passRate') return b.passRate - a.passRate;
-    if (teacherSort === 'attendance') return b.attendance - a.attendance;
-    return b.students - a.students;
+  const perfList: TeacherPerformance[] = teacherPerf ?? [];
+
+  const sortedTeachers = [...perfList].sort((a, b) => {
+    if (teacherSort === 'score') return (perfScore(b) ?? -1) - (perfScore(a) ?? -1);
+    if (teacherSort === 'passRate') return (b.passRate ?? -1) - (a.passRate ?? -1);
+    if (teacherSort === 'attendance') return (b.attendanceRate ?? -1) - (a.attendanceRate ?? -1);
+    return b.studentsCount - a.studentsCount;
   });
 
-  const avgPassRate = Math.round(TEACHER_PERFORMANCE.reduce((s, t) => s + t.passRate, 0) / TEACHER_PERFORMANCE.length);
-  const avgAttendance = Math.round(TEACHER_PERFORMANCE.reduce((s, t) => s + t.attendance, 0) / TEACHER_PERFORMANCE.length);
-  const avgLesson = Math.round(TEACHER_PERFORMANCE.reduce((s, t) => s + t.lessonCompletion, 0) / TEACHER_PERFORMANCE.length);
-  const topTeacher = [...TEACHER_PERFORMANCE].sort((a, b) => perfScore(b) - perfScore(a))[0];
-  const bottomTeacher = [...TEACHER_PERFORMANCE].sort((a, b) => perfScore(a) - perfScore(b))[0];
+  const avgOf = (vals: (number|null)[]) => {
+    const real = vals.filter((v): v is number => v !== null);
+    return real.length > 0 ? Math.round(real.reduce((s,v)=>s+v,0) / real.length) : null;
+  };
+  const avgPassRate = avgOf(perfList.map(t => t.passRate));
+  const avgAttendance = avgOf(perfList.map(t => t.attendanceRate));
+  const avgLesson = avgOf(perfList.map(t => t.lessonCompletionRate));
+  const scored = perfList.map(t => ({ t, score: perfScore(t) })).filter(x => x.score !== null) as { t: TeacherPerformance; score: number }[];
+  const topTeacher = scored.length > 0 ? scored.sort((a,b)=>b.score-a.score)[0].t : null;
 
   return (
     <>
@@ -248,13 +261,21 @@ export default function AnalyticsPage() {
 
         {analyticsTab === 'teachers' && (
           <div className="space-y-5">
+            {perfList.length === 0 ? (
+              <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-10 text-center">
+                <p className="text-3xl mb-2">👨‍🏫</p>
+                <p className="text-sm font-bold text-gray-700">No teachers yet</p>
+                <p className="text-xs text-gray-400 mt-1">Add teachers and assign them to subjects to see performance analytics here.</p>
+              </div>
+            ) : (
+            <>
             {/* Summary KPIs */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { label: 'Avg. Pass Rate', value: `${avgPassRate}%`, icon: '🎯', bg: 'bg-green-50', fg: 'text-green-700', sub: 'Across all teachers' },
-                { label: 'Avg. Attendance', value: `${avgAttendance}%`, icon: '📋', bg: 'bg-blue-50', fg: 'text-blue-700', sub: 'Teacher punctuality' },
-                { label: 'Lesson Completion', value: `${avgLesson}%`, icon: '📚', bg: 'bg-purple-50', fg: 'text-purple-700', sub: 'Curriculum coverage' },
-                { label: 'Top Performer', value: topTeacher.name.split(' ')[1], icon: '🏆', bg: 'bg-yellow-50', fg: 'text-yellow-700', sub: `Score: ${perfScore(topTeacher)}` },
+                { label: 'Avg. Pass Rate', value: avgPassRate !== null ? `${avgPassRate}%` : '—', icon: '🎯', bg: 'bg-green-50', fg: 'text-green-700', sub: avgPassRate !== null ? 'Across all teachers' : 'No published exams yet' },
+                { label: 'Avg. Attendance', value: avgAttendance !== null ? `${avgAttendance}%` : '—', icon: '📋', bg: 'bg-blue-50', fg: 'text-blue-700', sub: avgAttendance !== null ? 'Teacher punctuality' : 'No attendance records yet' },
+                { label: 'Lesson Completion', value: avgLesson !== null ? `${avgLesson}%` : '—', icon: '📚', bg: 'bg-purple-50', fg: 'text-purple-700', sub: avgLesson !== null ? 'Curriculum coverage' : 'No lesson plans yet' },
+                { label: 'Top Performer', value: topTeacher ? topTeacher.name.split(' ').slice(-1)[0] : '—', icon: '🏆', bg: 'bg-yellow-50', fg: 'text-yellow-700', sub: topTeacher ? `Score: ${perfScore(topTeacher)}` : 'Not enough data yet' },
               ].map(s => (
                 <div key={s.label} className={`${s.bg} rounded-xl p-4`}>
                   <div className="flex items-start justify-between">
@@ -274,7 +295,7 @@ export default function AnalyticsPage() {
               <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
                 <div>
                   <h3 className="font-bold text-gray-900">Teacher Performance Analytics</h3>
-                  <p className="text-xs text-gray-400 mt-0.5">Composite score = Pass Rate (35%) + Avg Marks (25%) + Attendance (25%) + Lesson Completion (15%)</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Composite score = Pass Rate (35%) + Avg Marks (25%) + Attendance (25%) + Lesson Completion (15%), re-weighted across whichever metrics have real data</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-gray-400">Sort by:</span>
@@ -298,10 +319,10 @@ export default function AnalyticsPage() {
                   <tbody className="divide-y divide-gray-50">
                     {sortedTeachers.map((t, idx) => {
                       const score = perfScore(t);
-                      const isTop = idx === 0 && teacherSort === 'score';
-                      const isBottom = idx === sortedTeachers.length - 1 && teacherSort === 'score';
+                      const isTop = idx === 0 && teacherSort === 'score' && score !== null;
+                      const isBottom = idx === sortedTeachers.length - 1 && teacherSort === 'score' && score !== null;
                       return (
-                        <tr key={t.name} className={`hover:bg-gray-50 ${isTop ? 'bg-yellow-50/30' : ''}`}>
+                        <tr key={t.id} className={`hover:bg-gray-50 ${isTop ? 'bg-yellow-50/30' : ''}`}>
                           <td className="px-4 py-3">
                             <span className={`text-sm font-black ${idx === 0 ? 'text-yellow-500' : idx === 1 ? 'text-gray-400' : idx === 2 ? 'text-amber-600' : 'text-gray-300'}`}>
                               {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`}
@@ -312,41 +333,49 @@ export default function AnalyticsPage() {
                             {isTop && <span className="text-xs text-yellow-600 font-medium">Top Performer</span>}
                             {isBottom && <span className="text-xs text-red-500 font-medium">Needs Support</span>}
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-500">{t.dept}</td>
-                          <td className="px-4 py-3 text-sm font-medium text-gray-700">{t.students}</td>
+                          <td className="px-4 py-3 text-sm text-gray-500">{t.department}</td>
+                          <td className="px-4 py-3 text-sm font-medium text-gray-700">{t.studentsCount}</td>
                           <td className="px-4 py-3">
-                            <div className="flex items-center gap-2">
-                              <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                <div className="h-full rounded-full" style={{ width: `${t.passRate}%`, background: t.passRate >= 90 ? '#16a34a' : t.passRate >= 75 ? '#3b82f6' : '#ef4444' }} />
+                            {t.passRate === null ? <Metric value={null}/> : (
+                              <div className="flex items-center gap-2">
+                                <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                  <div className="h-full rounded-full" style={{ width: `${t.passRate}%`, background: t.passRate >= 90 ? '#16a34a' : t.passRate >= 75 ? '#3b82f6' : '#ef4444' }} />
+                                </div>
+                                <Metric value={t.passRate} color={v => v >= 90 ? 'text-green-600' : v >= 75 ? 'text-blue-600' : 'text-red-500'} />
                               </div>
-                              <span className={`text-xs font-bold ${t.passRate >= 90 ? 'text-green-600' : t.passRate >= 75 ? 'text-blue-600' : 'text-red-500'}`}>{t.passRate}%</span>
-                            </div>
+                            )}
                           </td>
                           <td className="px-4 py-3">
-                            <span className={`text-sm font-bold ${t.avgMarks >= 80 ? 'text-green-600' : t.avgMarks >= 65 ? 'text-blue-600' : 'text-red-500'}`}>{t.avgMarks}</span>
+                            <Metric value={t.avgMarksPct} color={v => v >= 80 ? 'text-green-600' : v >= 65 ? 'text-blue-600' : 'text-red-500'} />
                           </td>
                           <td className="px-4 py-3">
-                            <div className="flex items-center gap-2">
-                              <div className="w-14 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                <div className="h-full rounded-full bg-blue-400" style={{ width: `${t.attendance}%` }} />
+                            {t.attendanceRate === null ? <Metric value={null}/> : (
+                              <div className="flex items-center gap-2">
+                                <div className="w-14 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                  <div className="h-full rounded-full bg-blue-400" style={{ width: `${t.attendanceRate}%` }} />
+                                </div>
+                                <Metric value={t.attendanceRate} color={v => v >= 95 ? 'text-green-600' : v >= 85 ? 'text-yellow-600' : 'text-red-500'} />
                               </div>
-                              <span className={`text-xs font-bold ${t.attendance >= 95 ? 'text-green-600' : t.attendance >= 85 ? 'text-yellow-600' : 'text-red-500'}`}>{t.attendance}%</span>
-                            </div>
+                            )}
                           </td>
                           <td className="px-4 py-3">
-                            <div className="flex items-center gap-2">
-                              <div className="w-14 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                <div className="h-full rounded-full bg-purple-400" style={{ width: `${t.lessonCompletion}%` }} />
+                            {t.lessonCompletionRate === null ? <Metric value={null}/> : (
+                              <div className="flex items-center gap-2">
+                                <div className="w-14 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                  <div className="h-full rounded-full bg-purple-400" style={{ width: `${t.lessonCompletionRate}%` }} />
+                                </div>
+                                <span className="text-xs font-bold text-purple-600">{t.lessonCompletionRate}%</span>
                               </div>
-                              <span className="text-xs font-bold text-purple-600">{t.lessonCompletion}%</span>
-                            </div>
+                            )}
                           </td>
                           <td className="px-4 py-3">
-                            <div className="flex items-center gap-2">
-                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black ${score >= 90 ? 'bg-green-100 text-green-700' : score >= 80 ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                                {score}
+                            {score === null ? <Metric value={null}/> : (
+                              <div className="flex items-center gap-2">
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black ${score >= 90 ? 'bg-green-100 text-green-700' : score >= 80 ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                  {score}
+                                </div>
                               </div>
-                            </div>
+                            )}
                           </td>
                         </tr>
                       );
@@ -359,37 +388,43 @@ export default function AnalyticsPage() {
             {/* Performance charts row */}
             <div className="grid grid-cols-2 gap-5">
               <Card title="Pass Rate by Teacher" subtitle="Student exam outcomes">
-                {sortedTeachers.map(t => (
-                  <Bar key={t.name} label={t.name.split(' ').slice(1).join(' ')} value={t.passRate} max={100} suffix="%" color={t.passRate >= 90 ? '#16a34a' : t.passRate >= 80 ? '#3b82f6' : '#f59e0b'} />
-                ))}
+                {sortedTeachers.filter(t => t.passRate !== null).length === 0
+                  ? <p className="text-sm text-center text-gray-300 py-8">No published exam results yet</p>
+                  : sortedTeachers.filter(t => t.passRate !== null).map(t => (
+                      <Bar key={t.id} label={t.name.split(' ').slice(1).join(' ') || t.name} value={t.passRate as number} max={100} suffix="%" color={(t.passRate as number) >= 90 ? '#16a34a' : (t.passRate as number) >= 80 ? '#3b82f6' : '#f59e0b'} />
+                    ))}
               </Card>
               <Card title="Lesson Plan Completion" subtitle="Curriculum coverage rate">
-                {sortedTeachers.map(t => (
-                  <Bar key={t.name} label={t.name.split(' ').slice(1).join(' ')} value={t.lessonCompletion} max={100} suffix="%" color="#7c3aed" />
-                ))}
+                {sortedTeachers.filter(t => t.lessonCompletionRate !== null).length === 0
+                  ? <p className="text-sm text-center text-gray-300 py-8">No lesson plans submitted yet</p>
+                  : sortedTeachers.filter(t => t.lessonCompletionRate !== null).map(t => (
+                      <Bar key={t.id} label={t.name.split(' ').slice(1).join(' ') || t.name} value={t.lessonCompletionRate as number} max={100} suffix="%" color="#7c3aed" />
+                    ))}
               </Card>
             </div>
 
             {/* Attention needed */}
-            {TEACHER_PERFORMANCE.some(t => t.passRate < 85 || t.attendance < 92) && (
+            {perfList.some(t => (t.passRate !== null && t.passRate < 85) || (t.attendanceRate !== null && t.attendanceRate < 92)) && (
               <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
                 <p className="font-bold text-amber-900 text-sm mb-3">Attention Required</p>
                 <div className="space-y-2">
-                  {TEACHER_PERFORMANCE.filter(t => t.passRate < 85 || t.attendance < 92).map(t => (
-                    <div key={t.name} className="flex items-center gap-3 bg-white rounded-lg p-3 border border-amber-100">
+                  {perfList.filter(t => (t.passRate !== null && t.passRate < 85) || (t.attendanceRate !== null && t.attendanceRate < 92)).map(t => (
+                    <div key={t.id} className="flex items-center gap-3 bg-white rounded-lg p-3 border border-amber-100">
                       <span className="text-xl">⚠️</span>
                       <div className="flex-1">
                         <p className="text-sm font-bold text-gray-900">{t.name}</p>
                         <div className="flex gap-3 mt-0.5">
-                          {t.passRate < 85 && <span className="text-xs text-red-600">Pass rate: {t.passRate}% (target: 85%)</span>}
-                          {t.attendance < 92 && <span className="text-xs text-orange-600">Attendance: {t.attendance}% (target: 92%)</span>}
+                          {t.passRate !== null && t.passRate < 85 && <span className="text-xs text-red-600">Pass rate: {t.passRate}% (target: 85%)</span>}
+                          {t.attendanceRate !== null && t.attendanceRate < 92 && <span className="text-xs text-orange-600">Attendance: {t.attendanceRate}% (target: 92%)</span>}
                         </div>
                       </div>
-                      <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-lg font-bold">Score: {perfScore(t)}</span>
+                      {perfScore(t) !== null && <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-lg font-bold">Score: {perfScore(t)}</span>}
                     </div>
                   ))}
                 </div>
               </div>
+            )}
+            </>
             )}
           </div>
         )}

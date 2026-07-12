@@ -14,6 +14,13 @@ import { Response } from 'express';
 export class ReportsController {
   constructor(private readonly svc: ReportsService) {}
 
+  // ── Teacher Performance Analytics ─────────────────────────────────────────
+  @Get('teacher-performance') @Roles('SCHOOL_ADMIN')
+  @ApiOperation({ summary: 'Real per-teacher performance: pass rate, avg marks, attendance, lesson completion' })
+  async teacherPerformance(@TenantId() tid: string) {
+    return this.svc.getTeacherPerformance(tid);
+  }
+
   // ── Report Card ────────────────────────────────────────────────────────────
   @Post('report-card')
   @Roles('SCHOOL_ADMIN','TEACHER')

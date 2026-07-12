@@ -35,4 +35,10 @@ export interface DashboardStats {
   fees: { outstanding: number; invoiceCount: number };
   upcomingExams: Exam[];
 }
+export interface TeacherPerformance {
+  id: string; name: string; department: string;
+  subjectsCount: number; sectionsCount: number; studentsCount: number;
+  passRate: number | null; avgMarksPct: number | null;
+  attendanceRate: number | null; lessonCompletionRate: number | null;
+}
 export interface PaginatedResponse<T> { data: T[]; meta: { total: number; page: number; limit: number; totalPages: number }; }

@@ -8,13 +8,16 @@
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../lib/api-client';
-import type { PaginatedResponse, Student, Invoice, Teacher, Exam, DashboardStats } from '../types';
+import type { PaginatedResponse, Student, Invoice, Teacher, Exam, DashboardStats, TeacherPerformance } from '../types';
 
 const qs = (p: Record<string, any>) => new URLSearchParams(Object.entries(p).filter(([,v])=>v!==undefined&&v!=='').map(([k,v])=>[k,String(v)])).toString();
 
 // ── Dashboard ───────────────────────────────────────────────────────────────
 export const useDashboard = (schoolId: string) =>
   useQuery({ queryKey: ['dashboard', schoolId], queryFn: () => apiClient.get<DashboardStats>(`/dashboard?schoolId=${schoolId}`), staleTime: 5*60*1000 });
+
+export const useTeacherPerformance = () =>
+  useQuery({ queryKey: ['teacher-performance'], queryFn: () => apiClient.get<TeacherPerformance[]>('/reports/teacher-performance'), staleTime: 5*60*1000 });
 
 // ── My Profile (role-based self-lookup) ──────────────────────────────────────
 export const useMyStudent = () =>
