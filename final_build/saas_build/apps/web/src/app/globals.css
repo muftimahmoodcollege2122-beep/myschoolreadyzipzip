@@ -21,3 +21,115 @@
 .animate-slide-in {
   animation: slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* ── Responsive Dashboard Utilities ─────────────────────────────────────── */
+
+/* Tables scroll horizontally on mobile */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Card grids adapt to screen size */
+.grid-responsive-2 { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+@media (min-width: 640px)  { .grid-responsive-2 { grid-template-columns: repeat(2, 1fr); } }
+
+.grid-responsive-3 { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+@media (min-width: 640px)  { .grid-responsive-3 { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .grid-responsive-3 { grid-template-columns: repeat(3, 1fr); } }
+
+.grid-responsive-4 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+@media (min-width: 768px)  { .grid-responsive-4 { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1280px) { .grid-responsive-4 { grid-template-columns: repeat(4, 1fr); } }
+
+.grid-responsive-5 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+@media (min-width: 768px)  { .grid-responsive-5 { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1280px) { .grid-responsive-5 { grid-template-columns: repeat(5, 1fr); } }
+
+/* Page padding */
+.page-padding { padding: 1rem; }
+@media (min-width: 640px) { .page-padding { padding: 1.5rem; } }
+@media (min-width: 1280px) { .page-padding { padding: 2rem; } }
+
+/* TV / large screens */
+@media (min-width: 1920px) {
+  .grid-responsive-4 { grid-template-columns: repeat(6, 1fr); }
+  .grid-responsive-5 { grid-template-columns: repeat(6, 1fr); }
+  html { font-size: 17px; }
+}
+
+/* Hide scrollbar on sidebar */
+.scrollbar-hide { scrollbar-width: none; -ms-overflow-style: none; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+
+/* Prevent horizontal overflow on mobile */
+body { overflow-x: hidden; }
+
+/* Responsive text */
+.text-responsive-title { font-size: clamp(0.875rem, 2.5vw, 1.25rem); font-weight: 700; }
+.text-responsive-stat  { font-size: clamp(1.25rem, 4vw, 2rem);     font-weight: 900; }
+
+/* ── Make all dashboard p-6 containers responsive ── */
+.flex-1.min-h-screen.flex.flex-col.min-w-0 > * > .p-6,
+main > * > .p-6 {
+  padding: 1rem !important;
+}
+@media (min-width: 640px) {
+  .flex-1.min-h-screen.flex.flex-col.min-w-0 > * > .p-6,
+  main > * > .p-6 { padding: 1.25rem !important; }
+}
+@media (min-width: 1024px) {
+  .flex-1.min-h-screen.flex.flex-col.min-w-0 > * > .p-6,
+  main > * > .p-6 { padding: 1.5rem !important; }
+}
+
+/* ── Tables: always scrollable on small screens ── */
+table { min-width: 600px; }
+.overflow-hidden:has(table) { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
+
+/* ── Stat grids: always 2-col minimum on mobile ── */
+.grid.grid-cols-4 { grid-template-columns: repeat(2, 1fr) !important; }
+.grid.grid-cols-5 { grid-template-columns: repeat(2, 1fr) !important; }
+.grid.grid-cols-3 { grid-template-columns: repeat(1, 1fr) !important; }
+@media (min-width: 640px)  { 
+  .grid.grid-cols-3 { grid-template-columns: repeat(2, 1fr) !important; }
+  .grid.grid-cols-4 { grid-template-columns: repeat(2, 1fr) !important; }
+}
+@media (min-width: 768px)  { 
+  .grid.grid-cols-3 { grid-template-columns: repeat(3, 1fr) !important; }
+  .grid.grid-cols-4 { grid-template-columns: repeat(4, 1fr) !important; }
+  .grid.grid-cols-5 { grid-template-columns: repeat(3, 1fr) !important; }
+}
+@media (min-width: 1280px) { 
+  .grid.grid-cols-5 { grid-template-columns: repeat(5, 1fr) !important; }
+}
+
+/* ── Buttons: min touch target 44px on mobile ── */
+@media (max-width: 640px) {
+  button, a.btn { min-height: 40px; }
+}
+
+/* ── Page header actions stack on mobile ── */
+.flex.items-center.justify-between .flex.gap-3 {
+  flex-wrap: wrap;
+}
+
+/* ── TV screens: max content width ── */
+@media (min-width: 2560px) {
+  main { max-width: 2400px; margin: 0 auto; }
+}
+
+/* ── School website responsive 2-col grids ── */
+[data-responsive-2col] { grid-template-columns: 1fr !important; gap: 2rem !important; }
+@media (min-width: 768px) { [data-responsive-2col] { grid-template-columns: 1fr 1fr !important; gap: 3.75rem !important; } }
+
+/* ── Nav: hamburger on mobile ── */
+@media (max-width: 768px) {
+  .school-nav-links { display: none; }
+  .school-nav-links.open { display: flex; flex-direction: column; position: absolute; top: 100%; left: 0; right: 0; background: var(--secondary); padding: 1rem; }
+}
+
+/* ── School hero section: fix padding on mobile ── */
+@media (max-width: 640px) {
+  section[style*="padding: '120px"] { padding: 60px 0 40px !important; }
+}
