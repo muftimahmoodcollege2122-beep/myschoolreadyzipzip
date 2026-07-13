@@ -155,7 +155,7 @@ export default function MarketingPage() {
             <span className={`font-black text-lg tracking-tight ${isScrolled ? 'text-gray-900' : 'text-white'}`}>MySchool</span>
           </Link>
           <div className="hidden md:flex items-center gap-7">
-            {[['Features', '#features'], ['Pricing', '#pricing'], ['How It Works', '#how-it-works'], ['Security', '#security']].map(([label, href]) => (
+            {[['Features', '/features'], ['Pricing', '/pricing'], ['How It Works', '#how-it-works'], ['Security', '/security-center']].map(([label, href]) => (
               <a key={label} href={href} className={`text-sm font-medium transition-colors ${isScrolled ? 'text-gray-600 hover:text-gray-900' : 'text-white/75 hover:text-white'}`}>{label}</a>
             ))}
           </div>
@@ -678,7 +678,7 @@ export default function MarketingPage() {
             {[
               { title: 'Product', links: ['Features', 'Pricing', 'Security', 'API Docs', 'Changelog'] },
               { title: 'Solutions', links: ['Schools', 'Colleges', 'Universities', 'Madrassas', 'Academies'] },
-              { title: 'Company', links: ['About', 'Blog', 'Careers', 'Privacy Policy|/privacy-policy', 'Terms of Service|/terms'] },
+              { title: 'Company', links: ['About', 'Blog', 'Careers', 'Privacy Policy|/privacy-policy', 'Terms of Service|/terms', 'Security|/security'] },
             ].map(col => (
               <div key={col.title}>
                 <p className="font-bold text-white mb-4 text-sm">{col.title}</p>
