@@ -155,7 +155,7 @@ export default function MarketingPage() {
             <span className={`font-black text-lg tracking-tight ${isScrolled ? 'text-gray-900' : 'text-white'}`}>MySchool</span>
           </Link>
           <div className="hidden md:flex items-center gap-7">
-            {[['Features', '/features'], ['Pricing', '/pricing'], ['How It Works', '#how-it-works'], ['Security', '/security-center']].map(([label, href]) => (
+            {[['Features', '/features'], ['Pricing', '/pricing'], ['How It Works', '#how-it-works'], ['About', '/about'], ['Security', '/security-center']].map(([label, href]) => (
               <a key={label} href={href} className={`text-sm font-medium transition-colors ${isScrolled ? 'text-gray-600 hover:text-gray-900' : 'text-white/75 hover:text-white'}`}>{label}</a>
             ))}
           </div>
