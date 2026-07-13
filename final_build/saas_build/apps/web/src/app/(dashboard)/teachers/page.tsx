@@ -8,7 +8,7 @@ import { Badge } from '@/components/shared/badge';
 import { Modal } from '@/components/shared/modal';
 import { BulkImportExport } from '@/components/shared/bulk-import-export';
 
-const EMPTY = { firstName:'', lastName:'', email:'', phone:'', specialization:'', qualifications:'', gender:'Male', joiningDate:'' };
+const EMPTY = { firstName:'', lastName:'', email:'', employeeId:'', phone:'', specialization:'', qualifications:'', gender:'Male', joiningDate:'' };
 
 export default function TeachersPage() {
   const [search, setSearch] = useState('');
@@ -88,7 +88,7 @@ export default function TeachersPage() {
         <Modal title="Add New Teacher" onClose={() => { setModal(false); setForm(EMPTY); }}>
           <div className="p-5 space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {[['First Name','firstName','text'],['Last Name','lastName','text'],['Email','email','email'],['Phone','phone','tel'],['Specialization','specialization','text'],['Qualifications','qualifications','text'],['Joining Date','joiningDate','date']].map(([l,k,t]) => (
+              {[['First Name','firstName','text'],['Last Name','lastName','text'],['Email','email','email'],['Employee ID','employeeId','text'],['Phone','phone','tel'],['Specialization','specialization','text'],['Qualifications','qualifications','text'],['Joining Date','joiningDate','date']].map(([l,k,t]) => (
                 <div key={k}><label className="block text-xs font-bold text-gray-500 uppercase mb-1">{l}</label>
                 <input type={t} value={(form as any)[k]} onChange={e => setForm(f => ({ ...f, [k]: e.target.value }))} className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400" /></div>
               ))}
@@ -97,7 +97,16 @@ export default function TeachersPage() {
             </div>
             <div className="flex gap-3 pt-2">
               <button onClick={() => { setModal(false); setForm(EMPTY); }} className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
-              <button onClick={async () => { await create.mutateAsync(form); setModal(false); setForm(EMPTY); }} disabled={!form.firstName||!form.email||create.isPending}
+              <button onClick={async () => {
+                  await create.mutateAsync({
+                    firstName: form.firstName, lastName: form.lastName, email: form.email,
+                    employeeId: form.employeeId, phone: form.phone || undefined, gender: form.gender || undefined,
+                    joiningDate: form.joiningDate,
+                    specializations: form.specialization ? [form.specialization] : undefined,
+                    qualifications: form.qualifications ? [form.qualifications] : undefined,
+                  });
+                  setModal(false); setForm(EMPTY);
+                }} disabled={!form.firstName||!form.email||!form.employeeId||!form.joiningDate||create.isPending}
                 className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 disabled:opacity-40">{create.isPending ? 'Adding...':'Add Teacher'}</button>
             </div>
           </div>
