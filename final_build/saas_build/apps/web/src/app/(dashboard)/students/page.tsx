@@ -26,7 +26,7 @@ export default function StudentsPage() {
   const meta     = (data as any)?.meta ?? {};
 
   const handleCreate = async () => {
-    await create.mutateAsync({ ...form, schoolId: (school as any)?.id });
+    await create.mutateAsync({ ...form, gender: form.gender ? form.gender.toUpperCase() : undefined, schoolId: (school as any)?.id });
     setModal(false); setForm(EMPTY);
   };
 

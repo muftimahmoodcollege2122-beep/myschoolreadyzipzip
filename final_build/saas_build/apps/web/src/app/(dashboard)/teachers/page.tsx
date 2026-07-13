@@ -100,7 +100,7 @@ export default function TeachersPage() {
               <button onClick={async () => {
                   await create.mutateAsync({
                     firstName: form.firstName, lastName: form.lastName, email: form.email,
-                    employeeId: form.employeeId, phone: form.phone || undefined, gender: form.gender || undefined,
+                    employeeId: form.employeeId, phone: form.phone || undefined, gender: form.gender ? form.gender.toUpperCase() : undefined,
                     joiningDate: form.joiningDate,
                     specializations: form.specialization ? [form.specialization] : undefined,
                     qualifications: form.qualifications ? [form.qualifications] : undefined,
