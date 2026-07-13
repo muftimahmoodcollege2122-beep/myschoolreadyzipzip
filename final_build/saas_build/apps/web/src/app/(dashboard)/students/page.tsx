@@ -1,10 +1,12 @@
 'use client';
 import React, { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useStudents, useCreateStudent, useDeleteStudent, useSchoolInfo } from '@/hooks/use-api';
 import { Topbar } from '@/components/layout/topbar';
 import { PageHeader } from '@/components/shared/page-header';
 import { Badge } from '@/components/shared/badge';
 import { Modal } from '@/components/shared/modal';
+import { BulkImportExport } from '@/components/shared/bulk-import-export';
 
 const EMPTY = { firstName:'', lastName:'', email:'', phone:'', gender:'Male', admissionNo:'', rollNumber:'', dateOfBirth:'', admissionDate:'' };
 
@@ -13,6 +15,7 @@ export default function StudentsPage() {
   const [page, setPage]       = useState(1);
   const [modal, setModal]     = useState(false);
   const [form, setForm]       = useState(EMPTY);
+  const qc = useQueryClient();
 
   const { data, isLoading }   = useStudents({ search, page, limit: 20 });
   const { data: school }      = useSchoolInfo();
@@ -36,6 +39,9 @@ export default function StudentsPage() {
         <div className="flex gap-3 mb-4">
           <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
             placeholder="Search by name, roll no, admission no..." className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400" />
+        </div>
+        <div className="mb-4">
+          <BulkImportExport entity="students" label="Students" onImported={() => qc.invalidateQueries({ queryKey: ['students'] })} />
         </div>
 
         {/* Mobile: Card view, Desktop: Table */}

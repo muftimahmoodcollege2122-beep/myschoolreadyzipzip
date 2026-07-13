@@ -97,6 +97,24 @@ export const apiClient = {
   put: <T = any>(url: string, data?: any): Promise<T> => instance.put<T>(url, data).then(r => r.data),
   patch: <T = any>(url: string, data?: any): Promise<T> => instance.patch<T>(url, data).then(r => r.data),
   delete: <T = any>(url: string): Promise<T> => instance.delete<T>(url).then(r => r.data),
+  /** Uploads a File as multipart/form-data (field name "file") — used for bulk import. */
+  upload: <T = any>(url: string, file: File): Promise<T> => {
+    const form = new FormData();
+    form.append('file', file);
+    return instance.post<T>(url, form, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data);
+  },
+  /** Downloads a file response (e.g. .xlsx export) and triggers a browser save. */
+  download: async (url: string, filename: string): Promise<void> => {
+    const res = await instance.get(url, { responseType: 'blob' });
+    const blobUrl = window.URL.createObjectURL(new Blob([res.data]));
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(blobUrl);
+  },
 };
 
 export default instance;

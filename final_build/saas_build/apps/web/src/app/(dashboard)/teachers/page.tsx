@@ -1,10 +1,12 @@
 'use client';
 import React, { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTeachers, useCreateTeacher, useDeleteTeacher } from '@/hooks/use-api';
 import { Topbar } from '@/components/layout/topbar';
 import { PageHeader } from '@/components/shared/page-header';
 import { Badge } from '@/components/shared/badge';
 import { Modal } from '@/components/shared/modal';
+import { BulkImportExport } from '@/components/shared/bulk-import-export';
 
 const EMPTY = { firstName:'', lastName:'', email:'', phone:'', specialization:'', qualifications:'', gender:'Male', joiningDate:'' };
 
@@ -12,6 +14,7 @@ export default function TeachersPage() {
   const [search, setSearch] = useState('');
   const [modal, setModal]   = useState(false);
   const [form, setForm]     = useState(EMPTY);
+  const qc = useQueryClient();
 
   const { data, isLoading } = useTeachers({ search, limit:50 });
   const create = useCreateTeacher();
@@ -25,6 +28,9 @@ export default function TeachersPage() {
       <div className="page-padding">
         <div className="flex gap-3 mb-4">
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search teachers..." className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400" />
+        </div>
+        <div className="mb-4">
+          <BulkImportExport entity="teachers" label="Teachers" onImported={() => qc.invalidateQueries({ queryKey: ['teachers'] })} />
         </div>
 
         {isLoading ? <div className="text-center py-16 text-gray-400">Loading...</div> :

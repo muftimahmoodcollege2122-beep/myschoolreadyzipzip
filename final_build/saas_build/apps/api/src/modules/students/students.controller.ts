@@ -22,8 +22,13 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
   Req,
+  Res,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import type { Response } from 'express';
 import {
   ApiTags,
   ApiOperation,
@@ -69,6 +74,47 @@ export class StudentsController {
       (req.body as any).schoolId;
 
     return this.studentsService.create(dto, tenantId, schoolId, user.sub);
+  }
+
+  // ── Bulk import / export ────────────────────────────────────────────────
+
+  @Get('bulk-import/template')
+  @Roles('SCHOOL_ADMIN')
+  @ApiOperation({ summary: 'Download the .xlsx template for bulk student import' })
+  async downloadImportTemplate(@Res() res: Response) {
+    const buffer = this.studentsService.getImportTemplate();
+    res.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': 'attachment; filename=students-import-template.xlsx',
+    });
+    res.send(buffer);
+  }
+
+  @Post('bulk-import')
+  @Roles('SCHOOL_ADMIN')
+  @Throttle(5, 300) // 5 imports per 5 minutes — these are heavy, not for rapid-fire use
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } })) // 10MB max
+  @ApiOperation({ summary: 'Bulk import students from an uploaded .xlsx/.csv file' })
+  async bulkImport(
+    @UploadedFile() file: Express.Multer.File,
+    @TenantId() tenantId: string,
+    @Query('schoolId') schoolId: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    if (!file) throw new Error('No file uploaded. Please attach a .xlsx or .csv file.');
+    return this.studentsService.bulkImport(file.buffer, tenantId, schoolId, user.sub);
+  }
+
+  @Get('export/excel')
+  @Roles('SCHOOL_ADMIN')
+  @ApiOperation({ summary: 'Export all active students to .xlsx' })
+  async exportExcel(@TenantId() tenantId: string, @Query('schoolId') schoolId: string, @Res() res: Response) {
+    const buffer = await this.studentsService.exportToExcel(tenantId, schoolId);
+    res.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': `attachment; filename=students-${new Date().toISOString().slice(0, 10)}.xlsx`,
+    });
+    res.send(buffer);
   }
 
   @Get('me')

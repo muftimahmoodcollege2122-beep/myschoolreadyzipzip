@@ -85,7 +85,7 @@ export class PlanGuard {
     }
   }
 
-  private async getLimits(tenantId: string): Promise<PlanLimits> {
+  async getLimits(tenantId: string): Promise<PlanLimits> {
     const cached = await this.cache.get<PlanLimits>(`limits:${tenantId}`);
     if (cached) return cached;
 

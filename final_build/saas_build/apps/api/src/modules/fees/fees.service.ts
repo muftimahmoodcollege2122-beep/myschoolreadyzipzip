@@ -16,6 +16,7 @@ import { FeeStatus } from '../../common/prisma-enums';
 import { randomUUID } from 'crypto';
 import dayjs from 'dayjs';
 import { FeesRealtimeInterceptor } from './fees.realtime.interceptor';
+import { parseSpreadsheet, buildTemplate, buildExport, cleanCell, ImportResult, RowError } from '../../common/import/xlsx-import.util';
 
 @Injectable()
 export class FeesService {
@@ -165,5 +166,126 @@ export class FeesService {
       pending: allInvoices.filter(i => i.status === FeeStatus.PENDING).length,
       overdue: allInvoices.filter(i => (i.status as string) === 'OVERDUE').length,
     };
+  }
+
+  // ── Edit invoice ─────────────────────────────────────────────────────────
+
+  async editInvoice(id: string, tenantId: string, dto: { amount?: number; dueDate?: string; discount?: number; fine?: number; notes?: string }, editedById: string) {
+    const invoice = await this.prisma.feeInvoice.findFirst({ where: { id, tenantId } });
+    if (!invoice) throw new NotFoundException('Invoice not found');
+
+    const newAmount = dto.amount ?? Number(invoice.amount);
+    const newDiscount = dto.discount ?? Number(invoice.discount ?? 0);
+    const newFine = dto.fine ?? Number(invoice.fine ?? 0);
+    const paid = Number(invoice.amountPaid ?? 0);
+    const outstanding = newAmount + newFine - newDiscount - paid;
+    const newStatus = outstanding <= 0 ? FeeStatus.PAID : (paid > 0 ? 'PARTIAL' as any : FeeStatus.PENDING);
+
+    const updated = await this.prisma.feeInvoice.update({
+      where: { id },
+      data: {
+        ...(dto.amount !== undefined && { amount: dto.amount }),
+        ...(dto.dueDate !== undefined && { dueDate: new Date(dto.dueDate) }),
+        ...(dto.discount !== undefined && { discount: dto.discount }),
+        ...(dto.fine !== undefined && { fine: dto.fine }),
+        ...(dto.notes !== undefined && { notes: dto.notes }),
+        status: newStatus,
+      },
+    });
+
+    await this.audit.log({ tenantId, userId: editedById, action: 'UPDATE', entity: 'FeeInvoice', entityId: id, before: { amount: invoice.amount, dueDate: invoice.dueDate }, after: { amount: updated.amount, dueDate: updated.dueDate } });
+    return updated;
+  }
+
+  // ── Bulk import / export ────────────────────────────────────────────────
+
+  private readonly IMPORT_HEADERS = ['Student Admission No', 'Description', 'Amount', 'Due Date (YYYY-MM-DD)', 'Category'];
+
+  getImportTemplate(): Buffer {
+    return buildTemplate(this.IMPORT_HEADERS, {
+      'Student Admission No': 'ADM-2026-001', 'Description': 'Tuition Fee - April',
+      'Amount': '4000', 'Due Date (YYYY-MM-DD)': '2026-04-10', 'Category': 'Tuition',
+    });
+  }
+
+  /**
+   * Bulk-creates fee invoices from a spreadsheet — for migrating outstanding
+   * dues from an old system, or issuing many one-off invoices at once.
+   * Each row becomes its own direct invoice (same pattern as createDirectInvoice).
+   */
+  async bulkImport(buffer: Buffer, tenantId: string, createdById: string): Promise<ImportResult<any>> {
+    const school = await this.prisma.school.findFirst({ where: { tenantId }, orderBy: { createdAt: 'asc' } });
+    if (!school) throw new Error('School not found for this tenant');
+
+    const rows = parseSpreadsheet(buffer);
+    if (rows.length === 0) throw new BadRequestException('No rows found in the uploaded file. Please use the provided template.');
+    if (rows.length > 1000) throw new BadRequestException('Import limited to 1000 rows per file. Please split into smaller batches.');
+
+    const students = await this.prisma.student.findMany({ where: { tenantId, isActive: true }, select: { id: true, admissionNo: true } });
+    const studentMap = new Map(students.map(s => [s.admissionNo, s.id]));
+
+    const created: any[] = [];
+    const errors: RowError[] = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const rowNum = i + 2;
+      const row = rows[i];
+      try {
+        const admissionNo = cleanCell(row['Student Admission No']);
+        const description = cleanCell(row['Description']);
+        const amountRaw = cleanCell(row['Amount']);
+        const dueDateRaw = cleanCell(row['Due Date (YYYY-MM-DD)']) ?? cleanCell(row['Due Date']);
+        const category = cleanCell(row['Category']);
+
+        const missing: string[] = [];
+        if (!admissionNo) missing.push('Student Admission No');
+        if (!amountRaw) missing.push('Amount');
+        if (!dueDateRaw) missing.push('Due Date');
+        if (missing.length) { errors.push({ row: rowNum, message: `Missing required field(s): ${missing.join(', ')}` }); continue; }
+
+        const studentId = studentMap.get(admissionNo!);
+        if (!studentId) { errors.push({ row: rowNum, message: `No active student found with Admission No "${admissionNo}"` }); continue; }
+
+        const amount = Number(amountRaw);
+        if (isNaN(amount) || amount <= 0) { errors.push({ row: rowNum, message: `Invalid Amount: ${amountRaw}` }); continue; }
+
+        const dueDate = new Date(dueDateRaw!);
+        if (isNaN(dueDate.getTime())) { errors.push({ row: rowNum, message: `Invalid Due Date: ${dueDateRaw}` }); continue; }
+
+        const invoice = await this.createDirectInvoice({ studentId, description: description ?? 'Imported Invoice', amount, dueDate: dueDate.toISOString(), category }, tenantId);
+        created.push(invoice);
+      } catch (err: any) {
+        errors.push({ row: rowNum, message: err?.message ?? 'Unknown error' });
+      }
+    }
+
+    if (created.length > 0) {
+      await this.audit.log({ tenantId, userId: createdById, action: 'CREATE', entity: 'FeeInvoice', entityId: 'bulk-import', after: { count: created.length, source: 'bulk-import' } });
+    }
+
+    return { successCount: created.length, failedCount: errors.length, created, errors };
+  }
+
+  async exportToExcel(tenantId: string, schoolId?: string): Promise<Buffer> {
+    const invoices = await this.prisma.feeInvoice.findMany({
+      where: { tenantId, ...(schoolId && { student: { schoolId } }) },
+      include: { student: { include: { user: { include: { profile: true } } } } },
+      orderBy: { createdAt: 'desc' },
+      take: 5000,
+    });
+    const rows = invoices.map(inv => ({
+      'Invoice No': inv.invoiceNo,
+      'Student Name': `${inv.student.user.profile?.firstName ?? ''} ${inv.student.user.profile?.lastName ?? ''}`.trim(),
+      'Admission No': inv.student.admissionNo,
+      'Amount': Number(inv.amount),
+      'Discount': Number(inv.discount ?? 0),
+      'Fine': Number(inv.fine ?? 0),
+      'Amount Paid': Number(inv.amountPaid ?? 0),
+      'Status': inv.status,
+      'Due Date': inv.dueDate.toISOString().slice(0, 10),
+      'Issued At': inv.issuedAt.toISOString().slice(0, 10),
+      'Paid At': inv.paidAt ? inv.paidAt.toISOString().slice(0, 10) : '',
+    }));
+    return buildExport(rows, 'Fee Invoices');
   }
 }

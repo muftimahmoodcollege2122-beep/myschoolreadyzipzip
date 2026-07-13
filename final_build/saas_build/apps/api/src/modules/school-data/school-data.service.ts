@@ -18,6 +18,23 @@ export class SchoolDataService {
     return s?.id;
   }
 
+  /**
+   * Backs GET /school/stats — lightweight real counts for the dashboard stat cards
+   * that aren't already covered by /attendance/today/summary or /ai-analytics/dashboard.
+   */
+  async getSchoolStats(tenantId: string, sid?: string) {
+    const schoolId = await this.resolveSchoolId(tenantId, sid);
+    const schoolFilter: any = { tenantId, ...(schoolId && { schoolId }) };
+    const today = new Date();
+    const [totalStudents, totalTeachers, totalClasses, overdueInvoices] = await Promise.all([
+      this.prisma.student.count({ where: { ...schoolFilter, isActive: true } }),
+      this.prisma.teacher.count({ where: { ...schoolFilter, isActive: true } }),
+      this.prisma.class.count({ where: { ...schoolFilter, isActive: true } }),
+      this.prisma.feeInvoice.count({ where: { tenantId, ...(schoolId && { student: { schoolId } }), status: { not: 'PAID' as any }, dueDate: { lt: today } } }),
+    ]);
+    return { totalStudents, totalTeachers, totalClasses, overdueInvoices };
+  }
+
   private async getSchool(tenantId: string) {
     let s = await this.prisma.school.findFirst({ where: { tenantId }, orderBy: { createdAt: 'asc' } });
     if (!s) {

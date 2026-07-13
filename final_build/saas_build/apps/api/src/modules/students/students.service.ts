@@ -18,6 +18,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../../common/audit/audit.service';
 import { EventPublisher } from '../../events/event-publisher.service';
 import { PlanGuard } from '../../common/guards/plan.guard';
+import { parseSpreadsheet, buildTemplate, buildExport, cleanCell, ImportResult, RowError } from '../../common/import/xlsx-import.util';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
 import { StudentListQueryDto } from './dto/student-list-query.dto';
@@ -388,5 +389,164 @@ export class StudentsService {
     });
 
     this.logger.log(`GDPR erasure completed for student ${id}`);
+  }
+
+  // ── Bulk import / export ────────────────────────────────────────────────
+
+  private readonly IMPORT_HEADERS = [
+    'First Name', 'Last Name', 'Email', 'Admission No', 'Roll Number',
+    'Admission Date (YYYY-MM-DD)', 'Date of Birth (YYYY-MM-DD)', 'Gender (MALE/FEMALE/OTHER)',
+    'Phone', 'Class', 'Section', 'Academic Year',
+  ];
+
+  getImportTemplate(): Buffer {
+    return buildTemplate(this.IMPORT_HEADERS, {
+      'First Name': 'Ali', 'Last Name': 'Raza', 'Email': 'ali.raza@example.com',
+      'Admission No': 'ADM-2026-001', 'Roll Number': '01',
+      'Admission Date (YYYY-MM-DD)': '2026-04-01', 'Date of Birth (YYYY-MM-DD)': '2012-03-15',
+      'Gender (MALE/FEMALE/OTHER)': 'MALE', 'Phone': '0300-0000000',
+      'Class': '10', 'Section': 'A', 'Academic Year': '2026-2027',
+    });
+  }
+
+  async bulkImport(buffer: Buffer, tenantId: string, schoolId: string | undefined, createdById: string): Promise<ImportResult<any>> {
+    if (!schoolId) {
+      const school = await this.prisma.school.findFirst({ where: { tenantId }, orderBy: { createdAt: 'asc' } });
+      if (!school) throw new Error('School not found for this tenant');
+      schoolId = school.id;
+    }
+
+    const rows = parseSpreadsheet(buffer);
+    if (rows.length === 0) throw new ConflictException('No rows found in the uploaded file. Please use the provided template.');
+    if (rows.length > 1000) throw new ConflictException('Import limited to 1000 rows per file. Please split into smaller batches.');
+
+    // Check plan capacity up front rather than failing midway through
+    const limits = await this.planGuard.getLimits(tenantId);
+    if (limits.maxStudents !== -1) {
+      const currentCount = await this.prisma.student.count({ where: { tenantId, isActive: true } });
+      if (currentCount + rows.length > limits.maxStudents) {
+        throw new ConflictException(`This import would exceed your plan's student limit (${currentCount}/${limits.maxStudents}, trying to add ${rows.length}). Please upgrade your plan or reduce the file size.`);
+      }
+    }
+
+    // Pre-load sections for this school so we can resolve "Class"+"Section" names without a query per row
+    const sections = await this.prisma.section.findMany({
+      where: { tenantId, schoolId, class: { isActive: true } },
+      include: { class: true },
+    });
+    const sectionMap = new Map(sections.map(s => [`${s.class.name.toLowerCase()}|${s.name.toLowerCase()}`, s.id]));
+
+    const existingEmails = new Set((await this.prisma.user.findMany({ where: { tenantId }, select: { email: true } })).map(u => u.email.toLowerCase()));
+    const existingAdmissionNos = new Set((await this.prisma.student.findMany({ where: { tenantId }, select: { admissionNo: true } })).map(a => a.admissionNo));
+
+    const created: any[] = [];
+    const errors: RowError[] = [];
+    const seenEmailsInFile = new Set<string>();
+    const seenAdmissionNosInFile = new Set<string>();
+
+    for (let i = 0; i < rows.length; i++) {
+      const rowNum = i + 2; // +1 for 0-index, +1 for header row
+      const row = rows[i];
+      try {
+        const firstName = cleanCell(row['First Name']);
+        const lastName = cleanCell(row['Last Name']);
+        const email = cleanCell(row['Email'])?.toLowerCase();
+        const admissionNo = cleanCell(row['Admission No']);
+        const rollNumber = cleanCell(row['Roll Number']);
+        const admissionDateRaw = cleanCell(row['Admission Date (YYYY-MM-DD)']) ?? cleanCell(row['Admission Date']);
+        const dobRaw = cleanCell(row['Date of Birth (YYYY-MM-DD)']) ?? cleanCell(row['Date of Birth']);
+        const genderRaw = cleanCell(row['Gender (MALE/FEMALE/OTHER)']) ?? cleanCell(row['Gender']);
+        const phone = cleanCell(row['Phone']);
+        const className = cleanCell(row['Class']);
+        const sectionName = cleanCell(row['Section']);
+        const academicYear = cleanCell(row['Academic Year']);
+
+        const missing: string[] = [];
+        if (!firstName) missing.push('First Name');
+        if (!lastName) missing.push('Last Name');
+        if (!email) missing.push('Email');
+        if (!admissionNo) missing.push('Admission No');
+        if (!rollNumber) missing.push('Roll Number');
+        if (!admissionDateRaw) missing.push('Admission Date');
+        if (missing.length) { errors.push({ row: rowNum, message: `Missing required field(s): ${missing.join(', ')}` }); continue; }
+
+        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { errors.push({ row: rowNum, message: `Invalid email: ${email}` }); continue; }
+        if (existingEmails.has(email!) || seenEmailsInFile.has(email!)) { errors.push({ row: rowNum, message: `Email already used: ${email}` }); continue; }
+        if (existingAdmissionNos.has(admissionNo!) || seenAdmissionNosInFile.has(admissionNo!)) { errors.push({ row: rowNum, message: `Admission No already used: ${admissionNo}` }); continue; }
+
+        const admissionDate = new Date(admissionDateRaw!);
+        if (isNaN(admissionDate.getTime())) { errors.push({ row: rowNum, message: `Invalid Admission Date: ${admissionDateRaw}` }); continue; }
+        let dateOfBirth: Date | undefined;
+        if (dobRaw) {
+          dateOfBirth = new Date(dobRaw);
+          if (isNaN(dateOfBirth.getTime())) { errors.push({ row: rowNum, message: `Invalid Date of Birth: ${dobRaw}` }); continue; }
+        }
+        let gender: string | undefined;
+        if (genderRaw) {
+          const g = genderRaw.toUpperCase();
+          if (!['MALE', 'FEMALE', 'OTHER', 'PREFER_NOT_TO_SAY'].includes(g)) { errors.push({ row: rowNum, message: `Invalid Gender: ${genderRaw} (use MALE/FEMALE/OTHER)` }); continue; }
+          gender = g;
+        }
+
+        let sectionId: string | undefined;
+        if (className && sectionName) {
+          sectionId = sectionMap.get(`${className.toLowerCase()}|${sectionName.toLowerCase()}`);
+          if (!sectionId) { errors.push({ row: rowNum, message: `No section found matching Class "${className}" + Section "${sectionName}"` }); continue; }
+        }
+
+        const student = await this.prisma.$transaction(async tx => {
+          const user = await tx.user.create({
+            data: { tenantId, email: email!, role: 'STUDENT', profile: { create: { firstName, lastName, dateOfBirth, gender: gender as any, phone } } },
+          });
+          const s = await tx.student.create({
+            data: { userId: user.id, tenantId, schoolId: schoolId!, rollNumber: rollNumber!, admissionNo: admissionNo!, admissionDate },
+          });
+          if (sectionId) {
+            await tx.studentEnrollment.create({ data: { studentId: s.id, sectionId, tenantId, academicYear: academicYear ?? new Date().getFullYear().toString() } });
+          }
+          return s;
+        });
+
+        existingEmails.add(email!);
+        existingAdmissionNos.add(admissionNo!);
+        seenEmailsInFile.add(email!);
+        seenAdmissionNosInFile.add(admissionNo!);
+        created.push(student);
+      } catch (err: any) {
+        errors.push({ row: rowNum, message: err?.message ?? 'Unknown error' });
+      }
+    }
+
+    if (created.length > 0) {
+      await this.audit.log({ tenantId, userId: createdById, action: 'CREATE', entity: 'Student', entityId: 'bulk-import', after: { count: created.length, source: 'bulk-import' } });
+    }
+
+    return { successCount: created.length, failedCount: errors.length, created, errors };
+  }
+
+  async exportToExcel(tenantId: string, schoolId: string | undefined): Promise<Buffer> {
+    if (!schoolId) {
+      const school = await this.prisma.school.findFirst({ where: { tenantId }, orderBy: { createdAt: 'asc' } });
+      schoolId = school?.id;
+    }
+    const students = await this.prisma.student.findMany({
+      where: { tenantId, ...(schoolId && { schoolId }), isActive: true },
+      include: { user: { include: { profile: true } }, enrollments: { where: { isActive: true }, include: { section: { include: { class: true } } } } },
+      orderBy: { createdAt: 'desc' },
+    });
+    const rows = students.map(s => ({
+      'First Name': s.user.profile?.firstName ?? '',
+      'Last Name': s.user.profile?.lastName ?? '',
+      'Email': s.user.email,
+      'Admission No': s.admissionNo,
+      'Roll Number': s.rollNumber,
+      'Admission Date': s.admissionDate.toISOString().slice(0, 10),
+      'Gender': s.user.profile?.gender ?? '',
+      'Phone': s.user.profile?.phone ?? '',
+      'Class': s.enrollments[0]?.section?.class?.name ?? '',
+      'Section': s.enrollments[0]?.section?.name ?? '',
+      'Status': s.isActive ? 'Active' : 'Inactive',
+    }));
+    return buildExport(rows, 'Students');
   }
 }

@@ -72,6 +72,11 @@ export const useCreateTeacher = () => {
   return useMutation({ mutationFn: (dto: any) => apiClient.post('/teachers', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['teachers'] }) });
 };
 
+export const useDeleteTeacher = () => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (id: string) => apiClient.delete(`/teachers/${id}`), onSuccess: () => qc.invalidateQueries({ queryKey: ['teachers'] }) });
+};
+
 // ── Attendance ──────────────────────────────────────────────────────────────
 export const useAttendance = (sectionId: string, date: string) =>
   useQuery({ queryKey: ['attendance', sectionId, date], queryFn: () => apiClient.get(`/attendance/section/${sectionId}?date=${date}`), enabled: !!sectionId && !!date });
@@ -99,6 +104,15 @@ export const useRecordPayment = () => {
 export const useCreateInvoice = () => {
   const qc = useQueryClient();
   return useMutation({ mutationFn: (dto: any) => apiClient.post('/fees/invoices', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['fees'] }) });
+};
+
+export const useEditInvoice = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...dto }: { id: string; amount?: number; dueDate?: string; discount?: number; fine?: number; notes?: string }) =>
+      apiClient.patch(`/fees/invoices/${id}`, dto),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['fees'] }); qc.invalidateQueries({ queryKey: ['dashboard'] }); },
+  });
 };
 
 export const useFeeRevenue = () =>

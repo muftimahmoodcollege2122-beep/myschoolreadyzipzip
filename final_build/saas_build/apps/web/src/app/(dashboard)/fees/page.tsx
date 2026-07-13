@@ -1,11 +1,13 @@
 'use client';
 import React, { useState } from 'react';
-import { useOutstandingFees, useRecordPayment, useCreateInvoice, useFeeRevenue, useStudents } from '@/hooks/use-api';
+import { useQueryClient } from '@tanstack/react-query';
+import { useOutstandingFees, useRecordPayment, useCreateInvoice, useEditInvoice, useFeeRevenue, useStudents } from '@/hooks/use-api';
 import { DataTable } from '@/components/shared/data-table';
 import { PageHeader } from '@/components/shared/page-header';
 import { Badge } from '@/components/shared/badge';
 import { Modal } from '@/components/shared/modal';
 import { Topbar } from '@/components/layout/topbar';
+import { BulkImportExport } from '@/components/shared/bulk-import-export';
 
 const SV: Record<string,string> = { PAID:'green', PENDING:'yellow', OVERDUE:'red', PARTIAL:'blue', CANCELLED:'gray' };
 
@@ -60,6 +62,8 @@ function printFeeSlip(inv: any) {
 export default function FeesPage() {
   const [payModal, setPayModal] = useState<any>(null);
   const [invoiceModal, setInvoiceModal] = useState(false);
+  const [editModal, setEditModal] = useState<any>(null);
+  const [editForm, setEditForm] = useState({ amount: '', dueDate: '', discount: '', fine: '', notes: '' });
   const [reminderModal, setReminderModal] = useState(false);
   const [reminderSent, setReminderSent] = useState<Set<string>>(new Set());
   const [amount, setAmount] = useState('');
@@ -68,12 +72,14 @@ export default function FeesPage() {
   const [invForm, setInvForm] = useState({ studentId: '', description: '', amount: '', dueDate: '', category: 'TUITION' });
   const [reminderForm, setReminderForm] = useState({ channel: 'SMS', message: 'Dear parent, your fee payment of Rs. {amount} for {description} is overdue. Please clear the dues at the earliest. - School Management' });
   const [isSendingReminders, setIsSendingReminders] = useState(false);
+  const qc = useQueryClient();
 
   const { data: invoices, isLoading } = useOutstandingFees('');
   const { data: revenue } = useFeeRevenue();
   const { data: studentsData } = useStudents({ limit: 100 });
   const pay = useRecordPayment();
   const createInvoice = useCreateInvoice();
+  const editInvoice = useEditInvoice();
 
   const inv: any[] = Array.isArray(invoices) ? invoices : [];
   const rev = revenue as any;
@@ -122,6 +128,30 @@ export default function FeesPage() {
     setInvoiceModal(false);
   };
 
+  const openEditModal = (i: any) => {
+    setEditModal(i);
+    setEditForm({
+      amount: String(i.amount ?? ''),
+      dueDate: i.dueDate ? new Date(i.dueDate).toISOString().slice(0, 10) : '',
+      discount: String(i.discount ?? 0),
+      fine: String(i.fine ?? 0),
+      notes: i.notes ?? '',
+    });
+  };
+
+  const submitEdit = async () => {
+    if (!editModal) return;
+    await editInvoice.mutateAsync({
+      id: editModal.id,
+      amount: editForm.amount ? parseFloat(editForm.amount) : undefined,
+      dueDate: editForm.dueDate || undefined,
+      discount: editForm.discount ? parseFloat(editForm.discount) : undefined,
+      fine: editForm.fine ? parseFloat(editForm.fine) : undefined,
+      notes: editForm.notes || undefined,
+    });
+    setEditModal(null);
+  };
+
   const sendReminders = async () => {
     setIsSendingReminders(true);
     await new Promise(r => setTimeout(r, 1200));
@@ -153,6 +183,9 @@ export default function FeesPage() {
       <div className="flex gap-1">
         <button onClick={() => printFeeSlip(i)} className="px-2 py-1 text-xs bg-gray-100 text-gray-600 font-medium rounded-lg hover:bg-gray-200" title="Print Fee Slip">
           🖨️
+        </button>
+        <button onClick={() => openEditModal(i)} className="px-2 py-1 text-xs bg-blue-50 text-blue-600 font-medium rounded-lg hover:bg-blue-100" title="Edit Invoice">
+          ✏️
         </button>
         {i.status !== 'PAID' && i.status !== 'CANCELLED' && (
           <button onClick={() => { setPayModal(i); setAmount(String(i.amount - (i.paidAmount ?? 0))); }}
@@ -188,6 +221,10 @@ export default function FeesPage() {
             </div>
           }
         />
+
+        <div className="mb-4">
+          <BulkImportExport entity="fees" label="Fee Invoices" onImported={() => qc.invalidateQueries({ queryKey: ['fees'] })} />
+        </div>
 
         {/* Stats */}
         <div className="grid grid-cols-4 gap-4 mb-6">
@@ -448,6 +485,40 @@ export default function FeesPage() {
               {isSendingReminders ? 'Sending...' : `Send ${reminderForm.channel} Reminders`}
             </button>
           </div>
+        </Modal>
+        {/* Edit Invoice Modal */}
+        <Modal isOpen={!!editModal} onClose={() => setEditModal(null)} title="Edit Invoice">
+          {editModal && (
+            <div className="space-y-3">
+              <div className="bg-gray-50 rounded-xl p-3">
+                <p className="font-bold text-sm text-gray-900">{editModal.description}</p>
+                <p className="text-xs text-gray-400 mt-0.5">Invoice #{editModal.invoiceNumber} · {editModal.student?.user?.profile?.firstName} {editModal.student?.user?.profile?.lastName}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Amount (Rs.)</label>
+                  <input type="number" value={editForm.amount} onChange={e => setEditForm(f => ({ ...f, amount: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400" /></div>
+                <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Due Date</label>
+                  <input type="date" value={editForm.dueDate} onChange={e => setEditForm(f => ({ ...f, dueDate: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Discount (Rs.)</label>
+                  <input type="number" value={editForm.discount} onChange={e => setEditForm(f => ({ ...f, discount: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400" /></div>
+                <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Fine (Rs.)</label>
+                  <input type="number" value={editForm.fine} onChange={e => setEditForm(f => ({ ...f, fine: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400" /></div>
+              </div>
+              <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Notes</label>
+                <textarea rows={2} value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-400" /></div>
+              <div className="bg-blue-50 rounded-lg p-2.5 text-xs text-blue-700">
+                Status recalculates automatically based on amount, discount, fine, and what's already been paid.
+              </div>
+              <div className="flex gap-3 pt-1">
+                <button onClick={() => setEditModal(null)} className="flex-1 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50">Cancel</button>
+                <button onClick={submitEdit} disabled={editInvoice.isPending} className="flex-1 py-2 text-sm bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-500 disabled:opacity-50">
+                  {editInvoice.isPending ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </div>
+          )}
         </Modal>
       </div>
     </>
