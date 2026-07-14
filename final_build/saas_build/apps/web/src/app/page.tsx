@@ -50,30 +50,39 @@ const FEATURES = [
 const PRICING = [
   {
     name: 'Starter',
-    monthlyPrice: 4999,
-    annualPrice: 3999,
+    urdu: 'ابتدائی',
+    monthlyPrice: 5000,
+    annualPrice: 4000,
     limit: 'Up to 500 students',
     highlight: false,
     badge: '',
-    features: ['500 students', 'School website', 'Admin portal', 'Attendance & fees', 'Email support', '5 GB storage'],
+    color: 'from-gray-700 to-gray-900',
+    glow: '',
+    features: ['500 students & 30 staff', 'School website + custom domain', 'Admin dashboard', 'Attendance & fee management', 'JazzCash & EasyPaisa payments', 'Student & parent portals', 'WhatsApp notifications (500/mo)', 'Basic reports', '5 GB storage', 'Email support'],
   },
   {
     name: 'Professional',
-    monthlyPrice: 12999,
-    annualPrice: 10399,
+    urdu: 'پیشہ ورانہ',
+    monthlyPrice: 12000,
+    annualPrice: 9600,
     limit: 'Up to 2,000 students',
     highlight: true,
     badge: 'Most Popular',
-    features: ['2,000 students', 'All Starter features', 'LMS & courses', 'Teacher & parent portals', 'AI Assistant', 'SMS integration', 'Priority support', '25 GB storage'],
+    color: 'from-blue-600 to-blue-700',
+    glow: 'shadow-2xl shadow-blue-500/25',
+    features: ['2,000 students & 100 staff', 'Everything in Starter', 'Teacher portal', 'LMS & online courses', 'AI analytics & dropout prediction', 'WhatsApp notifications (5,000/mo)', 'Advanced reports & analytics', 'Priority support', '25 GB storage', 'Question bank & digital exams'],
   },
   {
     name: 'Enterprise',
-    monthlyPrice: 29999,
-    annualPrice: 23999,
+    urdu: 'انٹرپرائز',
+    monthlyPrice: 20000,
+    annualPrice: 16000,
     limit: 'Unlimited students',
     highlight: false,
     badge: 'Enterprise',
-    features: ['Unlimited students', 'All Pro features', 'White-label branding', 'Custom domain', 'API access', 'Dedicated SLA', 'Multi-campus', 'Unlimited storage'],
+    color: 'from-purple-600 to-purple-700',
+    glow: '',
+    features: ['Unlimited students & staff', 'Everything in Professional', 'Multi-campus management', 'White-label branding', 'API access', 'Unlimited WhatsApp & SMS', 'Unlimited storage', 'Dedicated account manager', 'Custom SLA & uptime guarantee', 'Priority feature requests'],
   },
 ];
 
@@ -527,43 +536,100 @@ export default function MarketingPage() {
       </section>
 
       {/* ── Pricing ── */}
-      <section id="pricing" className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-4">
-            <span className="text-blue-600 font-bold text-xs uppercase tracking-widest">Transparent Pricing</span>
-            <h2 className="text-4xl font-black text-gray-900 mt-3 mb-4 tracking-tight">Pricing That Scales With You</h2>
-            <p className="text-gray-500 mb-8">30-day free trial on all plans. No credit card required.</p>
-            <div className="inline-flex items-center bg-gray-100 rounded-xl p-1 gap-1">
-              <button onClick={() => setBilling('monthly')} className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${billing === 'monthly' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Monthly</button>
-              <button onClick={() => setBilling('annual')} className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${billing === 'annual' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+      <section id="pricing" className="py-24 relative overflow-hidden" style={{ background: 'linear-gradient(180deg, #f8faff 0%, #ffffff 100%)' }}>
+        {/* Animated background blobs */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute -top-32 -left-32 w-96 h-96 bg-blue-100 rounded-full opacity-40 animate-[pulse_6s_ease-in-out_infinite]" />
+          <div className="absolute -bottom-32 -right-32 w-80 h-80 bg-purple-100 rounded-full opacity-30 animate-[pulse_8s_ease-in-out_infinite_1s]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-50 rounded-full opacity-20 animate-[pulse_10s_ease-in-out_infinite_2s]" />
+        </div>
+
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
+          {/* Header */}
+          <div className="text-center mb-10">
+            <span className="inline-flex items-center gap-1.5 text-blue-600 font-bold text-xs uppercase tracking-widest mb-3">
+              <span className="w-4 h-px bg-blue-400" />
+              Transparent Pricing
+              <span className="w-4 h-px bg-blue-400" />
+            </span>
+            <h2 className="text-4xl font-black text-gray-900 mb-3 tracking-tight">
+              Honest pricing for Pakistani schools
+            </h2>
+            <p className="text-gray-500 max-w-lg mx-auto mb-8">
+              One flat price for your entire school. No per-student charges, no hidden fees.
+              <span className="font-semibold text-gray-700"> 30-day free trial on all plans.</span>
+            </p>
+
+            {/* Billing toggle */}
+            <div className="inline-flex items-center bg-gray-100 rounded-xl p-1 gap-1 relative">
+              <div className={`absolute inset-y-1 rounded-lg bg-white shadow-sm transition-all duration-300 ease-in-out ${billing === 'annual' ? 'left-[calc(50%+2px)] right-1' : 'left-1 right-[calc(50%+2px)]'}`} />
+              <button onClick={() => setBilling('monthly')}
+                className={`relative px-6 py-2 rounded-lg text-sm font-bold transition-colors z-10 ${billing === 'monthly' ? 'text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
+                Monthly
+              </button>
+              <button onClick={() => setBilling('annual')}
+                className={`relative px-6 py-2 rounded-lg text-sm font-bold transition-colors z-10 flex items-center gap-2 ${billing === 'annual' ? 'text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
                 Annual
-                <span className="ml-2 text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-full">Save 20%</span>
+                <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full">Save 20%</span>
               </button>
             </div>
           </div>
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto mt-8">
-            {PRICING.map(p => (
-              <div key={p.name} className={`rounded-2xl border-2 overflow-hidden transition-transform ${p.highlight ? 'border-blue-600 scale-[1.02] shadow-xl shadow-blue-600/10' : 'border-gray-100 hover:border-gray-200'}`}>
-                {p.highlight && <div className="bg-blue-600 text-center py-2 text-xs font-black text-white tracking-wide">MOST POPULAR</div>}
-                {!p.highlight && p.badge && <div className="bg-gray-50 text-center py-2 text-xs font-bold text-gray-500 border-b border-gray-100">{p.badge.toUpperCase()}</div>}
-                {!p.highlight && !p.badge && <div className="py-2 border-b border-transparent" />}
-                <div className="p-7">
-                  <h3 className="font-black text-xl text-gray-900 mb-1">{p.name}</h3>
-                  <p className="text-sm text-gray-400 mb-5">{p.limit}</p>
-                  <div className="flex items-baseline gap-1 mb-6">
-                    <span className="text-sm text-gray-400">Rs.</span>
-                    <span className="text-4xl font-black text-gray-900">
-                      {(billing === 'annual' ? p.annualPrice : p.monthlyPrice).toLocaleString()}
-                    </span>
-                    <span className="text-sm text-gray-400">/mo</span>
+
+          {/* Cards */}
+          <div className="grid grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {PRICING.map((p, idx) => (
+              <div key={p.name}
+                className={`relative rounded-3xl overflow-hidden transition-all duration-500 hover:-translate-y-2 flex flex-col
+                  ${p.highlight ? `scale-[1.03] ${p.glow}` : 'hover:shadow-xl'}`}
+                style={{ animationDelay: `${idx * 100}ms` }}>
+
+                {/* Card header gradient */}
+                <div className={`bg-gradient-to-br ${p.color} p-7 text-white`}>
+                  {p.badge && (
+                    <div className={`inline-flex items-center gap-1.5 text-xs font-black px-3 py-1 rounded-full mb-4 ${p.highlight ? 'bg-white/20 text-white' : 'bg-white/15 text-white/90'}`}>
+                      {p.highlight && <span className="animate-pulse">⭐</span>}
+                      {p.badge.toUpperCase()}
+                    </div>
+                  )}
+                  {!p.badge && <div className="h-7 mb-4" />}
+
+                  <div className="flex items-end justify-between">
+                    <div>
+                      <h3 className="text-2xl font-black">{p.name}</h3>
+                      <p className="text-white/60 text-xs mt-0.5">{p.urdu}</p>
+                    </div>
                   </div>
-                  <Link href="/signup" className={`block text-center py-3 rounded-xl text-sm font-black transition-all mb-6 ${p.highlight ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-gray-900 hover:bg-gray-800 text-white'}`}>
-                    Start Free Trial
+
+                  {/* Animated price */}
+                  <div className="mt-5">
+                    <div className="flex items-end gap-1">
+                      <span className="text-white/70 text-sm font-medium pb-1">PKR</span>
+                      <span className="text-5xl font-black tracking-tight transition-all duration-500">
+                        {(billing === 'annual' ? p.annualPrice : p.monthlyPrice).toLocaleString()}
+                      </span>
+                      <span className="text-white/70 text-sm pb-1">/mo</span>
+                    </div>
+                    {billing === 'annual' && (
+                      <p className="text-white/60 text-xs mt-1.5 animate-[fadeIn_0.3s_ease]">
+                        PKR {(p.monthlyPrice - p.annualPrice).toLocaleString()} saved monthly · PKR {((p.monthlyPrice - p.annualPrice) * 12).toLocaleString()}/year
+                      </p>
+                    )}
+                    <p className="text-white/50 text-xs mt-1">{p.limit}</p>
+                  </div>
+                </div>
+
+                {/* Features */}
+                <div className="bg-white flex-1 p-6 border border-gray-100">
+                  <Link href="/signup"
+                    className={`block text-center py-3 rounded-xl text-sm font-black transition-all mb-5 bg-gradient-to-r ${p.color} text-white hover:opacity-90 shadow-sm`}>
+                    Start 30-Day Free Trial →
                   </Link>
                   <ul className="space-y-2.5">
                     {p.features.map(f => (
-                      <li key={f} className="flex items-center gap-2.5 text-sm text-gray-600">
-                        <svg className="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
+                      <li key={f} className="flex items-start gap-2.5 text-sm text-gray-600">
+                        <svg className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
+                        </svg>
                         {f}
                       </li>
                     ))}
@@ -572,7 +638,19 @@ export default function MarketingPage() {
               </div>
             ))}
           </div>
-          <p className="text-center text-gray-400 text-xs mt-6">All prices in Pakistani Rupees. Annual billing saves 20%. Custom enterprise pricing available — <a href="mailto:sales@myschool.pk" className="text-blue-600 hover:underline">contact sales</a>.</p>
+
+          {/* Bottom trust line */}
+          <div className="flex items-center justify-center gap-6 mt-10 flex-wrap">
+            {['✓ 30-day free trial', '✓ No credit card required', '✓ Cancel anytime', '✓ Data always yours'].map(t => (
+              <span key={t} className="text-sm text-gray-500 font-medium">{t}</span>
+            ))}
+          </div>
+          <p className="text-center text-gray-400 text-xs mt-4">
+            All prices in Pakistani Rupees (PKR) · Annual billing saves 20% ·{' '}
+            <Link href="/pricing" className="text-blue-600 hover:underline">Full pricing details</Link>
+            {' '}·{' '}
+            <a href="mailto:sales@myschool.pk" className="text-blue-600 hover:underline">Contact sales</a>
+          </p>
         </div>
       </section>
 
