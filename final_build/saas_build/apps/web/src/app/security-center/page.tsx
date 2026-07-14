@@ -87,7 +87,7 @@ export default function SecurityPage() {
     <div className="min-h-screen bg-white" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black text-sm">M</div>
             <span className="font-black text-lg text-gray-900">MySchool</span>
@@ -103,12 +103,12 @@ export default function SecurityPage() {
 
       {/* Hero */}
       <div className="pt-16" style={{ background: 'linear-gradient(150deg, #0C1E35 0%, #0a1628 60%, #0d1f3c 100%)' }}>
-        <div className="max-w-4xl mx-auto px-6 py-20 text-center">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-14 sm:py-20 text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-green-500/15 border border-green-400/25 rounded-full mb-6">
             <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
             <span className="text-green-300 text-xs font-semibold">All Systems Secure</span>
           </div>
-          <h1 className="text-5xl font-black text-white mb-5 leading-tight">
+          <h1 className="text-3xl sm:text-5xl font-black text-white mb-4 sm:mb-5 leading-tight">
             Your school's data is<br />
             <span className="text-green-400">protected at every layer</span>
           </h1>
@@ -119,7 +119,7 @@ export default function SecurityPage() {
           </p>
 
           {/* Security badges */}
-          <div className="grid grid-cols-3 gap-3 max-w-2xl mx-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-w-2xl mx-auto">
             {[
               { icon: '🔐', text: 'AES-256 Encrypted' },
               { icon: '🛡️', text: 'PDPA Compliant' },
@@ -139,7 +139,7 @@ export default function SecurityPage() {
 
       {/* Security overview stats */}
       <div className="bg-gray-900 py-10">
-        <div className="max-w-5xl mx-auto px-6 grid grid-cols-5 gap-6 text-center">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 grid grid-cols-2 sm:grid-cols-5 gap-6 text-center">
           {[
             { value: '256-bit', label: 'Encryption', sub: 'AES standard' },
             { value: '99.9%', label: 'Uptime SLA', sub: 'Enterprise guarantee' },
@@ -157,14 +157,14 @@ export default function SecurityPage() {
       </div>
 
       {/* Security layers */}
-      <div className="max-w-7xl mx-auto px-6 py-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-20">
         <div className="text-center mb-14">
           <h2 className="text-3xl font-black text-gray-900 mb-3">6 Layers of Security</h2>
           <p className="text-gray-500 max-w-xl mx-auto">Every piece of data passes through multiple independent security controls. If one layer fails, the next catches it.</p>
         </div>
 
         {/* Layer tabs */}
-        <div className="flex gap-2 flex-wrap justify-center mb-12">
+        <div className="flex gap-2 flex-wrap justify-center mb-8 sm:mb-12">
           {SECURITY_LAYERS.map((layer, i) => (
             <button key={layer.title} onClick={() => setActive(i)}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${active === i ? `bg-gradient-to-r ${layer.color} text-white shadow-lg` : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
@@ -186,7 +186,7 @@ export default function SecurityPage() {
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
               {layer.items.map(item => (
                 <div key={item.name} className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
                   <h4 className="font-black text-gray-900 mb-2">{item.name}</h4>
@@ -206,7 +206,7 @@ export default function SecurityPage() {
             <p className="text-gray-500 max-w-xl mx-auto">The most important security feature for a school management system</p>
           </div>
           <div className="bg-white rounded-3xl border border-blue-200 p-8 shadow-sm">
-            <div className="grid grid-cols-2 gap-8 items-start">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 items-start">
               <div>
                 <h3 className="font-black text-gray-900 text-xl mb-4">How it works</h3>
                 <div className="space-y-4">
@@ -243,12 +243,12 @@ export default function SecurityPage() {
       </div>
 
       {/* Student data protection */}
-      <div className="max-w-5xl mx-auto px-6 py-20">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12 sm:py-20">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-black text-gray-900 mb-3">Student Data Protection</h2>
           <p className="text-gray-500 max-w-xl mx-auto">Children's data requires the highest level of protection. Here's our commitment.</p>
         </div>
-        <div className="grid grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
           {[
             { icon: '🚫', title: 'Never Sold', desc: 'Student data is never sold, rented, or shared with advertisers, data brokers, or any third party for commercial purposes. Ever.' },
             { icon: '🔒', title: 'Minimal Collection', desc: 'We collect only the data necessary to operate the platform. No tracking pixels, no behavioral profiling, no ad targeting.' },
@@ -271,7 +271,7 @@ export default function SecurityPage() {
         <div className="max-w-5xl mx-auto px-6 text-center">
           <h2 className="text-3xl font-black text-white mb-3">Security Standards & Compliance</h2>
           <p className="text-gray-400 mb-10">We meet or exceed all major security standards relevant to Pakistani schools</p>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {CERTIFICATIONS.map(cert => (
               <div key={cert.name} className="bg-white/8 border border-white/10 rounded-2xl p-5 text-left">
                 <span className="text-3xl mb-3 block">{cert.icon}</span>
@@ -301,7 +301,7 @@ export default function SecurityPage() {
 
       {/* CTA */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 py-16">
-        <div className="max-w-3xl mx-auto px-6 text-center text-white">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center text-white">
           <h2 className="text-3xl font-black mb-3">Security you can trust</h2>
           <p className="text-blue-200 mb-8">Your students' data deserves the best protection. We built MySchool with security first.</p>
           <div className="flex gap-4 justify-center">
@@ -317,7 +317,7 @@ export default function SecurityPage() {
 
       {/* Footer */}
       <footer className="bg-gray-900 py-8">
-        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <Link href="/" className="flex items-center gap-2">
             <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black text-xs">M</div>
             <span className="text-white font-black">MySchool</span>

@@ -153,7 +153,7 @@ export default function PricingPage() {
     <div className="min-h-screen bg-white" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black text-sm">M</div>
             <span className="font-black text-lg text-gray-900">MySchool</span>
@@ -169,11 +169,11 @@ export default function PricingPage() {
 
       {/* Hero */}
       <div className="pt-16" style={{ background: 'linear-gradient(150deg, #0C1E35 0%, #0F2D50 60%, #1a3a6b 100%)' }}>
-        <div className="max-w-3xl mx-auto px-6 py-20 text-center">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-14 sm:py-20 text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-500/15 border border-blue-400/25 rounded-full mb-6">
             <span className="text-blue-300 text-xs font-semibold">Simple, Transparent Pricing</span>
           </div>
-          <h1 className="text-5xl font-black text-white mb-4 leading-tight">
+          <h1 className="text-3xl sm:text-5xl font-black text-white mb-4 leading-tight">
             Honest pricing for<br /><span className="text-blue-400">Pakistani schools</span>
           </h1>
           <p className="text-white/60 text-lg max-w-xl mx-auto leading-relaxed mb-8">
@@ -197,8 +197,8 @@ export default function PricingPage() {
       </div>
 
       {/* Pricing cards */}
-      <div className="max-w-6xl mx-auto px-6 -mt-8 pb-16">
-        <div className="grid grid-cols-3 gap-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 -mt-4 sm:-mt-8 pb-10 sm:pb-16">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-6">
           {PLANS.map(plan => (
             <div key={plan.name}
               className={`bg-white rounded-3xl border-2 shadow-sm overflow-hidden flex flex-col ${plan.highlight ? 'shadow-2xl shadow-blue-500/10 -mt-4' : ''} ${plan.color}`}>
@@ -207,7 +207,7 @@ export default function PricingPage() {
                   ⭐ Most Popular
                 </div>
               )}
-              <div className="p-8 flex-1">
+              <div className="p-6 sm:p-8 flex-1">
                 {/* Plan name */}
                 <div className="flex items-center justify-between mb-1">
                   <h2 className="text-2xl font-black text-gray-900">{plan.name}</h2>
@@ -219,7 +219,7 @@ export default function PricingPage() {
                 <div className="mb-6">
                   <div className="flex items-end gap-1">
                     <span className="text-sm font-bold text-gray-500">PKR</span>
-                    <span className="text-5xl font-black text-gray-900">
+                    <span className="text-4xl sm:text-5xl font-black text-gray-900">
                       {(annual ? plan.price.annual : plan.price.monthly).toLocaleString()}
                     </span>
                     <span className="text-gray-400 text-sm mb-1">/month</span>
@@ -274,13 +274,13 @@ export default function PricingPage() {
       </div>
 
       {/* How pricing works */}
-      <div className="bg-gray-50 border-y border-gray-100 py-20">
+      <div className="bg-gray-50 border-y border-gray-100 py-12 sm:py-20">
         <div className="max-w-5xl mx-auto px-6">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-black text-gray-900 mb-3">How Pricing Works</h2>
+          <div className="text-center mb-8 sm:mb-12">
+            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-3">How Pricing Works</h2>
             <p className="text-gray-500 max-w-xl mx-auto">Everything you need to know about how we charge — no surprises.</p>
           </div>
-          <div className="grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {[
               {
                 icon: '🎯',
@@ -324,7 +324,7 @@ export default function PricingPage() {
       </div>
 
       {/* Comparison table */}
-      <div className="max-w-5xl mx-auto px-6 py-20">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12 sm:py-20">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-black text-gray-900 mb-3">Compare Plans</h2>
           <p className="text-gray-500">Full side-by-side comparison of what each plan includes</p>
@@ -332,7 +332,7 @@ export default function PricingPage() {
 
         <div className="bg-white rounded-3xl border border-gray-200 overflow-hidden shadow-sm">
           {/* Header */}
-          <div className="grid grid-cols-4 border-b border-gray-100">
+          <div className="hidden sm:hidden sm:grid grid-cols-4 border-b border-gray-100">
             <div className="p-5 text-sm font-black text-gray-500 uppercase">Feature</div>
             {PLANS.map(p => (
               <div key={p.name} className={`p-5 text-center ${p.highlight ? 'bg-blue-50' : ''}`}>
@@ -380,7 +380,7 @@ export default function PricingPage() {
 
       {/* FAQ */}
       <div className="bg-gray-50 border-t border-gray-100 py-20">
-        <div className="max-w-3xl mx-auto px-6">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-black text-gray-900 mb-3">Frequently Asked Questions</h2>
             <p className="text-gray-500">Everything you need to know before signing up</p>
@@ -406,7 +406,7 @@ export default function PricingPage() {
 
       {/* CTA */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 py-16">
-        <div className="max-w-3xl mx-auto px-6 text-center text-white">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center text-white">
           <h2 className="text-3xl font-black mb-3">Start your free trial today</h2>
           <p className="text-blue-200 mb-3">30 days free · No credit card · Full Professional plan access</p>
           <p className="text-blue-300 text-sm mb-8">Questions? Call us: <a href="tel:+923001234567" className="underline">+92 300 123 4567</a> or email <a href="mailto:sales@myschool.pk" className="underline">sales@myschool.pk</a></p>
@@ -423,7 +423,7 @@ export default function PricingPage() {
 
       {/* Footer */}
       <footer className="bg-gray-900 py-8">
-        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <Link href="/" className="flex items-center gap-2">
             <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black text-xs">M</div>
             <span className="text-white font-black">MySchool</span>

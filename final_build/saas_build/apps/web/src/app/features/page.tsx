@@ -191,7 +191,7 @@ export default function FeaturesPage() {
     <div className="min-h-screen bg-white" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black text-sm">M</div>
             <span className="font-black text-lg text-gray-900">MySchool</span>
@@ -207,11 +207,11 @@ export default function FeaturesPage() {
 
       {/* Hero */}
       <div className="pt-16" style={{ background: 'linear-gradient(150deg, #0C1E35 0%, #0F2D50 60%, #1a3a6b 100%)' }}>
-        <div className="max-w-4xl mx-auto px-6 py-20 text-center">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-14 sm:py-20 text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-500/15 border border-blue-400/25 rounded-full mb-6">
             <span className="text-blue-300 text-xs font-semibold">Complete Feature Set</span>
           </div>
-          <h1 className="text-5xl font-black text-white mb-5 leading-tight">
+          <h1 className="text-3xl sm:text-4xl sm:text-5xl font-black text-white mb-4 sm:mb-5 leading-tight">
             Everything your school needs,<br />
             <span className="text-blue-400">built into one platform</span>
           </h1>
@@ -246,7 +246,7 @@ export default function FeaturesPage() {
 
       {/* Sticky module nav */}
       <div className="sticky top-16 z-40 bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex gap-0 overflow-x-auto scrollbar-hide">
             {NAV.map(n => (
               <button key={n.id} onClick={() => scrollTo(n.id)}
@@ -260,22 +260,22 @@ export default function FeaturesPage() {
       </div>
 
       {/* Modules */}
-      <div className="max-w-7xl mx-auto px-6 py-16 space-y-24">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-16 space-y-14 sm:space-y-24">
         {MODULES.map((mod, idx) => (
           <section key={mod.id} id={mod.id} className="scroll-mt-32">
             {/* Module header */}
-            <div className={`rounded-3xl bg-gradient-to-r ${mod.color} p-10 mb-10 text-white`}>
+            <div className={`rounded-2xl sm:rounded-3xl bg-gradient-to-r ${mod.color} p-6 sm:p-10 mb-6 sm:mb-10 text-white`}>
               <div className="flex items-start gap-6">
                 <span className="text-5xl">{mod.icon}</span>
                 <div>
-                  <h2 className="text-3xl font-black mb-2">{mod.title}</h2>
+                  <h2 className="text-2xl sm:text-3xl font-black mb-2">{mod.title}</h2>
                   <p className="text-white/75 text-lg">{mod.subtitle}</p>
                 </div>
               </div>
             </div>
 
             {/* Feature grid */}
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {mod.features.map(feat => (
                 <div key={feat.name} className={`border rounded-2xl p-5 hover:shadow-md transition-shadow ${mod.accent}`}>
                   <span className="text-2xl mb-3 block">{feat.icon}</span>
@@ -290,8 +290,8 @@ export default function FeaturesPage() {
 
       {/* CTA */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 py-16">
-        <div className="max-w-3xl mx-auto px-6 text-center text-white">
-          <h2 className="text-3xl font-black mb-3">Ready to modernize your school?</h2>
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center text-white">
+          <h2 className="text-2xl sm:text-3xl font-black mb-3">Ready to modernize your school?</h2>
           <p className="text-blue-200 mb-8">Join hundreds of Pakistani schools already using MySchool. 30-day free trial, no credit card required.</p>
           <div className="flex gap-4 justify-center">
             <Link href="/signup" className="px-8 py-3.5 bg-white text-blue-700 font-black rounded-xl hover:bg-blue-50 transition-all">
@@ -306,7 +306,7 @@ export default function FeaturesPage() {
 
       {/* Footer */}
       <footer className="bg-gray-900 py-8">
-        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <Link href="/" className="flex items-center gap-2">
             <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black text-xs">M</div>
             <span className="text-white font-black">MySchool</span>
