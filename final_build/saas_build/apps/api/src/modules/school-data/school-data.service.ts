@@ -22,6 +22,23 @@ export class SchoolDataService {
    * Backs GET /school/stats — lightweight real counts for the dashboard stat cards
    * that aren't already covered by /attendance/today/summary or /ai-analytics/dashboard.
    */
+  // ── Roles & Permissions overview (real counts; permissions reflect actual @Roles() guards) ─
+  private readonly ROLE_META: Record<string, { label: string; color: string; permissions: string[] }> = {
+    SCHOOL_ADMIN: { label: 'School Admin', color: 'bg-blue-100 text-blue-700', permissions: ['Manage students', 'Manage staff', 'View reports', 'Manage fees', 'Settings'] },
+    TEACHER:      { label: 'Teacher', color: 'bg-green-100 text-green-700', permissions: ['Take attendance', 'Grade students', 'View timetable', 'LMS access'] },
+    STAFF:        { label: 'Staff', color: 'bg-purple-100 text-purple-700', permissions: ['Manage fees', 'View reports', 'Generate invoices'] },
+    STUDENT:      { label: 'Student', color: 'bg-yellow-100 text-yellow-700', permissions: ['View grades', 'View timetable', 'LMS access'] },
+    PARENT:       { label: 'Parent', color: 'bg-orange-100 text-orange-700', permissions: ['View child progress', 'Chat with teacher', 'Pay fees'] },
+  };
+
+  async getRolesOverview(tenantId: string) {
+    const counts = await this.prisma.user.groupBy({ by: ['role'], where: { tenantId, isActive: true }, _count: true });
+    const countMap = Object.fromEntries(counts.map(c => [c.role, c._count]));
+    return Object.entries(this.ROLE_META).map(([role, meta]) => ({
+      role, name: meta.label, color: meta.color, permissions: meta.permissions, users: countMap[role] || 0,
+    }));
+  }
+
   async getSchoolStats(tenantId: string, sid?: string) {
     const schoolId = await this.resolveSchoolId(tenantId, sid);
     const schoolFilter: any = { tenantId, ...(schoolId && { schoolId }) };
@@ -206,6 +223,81 @@ export class SchoolDataService {
         settings: { ...currentSettings, profile: { ...(currentSettings.profile || {}), ...(dto.principalName !== undefined && { principalName: dto.principalName }), ...(dto.registrationNo !== undefined && { registrationNo: dto.registrationNo }) } },
       },
     });
+  }
+
+  // ── Payment Gateway Settings (per-school credentials for parent fee payments) ─
+  private maskSecret(v?: string) {
+    if (!v) return '';
+    return v.length <= 4 ? '••••' : `${'•'.repeat(v.length - 4)}${v.slice(-4)}`;
+  }
+
+  async getPaymentGatewaySettings(tenantId: string) {
+    const school = await this.getSchool(tenantId);
+    const cfg = ((school.settings as any)?.paymentGateways) || {};
+    const gateways = ['stripe', 'jazzcash', 'easypaisa', 'bankTransfer'] as const;
+    const out: Record<string, any> = {};
+    for (const g of gateways) {
+      const c = cfg[g] || {};
+      out[g] = {
+        enabled: !!c.enabled,
+        configured: Object.keys(c).some(k => k !== 'enabled' && !!c[k]),
+        fields: Object.fromEntries(Object.entries(c).filter(([k]) => k !== 'enabled').map(([k, v]) => [k, this.maskSecret(v as string)])),
+      };
+    }
+    return out;
+  }
+
+  async updatePaymentGatewaySettings(tenantId: string, gateway: string, dto: Record<string, any>) {
+    const allowed = ['stripe', 'jazzcash', 'easypaisa', 'bankTransfer'];
+    if (!allowed.includes(gateway)) throw new NotFoundException('Unknown gateway');
+    const school = await this.getSchool(tenantId);
+    const settings = (school.settings as any) || {};
+    const paymentGateways = settings.paymentGateways || {};
+    const current = paymentGateways[gateway] || {};
+    const merged = { ...current, ...dto };
+    await this.prisma.school.update({
+      where: { id: school.id },
+      data: { settings: { ...settings, paymentGateways: { ...paymentGateways, [gateway]: merged } } },
+    });
+    return { success: true, gateway };
+  }
+
+  // ── Notification Settings (SMS / Email triggers & sender config) ─────────────
+  private defaultNotificationSettings() {
+    return {
+      sms: {
+        enabled: false, provider: 'twilio', senderNumber: '',
+        triggers: { feeDueReminder: true, feeOverdueAlert: true, absenceAlert: true, examResultPublished: true, newAnnouncement: false },
+      },
+      email: {
+        enabled: false, fromName: '', fromEmail: '',
+        triggers: { welcomeEmail: true, feeReceipt: true, monthlyReportCard: false, examSchedule: true, newAnnouncement: false },
+      },
+    };
+  }
+
+  async getNotificationSettings(tenantId: string) {
+    const school = await this.getSchool(tenantId);
+    const defaults = this.defaultNotificationSettings();
+    const saved = ((school.settings as any)?.notifications) || {};
+    return {
+      sms: { ...defaults.sms, ...saved.sms, triggers: { ...defaults.sms.triggers, ...(saved.sms?.triggers || {}) } },
+      email: { ...defaults.email, ...saved.email, triggers: { ...defaults.email.triggers, ...(saved.email?.triggers || {}) } },
+    };
+  }
+
+  async updateNotificationSettings(tenantId: string, channel: 'sms' | 'email', dto: Record<string, any>) {
+    if (channel !== 'sms' && channel !== 'email') throw new NotFoundException('Unknown channel');
+    const school = await this.getSchool(tenantId);
+    const settings = (school.settings as any) || {};
+    const notifications = settings.notifications || {};
+    const current = notifications[channel] || {};
+    const merged = { ...current, ...dto, triggers: { ...(current.triggers || {}), ...(dto.triggers || {}) } };
+    await this.prisma.school.update({
+      where: { id: school.id },
+      data: { settings: { ...settings, notifications: { ...notifications, [channel]: merged } } },
+    });
+    return { success: true, channel };
   }
 
   // ── LMS ────────────────────────────────────────────────────────────────────

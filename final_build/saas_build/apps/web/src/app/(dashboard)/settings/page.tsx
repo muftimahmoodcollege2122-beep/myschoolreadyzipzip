@@ -4,6 +4,12 @@ import { PageHeader } from '@/components/shared/page-header';
 import { Topbar } from '@/components/layout/topbar';
 import { Badge } from '@/components/shared/badge';
 import { useSchoolInfo, useUpdateSchoolInfo } from '@/hooks/use-api';
+import {
+  usePaymentGatewaySettings, useUpdatePaymentGatewaySettings,
+  useNotificationSettings, useUpdateNotificationSettings,
+  useBillingSubscription, useBillingCheckout, useBillingPortal, useSchoolStats, useRolesOverview,
+  useSecurityDashboard, useLoginHistory, useSetupMfa, useEnableMfa, useDisableMfa,
+} from '@/hooks/use-api';
 
 const TABS = [
   { id:'profile', label:'School Profile', icon:'🏫' },
@@ -19,15 +25,6 @@ const TABS = [
   { id:'backup', label:'Backup & Restore', icon:'💾' },
 ] as const;
 type TabId = typeof TABS[number]['id'];
-
-const ROLES = [
-  { name:'Super Admin', users:1, permissions:['All permissions'], color:'bg-red-100 text-red-700' },
-  { name:'School Admin', users:3, permissions:['Manage students','Manage staff','View reports','Manage fees','Settings'], color:'bg-blue-100 text-blue-700' },
-  { name:'Teacher', users:42, permissions:['Take attendance','Grade students','View timetable','LMS access'], color:'bg-green-100 text-green-700' },
-  { name:'Accountant', users:2, permissions:['Manage fees','View reports','Generate invoices'], color:'bg-purple-100 text-purple-700' },
-  { name:'Student', users:2847, permissions:['View grades','View timetable','LMS access'], color:'bg-yellow-100 text-yellow-700' },
-  { name:'Parent', users:5200, permissions:['View child progress','Chat with teacher','Pay fees'], color:'bg-orange-100 text-orange-700' },
-];
 
 const INTEGRATIONS = [
   { name:'WhatsApp Business', icon:'💬', status:'Connected', category:'Communication' },
@@ -55,6 +52,35 @@ export default function SettingsPage() {
   const { data: schoolData, isLoading: schoolLoading } = useSchoolInfo();
   const updateSchool = useUpdateSchoolInfo();
   const school = schoolData as any;
+
+  // Payment Gateways
+  const { data: gatewayData, isLoading: gatewaysLoading } = usePaymentGatewaySettings();
+  const updateGateway = useUpdatePaymentGatewaySettings();
+  const [gatewayForms, setGatewayForms] = useState<Record<string, Record<string, string>>>({});
+  const [gatewaySaved, setGatewaySaved] = useState<string>('');
+
+  // Notification Settings (SMS / Email)
+  const { data: notifData, isLoading: notifLoading } = useNotificationSettings();
+  const updateNotif = useUpdateNotificationSettings();
+  const [smsForm, setSmsForm] = useState<any>(null);
+  const [emailForm, setEmailForm] = useState<any>(null);
+  useEffect(() => { if (notifData) { setSmsForm((notifData as any).sms); setEmailForm((notifData as any).email); } }, [notifData]);
+
+  // Billing
+  const { data: subData, isLoading: subLoading } = useBillingSubscription();
+  const checkout = useBillingCheckout();
+  const portal = useBillingPortal();
+  const { data: schoolStats } = useSchoolStats();
+  const { data: rolesData, isLoading: rolesLoading } = useRolesOverview();
+
+  // Security
+  const { data: secDashboard } = useSecurityDashboard();
+  const { data: loginHistory } = useLoginHistory({ limit: 5 });
+  const setupMfa = useSetupMfa();
+  const enableMfa = useEnableMfa();
+  const [mfaStep, setMfaStep] = useState<'idle'|'setup'|'verify'>('idle');
+  const [mfaSecret, setMfaSecret] = useState<{ secret?: string; qrCodeUrl?: string; backupCodes?: string[] }>({});
+  const [mfaToken, setMfaToken] = useState('');
 
   useEffect(() => {
     if (!school) return;
@@ -264,155 +290,269 @@ export default function SettingsPage() {
               {tab==='payments' && (
                 <div>
                   <h3 className="font-black text-gray-900 text-lg mb-5">💳 Payment Gateways</h3>
-                  <div className="space-y-4">
-                    {[
-                      { name:'Stripe', icon:'💳', color:'bg-blue-50', status:'Not Configured', fields:['Publishable Key','Secret Key'] },
-                      { name:'JazzCash', icon:'🟠', color:'bg-orange-50', status:'Active', fields:['Merchant ID','Password','Integrity Salt'] },
-                      { name:'EasyPaisa', icon:'🟢', color:'bg-green-50', status:'Active', fields:['Store ID','Account Number'] },
-                      { name:'Bank Transfer', icon:'🏦', color:'bg-gray-50', status:'Active', fields:['Bank Name','Account Title','Account No.','IBAN'] },
-                    ].map(g=>(
-                      <div key={g.name} className={`${g.color} border border-gray-100 rounded-2xl p-5`}>
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2"><span className="text-2xl">{g.icon}</span><p className="font-bold text-gray-900">{g.name}</p></div>
-                          <Badge variant={g.status==='Active'?'green':'gray'}>{g.status}</Badge>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          {g.fields.map(f=>(
-                            <div key={f}><label className="block text-xs font-bold text-gray-400 uppercase mb-1">{f}</label>
-                              <input type={f.toLowerCase().includes('key')||f.toLowerCase().includes('salt')||f.toLowerCase().includes('password')?'password':'text'} placeholder={`Enter ${f}`} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 bg-white"/></div>
-                          ))}
-                        </div>
-                        <button className="mt-3 px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-500">Save Config</button>
-                      </div>
-                    ))}
-                  </div>
+                  {gatewaysLoading ? (
+                    <div className="space-y-3">{[...Array(4)].map((_,i)=><div key={i} className="h-24 bg-gray-100 rounded-2xl animate-pulse"/>)}</div>
+                  ) : (
+                    <div className="space-y-4">
+                      {[
+                        { key:'stripe', name:'Stripe', icon:'💳', color:'bg-blue-50', fields:[['publishableKey','Publishable Key'],['secretKey','Secret Key']] },
+                        { key:'jazzcash', name:'JazzCash', icon:'🟠', color:'bg-orange-50', fields:[['merchantId','Merchant ID'],['password','Password'],['integritySalt','Integrity Salt']] },
+                        { key:'easypaisa', name:'EasyPaisa', icon:'🟢', color:'bg-green-50', fields:[['storeId','Store ID'],['accountNumber','Account Number']] },
+                        { key:'bankTransfer', name:'Bank Transfer', icon:'🏦', color:'bg-gray-50', fields:[['bankName','Bank Name'],['accountTitle','Account Title'],['accountNo','Account No.'],['iban','IBAN']] },
+                      ].map(g=>{
+                        const saved = (gatewayData as any)?.[g.key] || { enabled:false, configured:false, fields:{} };
+                        const form = gatewayForms[g.key] || {};
+                        const setF = (k: string, v: string) => setGatewayForms(p => ({ ...p, [g.key]: { ...p[g.key], [k]: v } }));
+                        const save = () => updateGateway.mutate({ gateway: g.key, enabled: true, ...form }, {
+                          onSuccess: () => { setGatewaySaved(g.key); setTimeout(()=>setGatewaySaved(''), 2000); },
+                        });
+                        return (
+                          <div key={g.key} className={`${g.color} border border-gray-100 rounded-2xl p-5`}>
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-2"><span className="text-2xl">{g.icon}</span><p className="font-bold text-gray-900">{g.name}</p></div>
+                              <Badge variant={saved.configured?'green':'gray'}>{saved.configured?'Configured':'Not Configured'}</Badge>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              {g.fields.map(([fk,fl])=>(
+                                <div key={fk}><label className="block text-xs font-bold text-gray-400 uppercase mb-1">{fl}</label>
+                                  <input
+                                    type={fk.toLowerCase().includes('key')||fk.toLowerCase().includes('salt')||fk.toLowerCase().includes('password')?'password':'text'}
+                                    placeholder={saved.fields?.[fk] || `Enter ${fl}`}
+                                    value={form[fk] ?? ''}
+                                    onChange={e=>setF(fk, e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 bg-white"/></div>
+                              ))}
+                            </div>
+                            <button onClick={save} disabled={updateGateway.isPending} className="mt-3 px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-500 disabled:opacity-60">
+                              {gatewaySaved===g.key ? '✅ Saved' : updateGateway.isPending ? 'Saving…' : 'Save Config'}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* SMS */}
-              {tab==='sms' && (
-                <div>
-                  <h3 className="font-black text-gray-900 text-lg mb-5">📱 SMS Configuration</h3>
-                  <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-5">
-                    <div className="flex items-center justify-between"><div><p className="font-bold text-green-800">Twilio SMS</p><p className="text-green-600 text-xs">Connected · 1,500 credits remaining</p></div><Badge variant="green">Active</Badge></div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 mb-5">
-                    {[['Account SID',''],['Auth Token',''],['Sender Number','+1234567890'],['SMS Credits','1500']].map(([l,v])=>(
-                      <div key={l}><label className="block text-xs font-bold text-gray-400 uppercase mb-1">{l}</label><input defaultValue={v} type={l.includes('Token')?'password':'text'} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400"/></div>
-                    ))}
-                  </div>
-                  <div className="mb-5">
-                    <p className="text-xs font-bold text-gray-500 uppercase mb-3">Auto SMS Triggers</p>
-                    <div className="space-y-2">
-                      {['Fee due reminder (3 days before)','Fee overdue alert','Student marked absent','Exam result published','New announcement'].map(t=>(
-                        <label key={t} className="flex items-center gap-3 cursor-pointer p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                          <div className="w-10 h-6 bg-green-500 rounded-full relative flex-shrink-0"><div className="w-4 h-4 bg-white rounded-full absolute right-1 top-1 shadow"/></div>
-                          <span className="text-sm text-gray-700">{t}</span>
-                        </label>
-                      ))}
+              {tab==='sms' && smsForm && (()=>{
+                const TRIGGERS: [string,string][] = [
+                  ['feeDueReminder','Fee due reminder (3 days before)'],
+                  ['feeOverdueAlert','Fee overdue alert'],
+                  ['absenceAlert','Student marked absent'],
+                  ['examResultPublished','Exam result published'],
+                  ['newAnnouncement','New announcement'],
+                ];
+                const save = () => updateNotif.mutate({ channel: 'sms', ...smsForm });
+                return (
+                  <div>
+                    <h3 className="font-black text-gray-900 text-lg mb-5">📱 SMS Configuration</h3>
+                    <div className={`${smsForm.enabled?'bg-green-50 border-green-200':'bg-gray-50 border-gray-200'} border rounded-xl p-4 mb-5`}>
+                      <div className="flex items-center justify-between">
+                        <div><p className="font-bold text-gray-800">Twilio SMS</p><p className="text-gray-500 text-xs">{smsForm.enabled?'Enabled for this school':'Disabled'}</p></div>
+                        <button onClick={()=>setSmsForm({...smsForm, enabled: !smsForm.enabled})} className={`px-3 py-1.5 text-xs font-bold rounded-lg ${smsForm.enabled?'bg-red-50 text-red-600 border border-red-200':'bg-green-50 text-green-700 border border-green-200'}`}>
+                          {smsForm.enabled?'Disable':'Enable'}
+                        </button>
+                      </div>
                     </div>
+                    <div className="grid grid-cols-2 gap-4 mb-5">
+                      <div><label className="block text-xs font-bold text-gray-400 uppercase mb-1">Sender Number</label>
+                        <input value={smsForm.senderNumber} onChange={e=>setSmsForm({...smsForm, senderNumber:e.target.value})} placeholder="+1234567890" className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400"/></div>
+                    </div>
+                    <div className="mb-5">
+                      <p className="text-xs font-bold text-gray-500 uppercase mb-3">Auto SMS Triggers</p>
+                      <div className="space-y-2">
+                        {TRIGGERS.map(([k,label])=>{
+                          const on = !!smsForm.triggers?.[k];
+                          return (
+                            <label key={k} className="flex items-center gap-3 cursor-pointer p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors" onClick={()=>setSmsForm({...smsForm, triggers:{...smsForm.triggers,[k]:!on}})}>
+                              <div className={`w-10 h-6 rounded-full relative flex-shrink-0 transition-colors ${on?'bg-green-500':'bg-gray-300'}`}><div className={`w-4 h-4 bg-white rounded-full absolute top-1 shadow transition-all ${on?'right-1':'left-1'}`}/></div>
+                              <span className="text-sm text-gray-700">{label}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <button onClick={save} disabled={updateNotif.isPending} className="px-5 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-500 disabled:opacity-60">
+                      {updateNotif.isPending ? 'Saving…' : updateNotif.isSuccess ? '✅ Saved' : 'Save SMS Settings'}
+                    </button>
                   </div>
-                  <button className="px-5 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-500">Save SMS Settings</button>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Email */}
-              {tab==='email' && (
-                <div>
-                  <h3 className="font-black text-gray-900 text-lg mb-5">📧 Email Configuration</h3>
-                  <div className="grid grid-cols-2 gap-4 mb-5">
-                    {[['SMTP Host','smtp.sendgrid.net'],['SMTP Port','587'],['Username','apikey'],['From Name','MySchool Academy'],['From Email','noreply@myschool.edu.pk'],['Encryption','TLS']].map(([l,v])=>(
-                      <div key={l}><label className="block text-xs font-bold text-gray-400 uppercase mb-1">{l}</label><input defaultValue={v} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400"/></div>
-                    ))}
-                  </div>
-                  <div className="mb-5">
-                    <p className="text-xs font-bold text-gray-500 uppercase mb-3">Auto Email Triggers</p>
-                    <div className="space-y-2">
-                      {['Welcome email on student registration','Fee receipt after payment','Monthly report card','Exam schedule notification','New announcement'].map(t=>(
-                        <label key={t} className="flex items-center gap-3 cursor-pointer p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                          <div className="w-10 h-6 bg-blue-500 rounded-full relative flex-shrink-0"><div className="w-4 h-4 bg-white rounded-full absolute right-1 top-1 shadow"/></div>
-                          <span className="text-sm text-gray-700">{t}</span>
-                        </label>
-                      ))}
+              {tab==='email' && emailForm && (()=>{
+                const TRIGGERS: [string,string][] = [
+                  ['welcomeEmail','Welcome email on student registration'],
+                  ['feeReceipt','Fee receipt after payment'],
+                  ['monthlyReportCard','Monthly report card'],
+                  ['examSchedule','Exam schedule notification'],
+                  ['newAnnouncement','New announcement'],
+                ];
+                const save = () => updateNotif.mutate({ channel: 'email', ...emailForm });
+                return (
+                  <div>
+                    <h3 className="font-black text-gray-900 text-lg mb-5">📧 Email Configuration</h3>
+                    <div className={`${emailForm.enabled?'bg-blue-50 border-blue-200':'bg-gray-50 border-gray-200'} border rounded-xl p-4 mb-5`}>
+                      <div className="flex items-center justify-between">
+                        <div><p className="font-bold text-gray-800">Email Notifications</p><p className="text-gray-500 text-xs">{emailForm.enabled?'Enabled for this school':'Disabled'}</p></div>
+                        <button onClick={()=>setEmailForm({...emailForm, enabled: !emailForm.enabled})} className={`px-3 py-1.5 text-xs font-bold rounded-lg ${emailForm.enabled?'bg-red-50 text-red-600 border border-red-200':'bg-blue-50 text-blue-700 border border-blue-200'}`}>
+                          {emailForm.enabled?'Disable':'Enable'}
+                        </button>
+                      </div>
                     </div>
+                    <div className="grid grid-cols-2 gap-4 mb-5">
+                      <div><label className="block text-xs font-bold text-gray-400 uppercase mb-1">From Name</label>
+                        <input value={emailForm.fromName} onChange={e=>setEmailForm({...emailForm, fromName:e.target.value})} placeholder="MySchool Academy" className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400"/></div>
+                      <div><label className="block text-xs font-bold text-gray-400 uppercase mb-1">From Email</label>
+                        <input value={emailForm.fromEmail} onChange={e=>setEmailForm({...emailForm, fromEmail:e.target.value})} placeholder="noreply@myschool.edu.pk" className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400"/></div>
+                    </div>
+                    <div className="mb-5">
+                      <p className="text-xs font-bold text-gray-500 uppercase mb-3">Auto Email Triggers</p>
+                      <div className="space-y-2">
+                        {TRIGGERS.map(([k,label])=>{
+                          const on = !!emailForm.triggers?.[k];
+                          return (
+                            <label key={k} className="flex items-center gap-3 cursor-pointer p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors" onClick={()=>setEmailForm({...emailForm, triggers:{...emailForm.triggers,[k]:!on}})}>
+                              <div className={`w-10 h-6 rounded-full relative flex-shrink-0 transition-colors ${on?'bg-blue-500':'bg-gray-300'}`}><div className={`w-4 h-4 bg-white rounded-full absolute top-1 shadow transition-all ${on?'right-1':'left-1'}`}/></div>
+                              <span className="text-sm text-gray-700">{label}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <button onClick={save} disabled={updateNotif.isPending} className="px-5 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-500 disabled:opacity-60">
+                      {updateNotif.isPending ? 'Saving…' : updateNotif.isSuccess ? '✅ Saved' : 'Save Email Settings'}
+                    </button>
                   </div>
-                  <button className="px-5 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-500">Test & Save</button>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Roles & Permissions */}
               {tab==='roles' && (
                 <div>
                   <h3 className="font-black text-gray-900 text-lg mb-5">🔐 Roles & Permissions</h3>
-                  <div className="space-y-4">
-                    {ROLES.map(r=>(
-                      <div key={r.name} className="border border-gray-100 rounded-2xl p-5 hover:border-blue-200 transition-colors">
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex items-center gap-3">
-                            <span className={`px-2 py-1 rounded-lg text-xs font-black ${r.color}`}>{r.name}</span>
-                            <span className="text-sm text-gray-500">{r.users.toLocaleString()} users</span>
+                  {rolesLoading ? (
+                    <div className="space-y-3">{[...Array(5)].map((_,i)=><div key={i} className="h-20 bg-gray-100 rounded-2xl animate-pulse"/>)}</div>
+                  ) : (
+                    <div className="space-y-4">
+                      {((rolesData as any[]) || []).map(r=>(
+                        <div key={r.role} className="border border-gray-100 rounded-2xl p-5">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                              <span className={`px-2 py-1 rounded-lg text-xs font-black ${r.color}`}>{r.name}</span>
+                              <span className="text-sm text-gray-500">{r.users.toLocaleString()} users</span>
+                            </div>
                           </div>
-                          <button className="text-xs text-blue-600 font-semibold hover:text-blue-800">Edit Permissions</button>
+                          <div className="flex flex-wrap gap-1.5">
+                            {r.permissions.map((p: string)=>(
+                              <span key={p} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-lg">{p}</span>
+                            ))}
+                          </div>
                         </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {r.permissions.map(p=>(
-                            <span key={p} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-lg">{p}</span>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <button className="mt-4 px-4 py-2 border border-blue-200 text-blue-700 bg-blue-50 text-sm font-bold rounded-xl hover:bg-blue-100">+ Create Custom Role</button>
+                      ))}
+                    </div>
+                  )}
+                  <button disabled title="Custom roles require a schema change beyond this pass — permissions are currently fixed per role in code" className="mt-4 px-4 py-2 border border-gray-200 text-gray-400 bg-gray-50 text-sm font-bold rounded-xl cursor-not-allowed">
+                    + Create Custom Role (not yet supported)
+                  </button>
                 </div>
               )}
 
               {/* Billing */}
-              {tab==='billing' && (
-                <div>
-                  <h3 className="font-black text-gray-900 text-lg mb-5">💰 Billing & Subscription</h3>
-                  <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-5 mb-5 text-white">
-                    <p className="text-white/70 text-sm">Current Plan</p>
-                    <p className="text-3xl font-black">Growth Plan</p>
-                    <p className="text-white/80 text-sm mt-1">Rs. 12,999/month · Renews July 1, 2026</p>
-                    <div className="flex gap-3 mt-4"><button className="px-4 py-2 bg-white text-blue-700 text-sm font-bold rounded-xl hover:bg-blue-50">Upgrade to Pro</button><button className="px-4 py-2 bg-white/20 text-white text-sm font-bold rounded-xl hover:bg-white/30">Manage Billing</button></div>
-                  </div>
-                  <div className="border border-gray-100 rounded-2xl p-5">
-                    <p className="font-bold text-gray-900 mb-3">Usage This Month</p>
-                    {[{l:'Students',v:1842,max:2000},{l:'Staff',v:48,max:100},{l:'Storage',v:12,max:50}].map(u=>(
-                      <div key={u.l} className="mb-3">
-                        <div className="flex justify-between text-xs mb-1"><span className="text-gray-500">{u.l}</span><span className="text-gray-600 font-bold">{u.v}/{u.max}</span></div>
-                        <div className="h-2 bg-gray-100 rounded-full overflow-hidden"><div className={`h-full rounded-full ${(u.v/u.max)>0.8?'bg-red-500':(u.v/u.max)>0.6?'bg-yellow-500':'bg-blue-500'}`} style={{width:`${(u.v/u.max)*100}%`}}/></div>
+              {tab==='billing' && (()=>{
+                const sub = (subData as any) || {};
+                const stats = (schoolStats as any) || {};
+                return (
+                  <div>
+                    <h3 className="font-black text-gray-900 text-lg mb-5">💰 Billing & Subscription</h3>
+                    {subLoading ? (
+                      <div className="h-32 bg-gray-100 rounded-2xl animate-pulse mb-5"/>
+                    ) : (
+                      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-5 mb-5 text-white">
+                        <p className="text-white/70 text-sm">Current Plan</p>
+                        <p className="text-3xl font-black">{sub.tier || 'No Active Plan'}</p>
+                        <p className="text-white/80 text-sm mt-1">Status: {sub.status || 'inactive'}</p>
+                        <div className="flex gap-3 mt-4">
+                          <button onClick={()=>checkout.mutate('PRO')} disabled={checkout.isPending} className="px-4 py-2 bg-white text-blue-700 text-sm font-bold rounded-xl hover:bg-blue-50 disabled:opacity-60">
+                            {checkout.isPending ? 'Loading…' : 'Upgrade to Pro'}
+                          </button>
+                          <button onClick={()=>portal.mutate()} disabled={portal.isPending || !sub.stripeSubId} className="px-4 py-2 bg-white/20 text-white text-sm font-bold rounded-xl hover:bg-white/30 disabled:opacity-60">
+                            {portal.isPending ? 'Loading…' : 'Manage Billing'}
+                          </button>
+                        </div>
                       </div>
-                    ))}
+                    )}
+                    <div className="border border-gray-100 rounded-2xl p-5">
+                      <p className="font-bold text-gray-900 mb-3">Current Usage</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        {([['Students', stats.totalStudents], ['Teachers', stats.totalTeachers], ['Classes', stats.totalClasses], ['Overdue Invoices', stats.overdueInvoices]] as [string, any][])
+                          .filter(([,v])=>v!==undefined)
+                          .map(([l,v])=>(
+                            <div key={l} className="p-3 bg-gray-50 rounded-xl">
+                              <p className="text-xs text-gray-500">{l}</p><p className="text-xl font-black text-gray-900">{v}</p>
+                            </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Security */}
-              {tab==='security' && (
-                <div>
-                  <h3 className="font-black text-gray-900 text-lg mb-5">🛡️ Security Settings</h3>
-                  <div className="space-y-3 mb-5">
-                    {[
-                      ['Change Password','Update your login password','Change'],
-                      ['Two-Factor Authentication','2FA adds extra security layer','Enable 2FA'],
-                      ['Active Sessions','Manage all logged-in devices','View Sessions'],
-                      ['Login History','View recent login activity','View History'],
-                      ['API Keys','Manage API access tokens','Manage Keys'],
-                    ].map(([t,d,a])=>(
-                      <div key={t as string} className="flex items-center justify-between p-4 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors">
-                        <div><p className="font-semibold text-sm text-gray-800">{t}</p><p className="text-xs text-gray-400 mt-0.5">{d}</p></div>
-                        <button className="px-3 py-1.5 text-xs font-bold border border-gray-200 rounded-xl hover:bg-white transition-colors">{a}</button>
+              {tab==='security' && (()=>{
+                const dash = (secDashboard as any) || {};
+                const history = ((loginHistory as any)?.items || loginHistory || []) as any[];
+                const startMfa = () => setupMfa.mutate(undefined, { onSuccess: (res: any) => { setMfaSecret(res); setMfaStep('verify'); } });
+                const confirmMfa = () => enableMfa.mutate(mfaToken, { onSuccess: () => { setMfaStep('idle'); setMfaToken(''); } });
+                return (
+                  <div>
+                    <h3 className="font-black text-gray-900 text-lg mb-5">🛡️ Security Settings</h3>
+
+                    <div className="p-4 border border-gray-100 rounded-xl mb-3">
+                      <div className="flex items-center justify-between">
+                        <div><p className="font-semibold text-sm text-gray-800">Two-Factor Authentication</p><p className="text-xs text-gray-400 mt-0.5">2FA adds an extra security layer</p></div>
+                        {mfaStep==='idle' && <button onClick={startMfa} disabled={setupMfa.isPending} className="px-3 py-1.5 text-xs font-bold border border-gray-200 rounded-xl hover:bg-white">{setupMfa.isPending?'Loading…':'Enable 2FA'}</button>}
                       </div>
-                    ))}
+                      {mfaStep==='verify' && (
+                        <div className="mt-3">
+                          {mfaSecret.secret && <p className="text-xs text-gray-500 mb-2">Enter this key in your authenticator app: <span className="font-mono font-bold text-gray-800">{mfaSecret.secret}</span></p>}
+                          <div className="flex items-center gap-2">
+                            <input value={mfaToken} onChange={e=>setMfaToken(e.target.value)} placeholder="6-digit code" className="px-3 py-2 border border-gray-200 rounded-xl text-sm flex-1"/>
+                            <button onClick={confirmMfa} disabled={enableMfa.isPending} className="px-3 py-1.5 text-xs font-bold bg-blue-600 text-white rounded-xl">{enableMfa.isPending?'Verifying…':'Confirm'}</button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-4 border border-gray-100 rounded-xl mb-3">
+                      <p className="font-semibold text-sm text-gray-800 mb-2">Recent Login Activity</p>
+                      {history.length===0 ? <p className="text-xs text-gray-400">No recent logins recorded.</p> : (
+                        <div className="space-y-2">
+                          {history.slice(0,5).map((h:any, i:number)=>(
+                            <div key={i} className="flex justify-between text-xs text-gray-600 py-1 border-b border-gray-50 last:border-0">
+                              <span>{h.ipAddress || h.ip || 'Unknown IP'} · {h.userAgent ? h.userAgent.slice(0,40) : ''}</span>
+                              <span className="text-gray-400">{h.createdAt ? new Date(h.createdAt).toLocaleString() : ''}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3 mb-5">
+                      <div className="p-3 bg-gray-50 rounded-xl"><p className="text-xs text-gray-500">MFA Adoption</p><p className="text-xl font-black text-gray-900">{dash.mfaAdoption ?? '—'}%</p></div>
+                      <div className="p-3 bg-gray-50 rounded-xl"><p className="text-xs text-gray-500">Active Users</p><p className="text-xl font-black text-gray-900">{dash.totalUsers ?? '—'}</p></div>
+                      <div className="p-3 bg-gray-50 rounded-xl"><p className="text-xs text-gray-500">Unresolved Alerts</p><p className="text-xl font-black text-gray-900">{dash.unresolvedSuspiciousActivities ?? '—'}</p></div>
+                    </div>
+
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                      <p className="font-bold text-yellow-800 text-sm">⚠️ Danger Zone</p>
+                      <p className="text-yellow-600 text-xs mt-1 mb-3">These actions are irreversible. Proceed with caution.</p>
+                      <button className="px-4 py-2 bg-red-50 text-red-600 text-xs font-bold rounded-xl border border-red-200 hover:bg-red-100" disabled title="Not yet implemented — requires confirmation flow">Delete School Account</button>
+                    </div>
                   </div>
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-                    <p className="font-bold text-yellow-800 text-sm">⚠️ Danger Zone</p>
-                    <p className="text-yellow-600 text-xs mt-1 mb-3">These actions are irreversible. Proceed with caution.</p>
-                    <button className="px-4 py-2 bg-red-50 text-red-600 text-xs font-bold rounded-xl border border-red-200 hover:bg-red-100">Delete School Account</button>
-                  </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Backup & Restore */}
               {tab==='backup' && (
