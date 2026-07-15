@@ -14,6 +14,8 @@ export default function TeachersPage() {
   const [search, setSearch] = useState('');
   const [modal, setModal]   = useState(false);
   const [form, setForm]     = useState(EMPTY);
+  const [credentials, setCredentials] = useState<{ username: string; tempPassword: string; portalLoginUrl: string } | null>(null);
+  const [copied, setCopied] = useState(false);
   const qc = useQueryClient();
 
   const { data, isLoading } = useTeachers({ search, limit:50 });
@@ -98,7 +100,7 @@ export default function TeachersPage() {
             <div className="flex gap-3 pt-2">
               <button onClick={() => { setModal(false); setForm(EMPTY); }} className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
               <button onClick={async () => {
-                  await create.mutateAsync({
+                  const created: any = await create.mutateAsync({
                     firstName: form.firstName, lastName: form.lastName, email: form.email,
                     employeeId: form.employeeId, phone: form.phone || undefined, gender: form.gender ? form.gender.toUpperCase() : undefined,
                     joiningDate: form.joiningDate,
@@ -106,8 +108,45 @@ export default function TeachersPage() {
                     qualifications: form.qualifications ? [form.qualifications] : undefined,
                   });
                   setModal(false); setForm(EMPTY);
+                  if (created?.credentials) setCredentials(created.credentials);
                 }} disabled={!form.firstName||!form.email||!form.employeeId||!form.joiningDate||create.isPending}
                 className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 disabled:opacity-40">{create.isPending ? 'Adding...':'Add Teacher'}</button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {credentials && (
+        <Modal title="Teacher Portal Access" onClose={() => { setCredentials(null); setCopied(false); }}>
+          <div className="p-5 space-y-4">
+            <p className="text-sm text-gray-600">Share these login details with the teacher. The password is shown only once — copy it now.</p>
+            <div className="bg-gray-50 rounded-xl p-4 space-y-3 border border-gray-100">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Username</label>
+                <p className="font-mono text-sm font-semibold">{credentials.username}</p>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Temporary Password</label>
+                <p className="font-mono text-sm font-semibold">{credentials.tempPassword}</p>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Portal Login URL</label>
+                <p className="font-mono text-xs break-all text-blue-600">{typeof window !== 'undefined' ? window.location.origin : ''}{credentials.portalLoginUrl}</p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+                  const text = `Portal login: ${origin}${credentials.portalLoginUrl}\nUsername: ${credentials.username}\nPassword: ${credentials.tempPassword}`;
+                  navigator.clipboard.writeText(text);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+                className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700">
+                {copied ? 'Copied!' : 'Copy Credentials'}
+              </button>
+              <button onClick={() => { setCredentials(null); setCopied(false); }} className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50">Done</button>
             </div>
           </div>
         </Modal>

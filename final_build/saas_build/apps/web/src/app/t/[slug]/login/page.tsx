@@ -7,7 +7,8 @@ import { useAuthStore } from '../../../../stores/auth.store';
 export default function TeacherLogin() {
   const { slug }   = useParams<{ slug: string }>();
   const router     = useRouter();
-  const setAuth    = useAuthStore(s => s.setAuth);
+  const setAuth       = useAuthStore(s => s.setAuth);
+  const setTenantSlug = useAuthStore(s => s.setTenantSlug);
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
   const [loading,  setLoading]  = useState(false);
@@ -18,15 +19,20 @@ export default function TeacherLogin() {
     setLoading(true);
     setError('');
     try {
-      const data: any = await apiClient.post('/auth/login', { email, password, slug, expectedRole: 'TEACHER' });
+      const data: any = await apiClient.post('/auth/login', { email, password, tenantSlug: slug });
       if (data?.accessToken) {
-        setAuth(data.accessToken, data.user);
+        if (data.user?.role !== 'TEACHER') {
+          setError('This account is not a teacher account. Use the correct portal to sign in.');
+          return;
+        }
+        setTenantSlug(slug);
+        setAuth(data.user, data.accessToken, data.refreshToken);
         router.push(`/t/${slug}`);
       } else {
         setError(data?.message || 'Invalid credentials');
       }
     } catch (err: any) {
-      setError(err?.message || 'Login failed. Please check your credentials.');
+      setError(err?.response?.data?.message || err?.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
