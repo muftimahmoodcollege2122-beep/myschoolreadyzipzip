@@ -48,7 +48,7 @@ export class TeachersService {
     const tempPassword = generateTempPassword();
     const passwordHash = await this.authService.hashPassword(tempPassword);
 
-    const { teacher, tenantSlug } = await this.prisma.$transaction(async tx => {
+    const { teacher, tenantSlug } = await this.prisma.queryTenantScoped(tenantId, async tx => {
       const user = await tx.user.create({ data: { tenantId, email: dto.email, passwordHash, role: 'TEACHER', profile: { create: { firstName: dto.firstName, lastName: dto.lastName, phone: dto.phone, gender: dto.gender as any } } } });
       const teacher = await tx.teacher.create({ data: { userId: user.id, tenantId, schoolId, employeeId: dto.employeeId, departmentId: dto.departmentId, qualifications: dto.qualifications ?? [], specializations: dto.specializations ?? [], joiningDate: new Date(dto.joiningDate) } });
       await tx.outboxEvent.create({ data: { tenantId, topic: 'teacher.created', key: teacher.id, payload: { teacherId: teacher.id }, headers: {} } });
@@ -77,10 +77,10 @@ export class TeachersService {
       isActive: true,
       ...(search && { user: { profile: { OR: [{ firstName: { contains: search, mode: 'insensitive' } }, { lastName: { contains: search, mode: 'insensitive' } }] } } }),
     };
-    const [data, total] = await Promise.all([
-      this.prisma.teacher.findMany({ where, include: { user: { include: { profile: true } }, department: true }, skip, take: Number(limit), orderBy: { createdAt: 'desc' } }),
-      this.prisma.teacher.count({ where }),
-    ]);
+    const [data, total] = await this.prisma.queryTenantScoped(tenantId, tx => Promise.all([
+      tx.teacher.findMany({ where, include: { user: { include: { profile: true } }, department: true }, skip, take: Number(limit), orderBy: { createdAt: 'desc' } }),
+      tx.teacher.count({ where }),
+    ]));
     return { data, meta: { total, page: Number(page), limit: Number(limit), totalPages: Math.ceil(total / Number(limit)) } };
   }
 
@@ -161,11 +161,15 @@ export class TeachersService {
       }
     }
 
-    const departments = await this.prisma.department.findMany({ where: { tenantId, schoolId: resolvedSchoolId } });
+    const { departments, existingEmails: existingEmailsArr, existingEmployeeIds: existingEmployeeIdsArr } = await this.prisma.queryTenantScoped(tenantId, async tx => {
+      const departments = await tx.department.findMany({ where: { tenantId, schoolId: resolvedSchoolId } });
+      const existingEmails = await tx.user.findMany({ where: { tenantId }, select: { email: true } });
+      const existingEmployeeIds = await tx.teacher.findMany({ where: { tenantId }, select: { employeeId: true } });
+      return { departments, existingEmails, existingEmployeeIds };
+    });
     const deptMap = new Map(departments.map(d => [d.name.toLowerCase(), d.id]));
-
-    const existingEmails = new Set((await this.prisma.user.findMany({ where: { tenantId }, select: { email: true } })).map(u => u.email.toLowerCase()));
-    const existingEmployeeIds = new Set((await this.prisma.teacher.findMany({ where: { tenantId }, select: { employeeId: true } })).map(e => e.employeeId));
+    const existingEmails = new Set(existingEmailsArr.map(u => u.email.toLowerCase()));
+    const existingEmployeeIds = new Set(existingEmployeeIdsArr.map(e => e.employeeId));
 
     const created: any[] = [];
     const errors: RowError[] = [];
@@ -207,22 +211,20 @@ export class TeachersService {
           gender = g;
         }
 
-        let departmentId: string | undefined;
-        if (deptName) {
-          departmentId = deptMap.get(deptName.toLowerCase());
-          if (!departmentId) {
-            const code = deptName.trim().slice(0, 10).toUpperCase().replace(/[^A-Z0-9]/g, '') || 'DEPT';
-            const newDept = await this.prisma.department.create({ data: { tenantId, schoolId: resolvedSchoolId, name: deptName.trim(), code } });
-            departmentId = newDept.id;
-            deptMap.set(deptName.toLowerCase(), departmentId);
-          }
-        }
+        const existingDeptId = deptName ? deptMap.get(deptName.toLowerCase()) : undefined;
 
-        const teacher = await this.prisma.$transaction(async tx => {
+        const teacher = await this.prisma.queryTenantScoped(tenantId, async tx => {
+          let deptId = existingDeptId;
+          if (deptName && !deptId) {
+            const code = deptName.trim().slice(0, 10).toUpperCase().replace(/[^A-Z0-9]/g, '') || 'DEPT';
+            const newDept = await tx.department.create({ data: { tenantId, schoolId: resolvedSchoolId, name: deptName.trim(), code } });
+            deptId = newDept.id;
+            deptMap.set(deptName.toLowerCase(), deptId);
+          }
           const tempPassword = generateTempPassword();
           const passwordHash = await this.authService.hashPassword(tempPassword);
           const user = await tx.user.create({ data: { tenantId, email: email!, passwordHash, role: 'TEACHER', profile: { create: { firstName, lastName, phone, gender: gender as any } } } });
-          const t = await tx.teacher.create({ data: { userId: user.id, tenantId, schoolId: resolvedSchoolId, employeeId: employeeId!, departmentId, joiningDate } });
+          const t = await tx.teacher.create({ data: { userId: user.id, tenantId, schoolId: resolvedSchoolId, employeeId: employeeId!, departmentId: deptId, joiningDate } });
           return { ...t, credentials: { username: email!, tempPassword } };
         });
 
