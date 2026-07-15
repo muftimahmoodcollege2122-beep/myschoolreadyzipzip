@@ -54,6 +54,7 @@ const sections: NavSection[] = [
   ]},
   { title: 'Content', items: [
     { href: '/website-builder',   icon: '🌐', label: 'Website Builder',    roles: ['SCHOOL_ADMIN'] },
+    { href: '/portal-links',      icon: '🔗', label: 'Portal Links',       roles: ['SCHOOL_ADMIN'] },
   ]},
   { title: 'System', items: [
     { href: '/settings',          icon: '⚙️', label: 'Settings',           roles: ['SCHOOL_ADMIN'] },
