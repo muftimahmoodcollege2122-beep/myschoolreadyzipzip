@@ -11,6 +11,8 @@ import { TenantId } from '../../common/decorators/tenant-id.decorator';
 export class TenantsController {
   constructor(private readonly svc: TenantsService) {}
   @Post() @Roles('SUPER_ADMIN') create(@Body() dto: CreateTenantDto) { return this.svc.provision(dto); }
+  @Get() @Roles('SUPER_ADMIN') listAll() { return this.svc.listAll(); }
+  @Get('summary') @Roles('SUPER_ADMIN') summary() { return this.svc.getPlatformSummary(); }
   @Get('current') @Roles('SCHOOL_ADMIN','TEACHER','STUDENT','PARENT') current(@TenantId() tid: string) { return this.svc.findById(tid); }
   @Put('current/branding') @Roles('SCHOOL_ADMIN') updateBranding(@TenantId() tid: string, @Body() dto: any) { return this.svc.updateConfig(tid, dto); }
   @Post(':id/suspend') @Roles('SUPER_ADMIN') suspend(@Param('id', ParseUUIDPipe) id: string) { return this.svc.suspend(id); }

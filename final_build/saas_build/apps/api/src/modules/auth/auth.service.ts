@@ -7,7 +7,7 @@
  * Passwords hashed with bcrypt (12 rounds). JWT signed with RS256.
  */
 
-import { Injectable, UnauthorizedException, ForbiddenException, BadRequestException, ConflictException, Logger } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ForbiddenException, BadRequestException, ConflictException, NotFoundException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../database/prisma.service';
@@ -163,6 +163,29 @@ export class AuthService {
   async hashPassword(password: string): Promise<string> {
     if (password.length < 8) throw new BadRequestException('Password must be at least 8 characters');
     return bcrypt.hash(password, this.BCRYPT_ROUNDS);
+  }
+
+  /**
+   * Super-admin impersonation: issues a short-lived token as that tenant's SCHOOL_ADMIN
+   * so support/ops can debug a school's portal. Every call is audit-logged with the
+   * acting super-admin's id so it's traceable.
+   */
+  async impersonate(actorUserId: string, targetTenantId: string): Promise<TokenPair & { user: any }> {
+    const target = await this.prisma.user.findFirst({
+      where: { tenantId: targetTenantId, role: 'SCHOOL_ADMIN', isActive: true, deletedAt: null },
+      include: { profile: true },
+      orderBy: { createdAt: 'asc' },
+    });
+    if (!target) throw new NotFoundException('No active school admin found for this tenant');
+
+    const jti = crypto.randomUUID();
+    const base = { sub: target.id, tid: targetTenantId, role: target.role, email: target.email, jti, impersonatedBy: actorUserId };
+    const accessToken = this.jwt.sign({ ...base, type: 'access' }, { secret: this.config.get<string>('JWT_ACCESS_SECRET'), expiresIn: '30m' });
+    const refreshToken = this.jwt.sign({ ...base, type: 'refresh' }, { secret: this.config.get<string>('JWT_REFRESH_SECRET'), expiresIn: '30m' });
+
+    await this.audit.log({ tenantId: targetTenantId, userId: actorUserId, action: 'IMPERSONATE', entity: 'User', entityId: target.id, after: { targetEmail: target.email } });
+
+    return { accessToken, refreshToken, expiresIn: 30 * 60, user: { id: target.id, email: target.email, role: target.role, tenantId: targetTenantId, profile: target.profile } };
   }
 
   private async generateTokenPair(userId: string, tenantId: string, role: string, email: string): Promise<TokenPair> {

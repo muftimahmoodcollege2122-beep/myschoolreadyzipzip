@@ -272,6 +272,103 @@ export const useCreateCashEntry = () => {
   return useMutation({ mutationFn: (dto: any) => apiClient.post('/finance/cashbook', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['cashbook'] }) });
 };
 
+export const useSetBudget = () => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (dto: any) => apiClient.post('/finance/budgets', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['budgets'] }) });
+};
+
+// ── Security ─────────────────────────────────────────────────────────────────
+export const useLoginHistory = (params: any = {}) =>
+  useQuery({ queryKey: ['login-history', params], queryFn: () => apiClient.get(`/security/login-history?${qs(params)}`), staleTime: 2*60*1000 });
+
+export const useIpRestrictions = () =>
+  useQuery({ queryKey: ['ip-restrictions'], queryFn: () => apiClient.get('/security/ip-restrictions') });
+
+export const useSuspiciousActivities = () =>
+  useQuery({ queryKey: ['suspicious'], queryFn: () => apiClient.get('/security/suspicious') });
+
+export const useSecurityDashboard = () =>
+  useQuery({ queryKey: ['security-dashboard'], queryFn: () => apiClient.get('/security/dashboard'), staleTime: 2*60*1000 });
+
+export const useAddIpRestriction = () => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (dto: any) => apiClient.post('/security/ip-restrictions', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['ip-restrictions'] }) });
+};
+
+export const useRemoveIpRestriction = () => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (id: string) => apiClient.delete(`/security/ip-restrictions/${id}`), onSuccess: () => qc.invalidateQueries({ queryKey: ['ip-restrictions'] }) });
+};
+
+export const useResolveSuspicious = () => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (id: string) => apiClient.put(`/security/suspicious/${id}/resolve`, {}), onSuccess: () => qc.invalidateQueries({ queryKey: ['suspicious'] }) });
+};
+
+export const useSetupMfa = () => useMutation({ mutationFn: () => apiClient.post('/security/mfa/setup', {}) });
+export const useEnableMfa = () => useMutation({ mutationFn: (token: string) => apiClient.post('/security/mfa/enable', { token }) });
+export const useDisableMfa = () => useMutation({ mutationFn: (token: string) => apiClient.post('/security/mfa/disable', { token }) });
+
+export const useRolesOverview = () =>
+  useQuery({ queryKey: ['roles-overview'], queryFn: () => apiClient.get('/school/roles-overview'), staleTime: 5 * 60 * 1000 });
+
+// ── Super Admin: platform-wide tenant management ───────────────────────────────
+export const useTenantsList = () =>
+  useQuery({ queryKey: ['tenants-list'], queryFn: () => apiClient.get('/tenants'), staleTime: 60 * 1000 });
+
+export const usePlatformSummary = () =>
+  useQuery({ queryKey: ['platform-summary'], queryFn: () => apiClient.get('/tenants/summary'), staleTime: 60 * 1000 });
+
+export const useImpersonateTenant = () =>
+  useMutation({ mutationFn: (tenantId: string) => apiClient.post(`/auth/impersonate/${tenantId}`, {}) });
+
+export const useSuspendTenant = () => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (id: string) => apiClient.post(`/tenants/${id}/suspend`, {}), onSuccess: () => { qc.invalidateQueries({ queryKey: ['tenants-list'] }); qc.invalidateQueries({ queryKey: ['platform-summary'] }); } });
+};
+
+export const useReactivateTenant = () => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (id: string) => apiClient.post(`/tenants/${id}/reactivate`, {}), onSuccess: () => { qc.invalidateQueries({ queryKey: ['tenants-list'] }); qc.invalidateQueries({ queryKey: ['platform-summary'] }); } });
+};
+
+export const useSchoolStats = () =>
+  useQuery({ queryKey: ['school-stats'], queryFn: () => apiClient.get('/school/stats'), staleTime: 5 * 60 * 1000 });
+
+// ── Billing / Subscription ───────────────────────────────────────────────────
+export const useBillingSubscription = () =>
+  useQuery({ queryKey: ['billing-subscription'], queryFn: () => apiClient.get('/billing/subscription'), staleTime: 60 * 1000 });
+
+export const useBillingCheckout = () =>
+  useMutation({ mutationFn: (plan: string) => apiClient.post('/billing/checkout', { plan }) });
+
+export const useBillingPortal = () =>
+  useMutation({ mutationFn: () => apiClient.post('/billing/portal', {}) });
+
+// ── Payment Gateway Settings (per-school fee-collection credentials) ──────────
+export const usePaymentGatewaySettings = () =>
+  useQuery({ queryKey: ['payment-gateway-settings'], queryFn: () => apiClient.get('/school/payment-gateway-settings') });
+
+export const useUpdatePaymentGatewaySettings = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ gateway, ...dto }: any) => apiClient.put(`/school/payment-gateway-settings/${gateway}`, dto),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['payment-gateway-settings'] }),
+  });
+};
+
+// ── Notification Settings (SMS / Email) ────────────────────────────────────────
+export const useNotificationSettings = () =>
+  useQuery({ queryKey: ['notification-settings'], queryFn: () => apiClient.get('/school/notification-settings') });
+
+export const useUpdateNotificationSettings = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ channel, ...dto }: any) => apiClient.put(`/school/notification-settings/${channel}`, dto),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['notification-settings'] }),
+  });
+};
+
 // ── Website Settings ─────────────────────────────────────────────────────────
 export const useWebsiteSettings = () =>
   useQuery({ queryKey: ['website-settings'], queryFn: () => apiClient.get('/school/website-settings'), staleTime: 5*60*1000 });
