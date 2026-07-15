@@ -210,7 +210,12 @@ export class TeachersService {
         let departmentId: string | undefined;
         if (deptName) {
           departmentId = deptMap.get(deptName.toLowerCase());
-          if (!departmentId) { errors.push({ row: rowNum, message: `No department found matching "${deptName}"` }); continue; }
+          if (!departmentId) {
+            const code = deptName.trim().slice(0, 10).toUpperCase().replace(/[^A-Z0-9]/g, '') || 'DEPT';
+            const newDept = await this.prisma.department.create({ data: { tenantId, schoolId: resolvedSchoolId, name: deptName.trim(), code } });
+            departmentId = newDept.id;
+            deptMap.set(deptName.toLowerCase(), departmentId);
+          }
         }
 
         const teacher = await this.prisma.$transaction(async tx => {
