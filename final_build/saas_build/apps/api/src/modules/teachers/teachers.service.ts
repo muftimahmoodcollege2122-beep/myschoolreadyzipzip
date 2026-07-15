@@ -8,18 +8,28 @@
  */
 
 import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
+import * as crypto from 'crypto';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../../common/audit/audit.service';
 import { PlanGuard } from '../../common/guards/plan.guard';
+import { AuthService } from '../auth/auth.service';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
 import { parseSpreadsheet, buildTemplate, buildExport, cleanCell, ImportResult, RowError } from '../../common/import/xlsx-import.util';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/** Generates a random, human-typeable temp password (no ambiguous chars: 0/O, 1/l/I). */
+function generateTempPassword(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+  let out = '';
+  for (let i = 0; i < 10; i++) out += chars[crypto.randomInt(chars.length)];
+  return out;
+}
+
 @Injectable()
 export class TeachersService {
   private readonly logger = new Logger(TeachersService.name);
-  constructor(private prisma: PrismaService, private audit: AuditService, private planGuard: PlanGuard) {}
+  constructor(private prisma: PrismaService, private audit: AuditService, private planGuard: PlanGuard, private authService: AuthService) {}
 
   private async resolveSchoolId(tenantId: string, schoolId?: string): Promise<string | undefined> {
     if (schoolId && UUID_RE.test(schoolId)) return schoolId;
@@ -34,12 +44,28 @@ export class TeachersService {
     await this.planGuard.assertTeacherLimit(tenantId);
     const existing = await this.prisma.user.findFirst({ where: { tenantId, email: dto.email } });
     if (existing) throw new ConflictException('Email already registered');
-    return this.prisma.$transaction(async tx => {
-      const user = await tx.user.create({ data: { tenantId, email: dto.email, role: 'TEACHER', profile: { create: { firstName: dto.firstName, lastName: dto.lastName, phone: dto.phone, gender: dto.gender as any } } } });
+
+    const tempPassword = generateTempPassword();
+    const passwordHash = await this.authService.hashPassword(tempPassword);
+
+    const { teacher, tenantSlug } = await this.prisma.$transaction(async tx => {
+      const user = await tx.user.create({ data: { tenantId, email: dto.email, passwordHash, role: 'TEACHER', profile: { create: { firstName: dto.firstName, lastName: dto.lastName, phone: dto.phone, gender: dto.gender as any } } } });
       const teacher = await tx.teacher.create({ data: { userId: user.id, tenantId, schoolId, employeeId: dto.employeeId, departmentId: dto.departmentId, qualifications: dto.qualifications ?? [], specializations: dto.specializations ?? [], joiningDate: new Date(dto.joiningDate) } });
       await tx.outboxEvent.create({ data: { tenantId, topic: 'teacher.created', key: teacher.id, payload: { teacherId: teacher.id }, headers: {} } });
-      return teacher;
+      const tenant = await tx.tenant.findUnique({ where: { id: tenantId }, select: { slug: true } });
+      return { teacher, tenantSlug: tenant?.slug ?? '' };
     });
+
+    this.logger.log(`Teacher ${teacher.id} onboarded with auto-generated credentials (${dto.email})`);
+
+    return {
+      ...teacher,
+      credentials: {
+        username: dto.email,
+        tempPassword,
+        portalLoginUrl: `/t/${tenantSlug}/login`,
+      },
+    };
   }
 
   async findAll(tenantId: string, schoolId: string, page = 1, limit = 20, search?: string) {
@@ -188,8 +214,11 @@ export class TeachersService {
         }
 
         const teacher = await this.prisma.$transaction(async tx => {
-          const user = await tx.user.create({ data: { tenantId, email: email!, role: 'TEACHER', profile: { create: { firstName, lastName, phone, gender: gender as any } } } });
-          return tx.teacher.create({ data: { userId: user.id, tenantId, schoolId: resolvedSchoolId, employeeId: employeeId!, departmentId, joiningDate } });
+          const tempPassword = generateTempPassword();
+          const passwordHash = await this.authService.hashPassword(tempPassword);
+          const user = await tx.user.create({ data: { tenantId, email: email!, passwordHash, role: 'TEACHER', profile: { create: { firstName, lastName, phone, gender: gender as any } } } });
+          const t = await tx.teacher.create({ data: { userId: user.id, tenantId, schoolId: resolvedSchoolId, employeeId: employeeId!, departmentId, joiningDate } });
+          return { ...t, credentials: { username: email!, tempPassword } };
         });
 
         existingEmails.add(email!); seenEmails.add(email!);
