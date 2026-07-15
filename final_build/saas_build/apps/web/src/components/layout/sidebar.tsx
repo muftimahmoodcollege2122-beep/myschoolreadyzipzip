@@ -22,55 +22,30 @@ const sections: NavSection[] = [
     { href: '/attendance',        icon: '✅', label: 'Attendance',         roles: ['SCHOOL_ADMIN','TEACHER'] },
     { href: '/grades',            icon: '🎯', label: 'Grades',             roles: ['SCHOOL_ADMIN','TEACHER'] },
     { href: '/exams',             icon: '📝', label: 'Exams',              roles: ['SCHOOL_ADMIN','TEACHER'] },
-  ]},
-  { title: 'Learning', items: [
-    { href: '/lms',               icon: '🎓', label: 'LMS',                roles: ['SCHOOL_ADMIN','TEACHER','STUDENT'] },
-    { href: '/library',           icon: '📖', label: 'Library',            roles: ['SCHOOL_ADMIN','TEACHER','STUDENT'] },
     { href: '/question-bank',     icon: '🧠', label: 'Question Bank',      roles: ['SCHOOL_ADMIN','TEACHER'] },
-    { href: '/lesson-plans',      icon: '📋', label: 'Lesson Plans',       roles: ['SCHOOL_ADMIN','TEACHER'] },
   ]},
   { title: 'Admissions & HR', items: [
     { href: '/admissions',        icon: '📝', label: 'Admissions CRM',     roles: ['SCHOOL_ADMIN'] },
     { href: '/staff',             icon: '👥', label: 'Staff',              roles: ['SCHOOL_ADMIN'] },
-    { href: '/hrm',               icon: '🏢', label: 'HR & Payroll',       roles: ['SCHOOL_ADMIN'] },
-    { href: '/payroll',           icon: '💵', label: 'Payroll',            roles: ['SCHOOL_ADMIN'] },
-    { href: '/duty-roster',       icon: '📋', label: 'Duty Roster',        roles: ['SCHOOL_ADMIN'] },
   ]},
   { title: 'Finance', items: [
     { href: '/fees',              icon: '💰', label: 'Fees',               roles: ['SCHOOL_ADMIN','ACCOUNTANT'] },
-    { href: '/budget',            icon: '📊', label: 'Budget & Expenses',  roles: ['SCHOOL_ADMIN'] },
-    { href: '/scholarships',      icon: '🎖️', label: 'Scholarships',       roles: ['SCHOOL_ADMIN'] },
     { href: '/reports',           icon: '📄', label: 'Reports',            roles: ['SCHOOL_ADMIN'] },
   ]},
   { title: 'Students & Parents', items: [
     { href: '/parents',           icon: '👨‍👩‍👧', label: 'Parents',            roles: ['SCHOOL_ADMIN'] },
-    { href: '/conduct',           icon: '⚖️', label: 'Conduct',            roles: ['SCHOOL_ADMIN','TEACHER'] },
-    { href: '/medical',           icon: '🏥', label: 'Medical Records',    roles: ['SCHOOL_ADMIN'] },
-    { href: '/certificates',      icon: '📜', label: 'Certificates',       roles: ['SCHOOL_ADMIN'] },
-    { href: '/id-cards',          icon: '🪪', label: 'ID Cards',           roles: ['SCHOOL_ADMIN'] },
   ]},
   { title: 'Resources', items: [
-    { href: '/transport',         icon: '🚌', label: 'Transport',          roles: ['SCHOOL_ADMIN','TEACHER','STUDENT','PARENT'] },
-    { href: '/inventory',         icon: '📦', label: 'Inventory',          roles: ['SCHOOL_ADMIN'] },
-    { href: '/hostel',            icon: '🏠', label: 'Hostel',             roles: ['SCHOOL_ADMIN'] },
-    { href: '/canteen',           icon: '🍽️', label: 'Canteen & Store',    roles: ['SCHOOL_ADMIN'] },
     { href: '/events',            icon: '🎉', label: 'Events',             roles: ['SCHOOL_ADMIN','TEACHER','STUDENT','PARENT'] },
-    { href: '/academic-calendar', icon: '📅', label: 'Academic Calendar',  roles: ['SCHOOL_ADMIN','TEACHER','STUDENT','PARENT'] },
-  ]},
-  { title: 'Co-curricular', items: [
-    { href: '/sports',            icon: '⚽', label: 'Sports',             roles: ['SCHOOL_ADMIN','TEACHER'] },
-    { href: '/clubs',             icon: '🏛️', label: 'Clubs & Societies',  roles: ['SCHOOL_ADMIN','TEACHER'] },
   ]},
   { title: 'Academic Tools', items: [
     { href: '/gradebook',         icon: '📊', label: 'Gradebook',          roles: ['SCHOOL_ADMIN','TEACHER'] },
     { href: '/announcements',     icon: '📢', label: 'Announcements',      roles: ['SCHOOL_ADMIN','TEACHER'] },
-    { href: '/vehicle-tracking',  icon: '🗺️', label: 'Vehicle Tracking',   roles: ['SCHOOL_ADMIN'] },
   ]},
   { title: 'Portals', items: [
     { href: '/teacher-portal',    icon: '👨‍🏫', label: 'Teacher Portal',    roles: ['TEACHER','SCHOOL_ADMIN'] },
     { href: '/student-portal',    icon: '👩‍🎓', label: 'Student Portal',    roles: ['STUDENT','SCHOOL_ADMIN'] },
     { href: '/parent-portal',     icon: '👨‍👩‍👧', label: 'Parent Portal',     roles: ['PARENT','SCHOOL_ADMIN'] },
-    { href: '/alumni',            icon: '🎓', label: 'Alumni Portal',      roles: ['SCHOOL_ADMIN'] },
   ]},
   { title: 'Communication', items: [
     { href: '/communications',    icon: '💬', label: 'Communications',     roles: ['SCHOOL_ADMIN','TEACHER'] },
@@ -78,24 +53,9 @@ const sections: NavSection[] = [
     { href: '/notifications',     icon: '🔔', label: 'Notifications',      roles: ['SCHOOL_ADMIN','TEACHER','STUDENT','PARENT'] },
   ]},
   { title: 'Content', items: [
-    { href: '/blog',              icon: '📰', label: 'Blog & News',        roles: ['SCHOOL_ADMIN'] },
-    { href: '/gallery',           icon: '🖼️', label: 'Photo Gallery',      roles: ['SCHOOL_ADMIN','TEACHER'] },
-    { href: '/documents',         icon: '📁', label: 'Documents',          roles: ['SCHOOL_ADMIN','TEACHER'] },
     { href: '/website-builder',   icon: '🌐', label: 'Website Builder',    roles: ['SCHOOL_ADMIN'] },
   ]},
-  { title: 'Research & AI', items: [
-    { href: '/research',          icon: '🔬', label: 'Research',           roles: ['SCHOOL_ADMIN','TEACHER'] },
-    { href: '/ai',                icon: '🤖', label: 'AI Assistant',       roles: ['SCHOOL_ADMIN','TEACHER'] },
-    { href: '/ai-analytics',      icon: '📊', label: 'AI Analytics',       roles: ['SCHOOL_ADMIN'] },
-  ]},
-  { title: 'Support', items: [
-    { href: '/support-tickets',   icon: '🎫', label: 'Support Tickets',    roles: ['SCHOOL_ADMIN'] },
-  ]},
-  { title: 'Portals & Sharing', items: [
-    { href: '/portal-links',      icon: '🔗', label: 'Portal Links',       roles: ['SCHOOL_ADMIN'] },
-  ]},
   { title: 'System', items: [
-    { href: '/security',          icon: '🛡️', label: 'Security',           roles: ['SCHOOL_ADMIN'] },
     { href: '/settings',          icon: '⚙️', label: 'Settings',           roles: ['SCHOOL_ADMIN'] },
   ]},
 ];

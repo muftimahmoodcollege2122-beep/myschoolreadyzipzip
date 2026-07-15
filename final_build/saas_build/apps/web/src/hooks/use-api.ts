@@ -4,7 +4,7 @@
  * Pattern: useXxx() for GET queries, useCreateXxx()/useUpdateXxx()/useDeleteXxx() for mutations.
  * All hooks automatically handle: loading state, error state, cache invalidation.
  * Organized by module: students, teachers, fees, attendance, grades, exams,
- * notifications, dashboard, library, transport, events, billing, AI, alumni, etc.
+ * notifications, dashboard, timetable, question bank, finance, events, billing.
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../lib/api-client';
@@ -219,56 +219,6 @@ export const useCreateSubject = () => {
   return useMutation({ mutationFn: (dto: any) => apiClient.post('/school/subjects', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['subjects'] }) });
 };
 
-// ── Library ──────────────────────────────────────────────────────────────────
-export const useLibraryBooks = (params: any = {}) =>
-  useQuery({ queryKey: ['library-books', params], queryFn: () => apiClient.get(`/library/books?${qs(params)}`) });
-
-export const useLibraryStats = () =>
-  useQuery({ queryKey: ['library-stats'], queryFn: () => apiClient.get('/library/stats'), staleTime: 5*60*1000 });
-
-export const useLibraryCategories = () =>
-  useQuery({ queryKey: ['library-categories'], queryFn: () => apiClient.get('/library/categories'), staleTime: 10*60*1000 });
-
-export const useBookIssues = (returned?: boolean, page = 1) =>
-  useQuery({ queryKey: ['book-issues', returned, page], queryFn: () => apiClient.get(`/library/issues?${qs({ returned: returned?.toString(), page })}`) });
-
-export const useCreateBook = () => {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: (dto: any) => apiClient.post('/library/books', dto), onSuccess: () => { qc.invalidateQueries({ queryKey: ['library-books'] }); qc.invalidateQueries({ queryKey: ['library-stats'] }); } });
-};
-
-export const useIssueBook = () => {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: ({ bookId, ...dto }: any) => apiClient.post(`/library/books/${bookId}/issue`, dto), onSuccess: () => { qc.invalidateQueries({ queryKey: ['library-books'] }); qc.invalidateQueries({ queryKey: ['book-issues'] }); qc.invalidateQueries({ queryKey: ['library-stats'] }); } });
-};
-
-export const useReturnBook = () => {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: (issueId: string) => apiClient.post(`/library/issues/${issueId}/return`, {}), onSuccess: () => { qc.invalidateQueries({ queryKey: ['library-books'] }); qc.invalidateQueries({ queryKey: ['book-issues'] }); qc.invalidateQueries({ queryKey: ['library-stats'] }); } });
-};
-
-// ── Transport ─────────────────────────────────────────────────────────────────
-export const useTransportRoutes = (params: any = {}) =>
-  useQuery({ queryKey: ['transport-routes', params], queryFn: () => apiClient.get(`/transport/routes?${qs(params)}`) });
-
-export const useTransportStats = () =>
-  useQuery({ queryKey: ['transport-stats'], queryFn: () => apiClient.get('/transport/stats'), staleTime: 5*60*1000 });
-
-export const useCreateRoute = () => {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: (dto: any) => apiClient.post('/transport/routes', dto), onSuccess: () => { qc.invalidateQueries({ queryKey: ['transport-routes'] }); qc.invalidateQueries({ queryKey: ['transport-stats'] }); } });
-};
-
-export const useUpdateRoute = () => {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: ({ id, ...dto }: any) => apiClient.put(`/transport/routes/${id}`, dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['transport-routes'] }) });
-};
-
-export const useDeleteRoute = () => {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: (id: string) => apiClient.delete(`/transport/routes/${id}`), onSuccess: () => { qc.invalidateQueries({ queryKey: ['transport-routes'] }); qc.invalidateQueries({ queryKey: ['transport-stats'] }); } });
-};
-
 // ── Timetable ─────────────────────────────────────────────────────────────────
 export const useTimetable = (sectionId: string) =>
   useQuery({ queryKey: ['timetable', sectionId], queryFn: () => apiClient.get(`/timetable?sectionId=${sectionId}`), enabled: !!sectionId, staleTime: 10*60*1000 });
@@ -307,9 +257,6 @@ export const useExpenses = (params: any = {}) =>
 export const useCashbook = (params: any = {}) =>
   useQuery({ queryKey: ['cashbook', params], queryFn: () => apiClient.get(`/finance/cashbook?${qs(params)}`) });
 
-export const useBudgets = (params: any = {}) =>
-  useQuery({ queryKey: ['budgets', params], queryFn: () => apiClient.get(`/finance/budgets?${qs(params)}`) });
-
 export const useCreateExpense = () => {
   const qc = useQueryClient();
   return useMutation({ mutationFn: (dto: any) => apiClient.post('/finance/expenses', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['expenses'] }) });
@@ -323,199 +270,6 @@ export const useApproveExpense = () => {
 export const useCreateCashEntry = () => {
   const qc = useQueryClient();
   return useMutation({ mutationFn: (dto: any) => apiClient.post('/finance/cashbook', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['cashbook'] }) });
-};
-
-export const useSetBudget = () => {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: (dto: any) => apiClient.post('/finance/budgets', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['budgets'] }) });
-};
-
-// ── Discounts & Scholarships ─────────────────────────────────────────────────
-export const useScholarships = () =>
-  useQuery({ queryKey: ['scholarships'], queryFn: () => apiClient.get('/discounts/scholarships'), staleTime: 10*60*1000 });
-
-export const useScholarshipGrants = () =>
-  useQuery({ queryKey: ['sch-grants'], queryFn: () => apiClient.get('/discounts/scholarships/grants') });
-
-export const useDiscounts = () =>
-  useQuery({ queryKey: ['discounts'], queryFn: () => apiClient.get('/discounts'), staleTime: 10*60*1000 });
-
-export const useInstallmentPlans = () =>
-  useQuery({ queryKey: ['installment-plans'], queryFn: () => apiClient.get('/discounts/installment-plans') });
-
-export const useCreateScholarship = () => {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: (dto: any) => apiClient.post('/discounts/scholarships', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['scholarships'] }) });
-};
-
-export const useGrantScholarship = () => {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: (dto: any) => apiClient.post('/discounts/scholarships/grant', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['sch-grants'] }) });
-};
-
-export const useCreateDiscount = () => {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: (dto: any) => apiClient.post('/discounts', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['discounts'] }) });
-};
-
-// ── Student Records ──────────────────────────────────────────────────────────
-export const useStudentBehaviors = (studentId?: string) =>
-  useQuery({ queryKey: ['behaviors', studentId], queryFn: () => apiClient.get(`/student-records/behavior?${qs({ studentId })}`), enabled: !!studentId });
-
-export const useStudentMedical = (studentId?: string) =>
-  useQuery({ queryKey: ['medical', studentId], queryFn: () => apiClient.get(`/student-records/medical?${qs({ studentId })}`), enabled: !!studentId });
-
-export const useStudentAchievements = (studentId?: string) =>
-  useQuery({ queryKey: ['achievements', studentId], queryFn: () => apiClient.get(`/student-records/achievements?${qs({ studentId })}`), enabled: !!studentId });
-
-export const useCreateBehavior = () => {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: (dto: any) => apiClient.post('/student-records/behavior', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['behaviors'] }) });
-};
-
-export const useCreateAchievement = () => {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: (dto: any) => apiClient.post('/student-records/achievements', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['achievements'] }) });
-};
-
-// ── HR Extended ──────────────────────────────────────────────────────────────
-export const useLessonPlans = (params: any = {}) =>
-  useQuery({ queryKey: ['lesson-plans', params], queryFn: () => apiClient.get(`/hr/lesson-plans?${qs(params)}`) });
-
-export const useSubstitutions = () =>
-  useQuery({ queryKey: ['substitutions'], queryFn: () => apiClient.get('/hr/substitutions') });
-
-export const useTrainingRecords = () =>
-  useQuery({ queryKey: ['training'], queryFn: () => apiClient.get('/hr/training') });
-
-export const useCreateLessonPlan = () => {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: (dto: any) => apiClient.post('/hr/lesson-plans', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['lesson-plans'] }) });
-};
-
-export const useApproveLessonPlan = () => {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: (id: string) => apiClient.put(`/hr/lesson-plans/${id}/approve`, {}), onSuccess: () => qc.invalidateQueries({ queryKey: ['lesson-plans'] }) });
-};
-
-export const useCreateSubstitution = () => {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: (dto: any) => apiClient.post('/hr/substitutions', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['substitutions'] }) });
-};
-
-// ── Content ──────────────────────────────────────────────────────────────────
-export const useBlogPosts = (params: any = {}) =>
-  useQuery({ queryKey: ['blog-posts', params], queryFn: () => apiClient.get(`/content/posts?${qs(params)}`) });
-
-export const useGalleryAlbums = () =>
-  useQuery({ queryKey: ['gallery-albums'], queryFn: () => apiClient.get('/content/albums'), staleTime: 5*60*1000 });
-
-export const useCreateBlogPost = () => {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: (dto: any) => apiClient.post('/content/posts', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['blog-posts'] }) });
-};
-
-export const usePublishBlogPost = () => {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: (id: string) => apiClient.put(`/content/posts/${id}`, { status: 'PUBLISHED' }), onSuccess: () => qc.invalidateQueries({ queryKey: ['blog-posts'] }) });
-};
-
-export const useCreateGalleryAlbum = () => {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: (dto: any) => apiClient.post('/content/albums', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['gallery-albums'] }) });
-};
-
-// ── Security ─────────────────────────────────────────────────────────────────
-export const useLoginHistory = (params: any = {}) =>
-  useQuery({ queryKey: ['login-history', params], queryFn: () => apiClient.get(`/security/login-history?${qs(params)}`), staleTime: 2*60*1000 });
-
-export const useIpRestrictions = () =>
-  useQuery({ queryKey: ['ip-restrictions'], queryFn: () => apiClient.get('/security/ip-restrictions') });
-
-export const useSuspiciousActivities = () =>
-  useQuery({ queryKey: ['suspicious'], queryFn: () => apiClient.get('/security/suspicious-activities') });
-
-export const useSecurityDashboard = () =>
-  useQuery({ queryKey: ['security-dashboard'], queryFn: () => apiClient.get('/security/dashboard'), staleTime: 2*60*1000 });
-
-export const useAddIpRestriction = () => {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: (dto: any) => apiClient.post('/security/ip-restrictions', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['ip-restrictions'] }) });
-};
-
-// ── Support Tickets ──────────────────────────────────────────────────────────
-export const useSupportTickets = (params: any = {}) =>
-  useQuery({ queryKey: ['tickets', params], queryFn: () => apiClient.get(`/support-tickets?${qs(params)}`) });
-
-export const useTicketStats = () =>
-  useQuery({ queryKey: ['ticket-stats'], queryFn: () => apiClient.get('/support-tickets/stats'), staleTime: 2*60*1000 });
-
-export const useCreateTicket = () => {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: (dto: any) => apiClient.post('/support-tickets', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['tickets'] }) });
-};
-
-export const useRespondToTicket = () => {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: ({ id, ...dto }: any) => apiClient.post(`/support-tickets/${id}/respond`, dto), onSuccess: () => { qc.invalidateQueries({ queryKey: ['tickets'] }); qc.invalidateQueries({ queryKey: ['ticket'] }); } });
-};
-
-export const useUpdateTicketStatus = () => {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: ({ id, status }: any) => apiClient.put(`/support-tickets/${id}/status`, { status }), onSuccess: () => { qc.invalidateQueries({ queryKey: ['tickets'] }); qc.invalidateQueries({ queryKey: ['ticket'] }); } });
-};
-
-// ── AI Analytics ─────────────────────────────────────────────────────────────
-export const useAiAnalytics = (type: string) =>
-  useQuery({ queryKey: ['ai-analytics', type], queryFn: () => apiClient.get(`/ai-analytics/${type}`), staleTime: 10*60*1000 });
-
-export const useAiPrediction = () =>
-  useMutation({ mutationFn: (dto: any) => apiClient.post('/ai-analytics/predict', dto) });
-
-// ── Alumni ───────────────────────────────────────────────────────────────────
-export const useAlumni = (params: any = {}) =>
-  useQuery({ queryKey: ['alumni', params], queryFn: () => apiClient.get(`/alumni?${qs(params)}`) });
-
-export const useCreateAlumni = () => {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: (dto: any) => apiClient.post('/alumni', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['alumni'] }) });
-};
-
-export const useAlumniStats = () =>
-  useQuery({ queryKey: ['alumni-stats'], queryFn: () => apiClient.get('/alumni/stats'), staleTime: 10*60*1000 });
-
-// ── Forms ────────────────────────────────────────────────────────────────────
-export const useForms = () =>
-  useQuery({ queryKey: ['forms'], queryFn: () => apiClient.get('/forms'), staleTime: 10*60*1000 });
-
-export const useFormResponses = (formId: string) =>
-  useQuery({ queryKey: ['form-responses', formId], queryFn: () => apiClient.get(`/forms/${formId}/responses`), enabled: !!formId });
-
-export const useCreateForm = () => {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: (dto: any) => apiClient.post('/forms', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['forms'] }) });
-};
-
-export const useSubmitFormResponse = () =>
-  useMutation({ mutationFn: ({ formId, ...dto }: any) => apiClient.post(`/forms/${formId}/submit`, dto) });
-
-// ── LMS ─────────────────────────────────────────────────────────────────────
-export const useLmsCourses = () =>
-  useQuery({ queryKey: ['lms-courses'], queryFn: () => apiClient.get('/school/lms'), staleTime: 5*60*1000 });
-
-export const useCreateLmsCourse = () => {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: (dto: any) => apiClient.post('/school/lms', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['lms-courses'] }) });
-};
-
-export const useUpdateLmsCourse = () => {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: ({ id, ...dto }: any) => apiClient.put(`/school/lms/${id}`, dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['lms-courses'] }) });
-};
-
-export const useDeleteLmsCourse = () => {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: (id: string) => apiClient.delete(`/school/lms/${id}`), onSuccess: () => qc.invalidateQueries({ queryKey: ['lms-courses'] }) });
 };
 
 // ── Website Settings ─────────────────────────────────────────────────────────
@@ -584,13 +338,3 @@ export const useSubmitLeaveRequest = () => {
 
 export const useTeacherStats = (slug: string) =>
   useQuery({ queryKey: ['teacher-stats', slug], queryFn: () => apiClient.get(`/dashboard/stats?tenantSlug=${slug}`), enabled: !!slug, staleTime: 5 * 60 * 1000 });
-// ── Missing hooks ─────────────────────────────────────────────────────────────
-export const useCreateBudget = () => {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: (dto: any) => apiClient.post('/finance/budgets', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['budgets'] }) });
-};
-
-export const useSubmitLessonPlan = () => {
-  const qc = useQueryClient();
-  return useMutation({ mutationFn: (id: string) => apiClient.put(`/hr/lesson-plans/${id}/submit`, {}), onSuccess: () => qc.invalidateQueries({ queryKey: ['lesson-plans'] }) });
-};
