@@ -281,6 +281,15 @@ export const useSaveWebsiteSettings = () => {
   return useMutation({ mutationFn: (dto: any) => apiClient.put('/school/website-settings', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['website-settings'] }) });
 };
 
+// ── Website Pages ─────────────────────────────────────────────────────────────
+export const useWebsitePages = () =>
+  useQuery({ queryKey: ['website-pages'], queryFn: () => apiClient.get('/themes/pages'), staleTime: 60*1000 });
+
+export const useSaveWebsitePage = () => {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: (page: any) => apiClient.put('/themes/pages', page), onSuccess: () => qc.invalidateQueries({ queryKey: ['website-pages'] }) });
+};
+
 // ── Generic School Section CRUD ───────────────────────────────────────────────
 export const useSchoolSection = (section: string) =>
   useQuery({ queryKey: ['school-section', section], queryFn: () => apiClient.get(`/school/section/${section}`), staleTime: 2*60*1000 });

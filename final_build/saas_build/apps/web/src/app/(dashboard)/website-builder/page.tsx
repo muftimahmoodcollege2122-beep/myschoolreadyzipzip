@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Topbar } from '@/components/layout/topbar';
 import { PageHeader } from '@/components/shared/page-header';
 import { Badge } from '@/components/shared/badge';
-import { useSchoolInfo, useWebsiteSettings, useSaveWebsiteSettings } from '@/hooks/use-api';
+import { useSchoolInfo, useWebsiteSettings, useSaveWebsiteSettings, useWebsitePages, useSaveWebsitePage } from '@/hooks/use-api';
 
 const COMPONENTS = [
   { icon: '🦸', label: 'Hero Section', desc: 'Eye-catching banner with CTA' },
@@ -25,14 +25,6 @@ const THEMES = [
   { name: 'Forest Green', primary: '#16A34A', secondary: '#14532D', preview: 'bg-green-600' },
   { name: 'Royal Purple', primary: '#7C3AED', secondary: '#1E1B4B', preview: 'bg-purple-600' },
   { name: 'Sunset Orange', primary: '#EA580C', secondary: '#431407', preview: 'bg-orange-600' },
-];
-
-const PAGES_BUILT = [
-  { name: 'Home', status: 'Published', components: 7, lastEdit: '2 days ago' },
-  { name: 'About Us', status: 'Published', components: 4, lastEdit: '1 week ago' },
-  { name: 'Admissions', status: 'Draft', components: 3, lastEdit: '3 days ago' },
-  { name: 'Contact', status: 'Published', components: 2, lastEdit: '5 days ago' },
-  { name: 'Faculty', status: 'Draft', components: 2, lastEdit: '1 day ago' },
 ];
 
 const DEFAULT_COMPONENTS = ['Hero Section', 'About Us', 'Statistics', 'Events', 'Contact'];
@@ -58,8 +50,21 @@ export default function WebsiteBuilderPage() {
   const { data: schoolInfo } = useSchoolInfo();
   const { data: websiteData } = useWebsiteSettings();
   const saveSettings = useSaveWebsiteSettings();
+  const { data: pagesData, isLoading: pagesLoading } = useWebsitePages();
+  const savePage = useSaveWebsitePage();
+  const [pageActionId, setPageActionId] = useState<string | null>(null);
   const school = schoolInfo as any;
   const wsData = websiteData as any;
+  const pages: any[] = Array.isArray(pagesData) ? pagesData : [];
+
+  const togglePageStatus = async (page: any) => {
+    setPageActionId(page.slug);
+    try {
+      await savePage.mutateAsync({ ...page, status: page.status === 'published' ? 'draft' : 'published' });
+    } finally {
+      setPageActionId(null);
+    }
+  };
 
   useEffect(() => {
     if (!wsData) return;
@@ -333,21 +338,30 @@ export default function WebsiteBuilderPage() {
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
             <div className="p-4 border-b border-gray-100 flex justify-between items-center">
               <h3 className="font-bold text-gray-900">Website Pages</h3>
-              <button className="px-3 py-1.5 bg-blue-50 text-blue-700 text-xs font-bold rounded-lg border border-blue-200 hover:bg-blue-100">+ New Page</button>
             </div>
             <div className="divide-y divide-gray-50">
-              {PAGES_BUILT.map(p=>(
-                <div key={p.name} className="flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors">
+              {pagesLoading && <div className="px-5 py-6 text-sm text-gray-400">Loading pages…</div>}
+              {!pagesLoading && pages.length === 0 && (
+                <div className="px-5 py-6 text-sm text-gray-400">No pages found.</div>
+              )}
+              {pages.map(p=>(
+                <div key={p.slug} className="flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center font-bold text-blue-600 text-sm">📄</div>
-                    <div><p className="font-semibold text-sm text-gray-900">{p.name}</p><p className="text-xs text-gray-400">{p.components} components · {p.lastEdit}</p></div>
+                    <div>
+                      <p className="font-semibold text-sm text-gray-900">{p.title}</p>
+                      <p className="text-xs text-gray-400">/{p.slug} · updated {p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : '—'}</p>
+                    </div>
                   </div>
                   <div className="flex items-center gap-4">
-                    <Badge variant={p.status==='Published'?'green':'yellow'}>{p.status}</Badge>
-                    <div className="flex gap-2">
-                      <button className="px-2 py-1 text-xs text-blue-600 bg-blue-50 rounded-lg font-semibold hover:bg-blue-100">Edit</button>
-                      <button className="px-2 py-1 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50">Preview</button>
-                    </div>
+                    <Badge variant={p.status==='published'?'green':'yellow'}>{p.status==='published'?'Published':'Draft'}</Badge>
+                    <button
+                      onClick={() => togglePageStatus(p)}
+                      disabled={pageActionId === p.slug}
+                      className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors disabled:opacity-60 ${p.status==='published' ? 'text-gray-600 border border-gray-200 hover:bg-gray-50' : 'text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100'}`}
+                    >
+                      {pageActionId === p.slug ? '⏳' : p.status==='published' ? 'Unpublish' : 'Publish'}
+                    </button>
                   </div>
                 </div>
               ))}

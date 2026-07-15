@@ -8,6 +8,10 @@ import { notFound } from 'next/navigation';
 import { getSchoolTheme } from '@/lib/school-data';
 import { AboutPage } from '@/components/school-website/pages/about';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
+
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const theme = await getSchoolTheme(params.slug);
   if (!theme) return { title: 'School Not Found' };
