@@ -6,6 +6,8 @@
 #   1. Start Redis (daemonized on port 6379)
 #   2. Run Prisma migration (db push) to sync DB schema
 #   3. Run seed-demo.js — creates demo school tenant if not exists
+#   3b. Run prisma/seed.ts — ensures the platform tenant + SUPER_ADMIN account
+#       exist (idempotent, safe to run on every deploy — see prisma/seed.ts)
 #   4. Start NestJS API on port 3001 (background process)
 #   5. Poll /api/v1/health/live until API is ready (max 60s)
 #      → if API dies during startup, prints last 40 log lines and exits
@@ -16,6 +18,13 @@
 #   JWT_ACCESS_SECRET  — 64-char random string
 #   JWT_REFRESH_SECRET — 64-char random string
 #   NODE_ENV=production
+#
+# Environment variables recommended (super admin login):
+#   SUPER_ADMIN_EMAIL    — your login email (default: admin@platform.internal)
+#   SUPER_ADMIN_PASSWORD — your login password (default: randomly generated
+#                           and printed once to this container's logs on first
+#                           deploy — set this explicitly instead so you know it
+#                           without digging through Railway logs)
 # ─────────────────────────────────────────────────────────────────────────────
 set -e
 
@@ -40,6 +49,11 @@ if [ -n "$DATABASE_URL" ]; then
   echo "==> Seeding..."
   node "$API_DIR/seed-demo.js" 2>&1 | tail -3 || true
   echo "==> Seed done"
+
+  echo "==> Ensuring platform super admin exists..."
+  cd "$API_DIR"
+  ./node_modules/.bin/ts-node --transpile-only prisma/seed.ts 2>&1 | tail -10 || true
+  echo "==> Super admin check done"
 fi
 
 echo "==> Starting API on :$API_PORT..."
