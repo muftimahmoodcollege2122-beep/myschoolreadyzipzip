@@ -111,7 +111,7 @@ export function LoginPortalPage({ theme, slug }: Props) {
                 <p style={{ fontWeight: 700, color: theme.secondaryColor, margin: '0 0 2px', fontSize: '0.9rem' }}>School Administration</p>
                 <p style={{ color: '#9CA3AF', fontSize: '0.78rem', margin: 0 }}>For admin, principal, and management staff</p>
               </div>
-              <a href="/login" style={{ background: theme.secondaryColor, color: '#fff', padding: '9px 18px', borderRadius: 8, fontWeight: 700, textDecoration: 'none', fontSize: '0.82rem', whiteSpace: 'nowrap' }}>Admin Login</a>
+              <a href={`/login?slug=${slug}`} style={{ background: theme.secondaryColor, color: '#fff', padding: '9px 18px', borderRadius: 8, fontWeight: 700, textDecoration: 'none', fontSize: '0.82rem', whiteSpace: 'nowrap' }}>Admin Login</a>
             </div>
           </div>
 
