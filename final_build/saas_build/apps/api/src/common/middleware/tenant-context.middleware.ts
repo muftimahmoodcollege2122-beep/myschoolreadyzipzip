@@ -30,6 +30,25 @@ declare global {
 const BYPASS_PATHS = new Set(['/health', '/health/live', '/health/ready', '/metrics']);
 const PUBLIC_PREFIXES = ['/api/v1/public/', '/api/v1/webhooks/', '/api/v1/auth/'];
 
+// Individual @Public() routes on ThemesController that take the tenant slug/domain
+// directly as a path param and resolve their own tenant record inside the service —
+// they don't need (and shouldn't require) TenantContextMiddleware's tenant context.
+// @Public() only bypasses the JWT guard; it has no effect on this Express middleware,
+// which runs earlier in the pipeline, so these must be listed explicitly or every
+// request to them — including this app's own server-side theme fetches — 401s.
+const PUBLIC_PATH_PATTERNS: RegExp[] = [
+  /^\/api\/v1\/themes\/school\/[^/]+$/,
+  /^\/api\/v1\/themes\/by-domain\/[^/]+$/,
+  /^\/api\/v1\/themes\/presets$/,
+  /^\/api\/v1\/themes\/portal-settings\/slug\/[^/]+$/,
+  /^\/api\/v1\/themes\/nav-config\/slug\/[^/]+$/,
+  /^\/api\/v1\/themes\/portal-branding\/slug\/[^/]+$/,
+  /^\/api\/v1\/themes\/alert-banners\/slug\/[^/]+$/,
+  /^\/api\/v1\/themes\/pages\/slug\/[^/]+$/,
+  /^\/api\/v1\/themes\/dashboard-widgets\/slug\/[^/]+$/,
+  /^\/api\/v1\/themes\/labels\/slug\/[^/]+$/,
+];
+
 // Cache TTLs — longer = fewer DB hits = better throughput at 100k schools
 const TENANT_SLUG_TTL  = 600;  // 10 min — slugs never change
 const TENANT_DOMAIN_TTL = 300; // 5 min — custom domains rarely change
@@ -56,6 +75,9 @@ export class TenantContextMiddleware implements NestMiddleware {
       return next();
     }
     if (PUBLIC_PREFIXES.some(p => path.startsWith(p))) {
+      return next();
+    }
+    if (PUBLIC_PATH_PATTERNS.some(re => re.test(path))) {
       return next();
     }
 

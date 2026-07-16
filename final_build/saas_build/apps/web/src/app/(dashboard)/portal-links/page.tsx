@@ -105,7 +105,7 @@ export default function PortalLinksPage() {
       label:    'Admin Dashboard',
       desc:     'Full control panel for school administrators',
       url:      isSingleDomain ? `${base}/dashboard` : `${devUrls.admin}/dashboard`,
-      loginUrl: isSingleDomain ? `${base}/login` : `${devUrls.admin}/login`,
+      loginUrl: isSingleDomain ? `${base}/login?slug=${slug}` : `${devUrls.admin}/login?slug=${slug}`,
       color:    'border-indigo-200 bg-indigo-50',
       badge:    'bg-indigo-600',
     },

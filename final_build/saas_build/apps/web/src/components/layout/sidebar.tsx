@@ -236,6 +236,14 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
                     </div>
                   );
                 })}
+                {user?.role === 'SUPER_ADMIN' && (
+                  <div className="mx-2 mt-2 mb-1">
+                    <Link href="/super-admin" className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-yellow-400/80 hover:text-yellow-400 hover:bg-yellow-400/10 transition-all">
+                      <span className="text-lg flex-shrink-0">👑</span>
+                      <span>Super Admin Panel</span>
+                    </Link>
+                  </div>
+                )}
               </nav>
               <div className="p-3 border-t border-white/10">
                 <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer hover:bg-white/5" onClick={logout}>

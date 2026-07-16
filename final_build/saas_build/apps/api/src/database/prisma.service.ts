@@ -188,6 +188,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   get teacherSubstitution() { return this._client?.teacherSubstitution; }
   get trainingRecord() { return this._client?.trainingRecord; }
   get usageRecord() { return this._client?.usageRecord; }
+  get subscription() { return this._client?.subscription; }
 
   // ── Raw query helpers ────────────────────────────────────────────────────────
   get $queryRaw()    { return this._client?.$queryRaw?.bind(this._client); }

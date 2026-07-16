@@ -1,8 +1,10 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
 import { useAuthStore } from '../../../../stores/auth.store';
+
+const FALLBACK = { primaryColor: '#0D9488', secondaryColor: '#115E59' };
 
 export default function TeacherLogin() {
   const { slug }   = useParams<{ slug: string }>();
@@ -13,6 +15,15 @@ export default function TeacherLogin() {
   const [password, setPassword] = useState('');
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState('');
+  const [theme, setTheme] = useState(FALLBACK);
+  const [schoolName, setSchoolName] = useState('');
+
+  useEffect(() => {
+    if (!slug) return;
+    apiClient.get(`/themes/school/${slug}`)
+      .then((t: any) => { setTheme({ primaryColor: t.primaryColor || FALLBACK.primaryColor, secondaryColor: t.secondaryColor || FALLBACK.secondaryColor }); setSchoolName(t.schoolName || ''); })
+      .catch(() => {});
+  }, [slug]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,13 +50,13 @@ export default function TeacherLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-900 via-teal-800 to-emerald-900 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: `linear-gradient(135deg, ${theme.secondaryColor} 0%, ${theme.primaryColor} 100%)` }}>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 shadow-xl">👨‍🏫</div>
           <h1 className="text-2xl font-black text-white">Teacher Portal</h1>
-          <p className="text-teal-300 mt-1 text-sm capitalize">
-            {slug.replace(/-/g, ' ')} School
+          <p className="mt-1 text-sm capitalize" style={{ color: 'rgba(255,255,255,0.7)' }}>
+            {schoolName || slug.replace(/-/g, ' ') + ' School'}
           </p>
         </div>
 
@@ -61,7 +72,10 @@ export default function TeacherLogin() {
                 onChange={e => setEmail(e.target.value)}
                 placeholder="teacher@school.edu.pk"
                 required
-                className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none text-sm"
+                style={{ boxShadow: 'none' }}
+                onFocus={e => e.currentTarget.style.boxShadow = `0 0 0 2px ${theme.primaryColor}`}
+                onBlur={e => e.currentTarget.style.boxShadow = 'none'}
               />
             </div>
             <div>
@@ -72,7 +86,10 @@ export default function TeacherLogin() {
                 onChange={e => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none text-sm"
+                style={{ boxShadow: 'none' }}
+                onFocus={e => e.currentTarget.style.boxShadow = `0 0 0 2px ${theme.primaryColor}`}
+                onBlur={e => e.currentTarget.style.boxShadow = 'none'}
               />
             </div>
 
@@ -85,7 +102,8 @@ export default function TeacherLogin() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold py-3.5 rounded-xl transition-all text-sm mt-2"
+              className="w-full text-white font-bold py-3.5 rounded-xl transition-all text-sm mt-2 disabled:opacity-50"
+              style={{ background: theme.primaryColor }}
             >
               {loading ? 'Signing in…' : 'Sign In to Teacher Portal'}
             </button>
@@ -94,14 +112,14 @@ export default function TeacherLogin() {
           <div className="mt-6 pt-6 border-t border-gray-100 text-center">
             <p className="text-xs text-gray-400">
               Not a teacher?{' '}
-              <a href={`/learn/${slug}/login`} className="text-teal-600 hover:underline font-medium">Student Portal</a>
+              <a href={`/learn/${slug}/login`} className="hover:underline font-medium" style={{ color: theme.primaryColor }}>Student Portal</a>
               {' · '}
-              <a href={`/parent/${slug}/login`} className="text-teal-600 hover:underline font-medium">Parent Portal</a>
+              <a href={`/parent/${slug}/login`} className="hover:underline font-medium" style={{ color: theme.primaryColor }}>Parent Portal</a>
             </p>
           </div>
         </div>
 
-        <p className="text-center text-teal-400 text-xs mt-6">
+        <p className="text-center text-xs mt-6" style={{ color: 'rgba(255,255,255,0.5)' }}>
           Powered by <span className="font-bold text-white">EduOS</span>
         </p>
       </div>

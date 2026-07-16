@@ -17,9 +17,24 @@ export class SchoolDataController {
   @Put('info') @Roles('SCHOOL_ADMIN')
   updateSchool(@TenantId() tid: string, @Body() dto: any) { return this.svc.updateSchoolInfo(tid, dto); }
 
+  @Get('roles-overview') @Roles('SCHOOL_ADMIN')
+  getRolesOverview(@TenantId() tid: string) { return this.svc.getRolesOverview(tid); }
+
   @Get('stats') @Roles('SCHOOL_ADMIN','TEACHER')
   @ApiOperation({ summary: 'Real counts backing the dashboard stat cards: students, teachers, classes, overdue invoices' })
   getStats(@TenantId() tid: string, @Query('schoolId') sid?: string) { return this.svc.getSchoolStats(tid, sid); }
+
+  @Get('payment-gateway-settings') @Roles('SCHOOL_ADMIN')
+  getPaymentGatewaySettings(@TenantId() tid: string) { return this.svc.getPaymentGatewaySettings(tid); }
+
+  @Put('payment-gateway-settings/:gateway') @Roles('SCHOOL_ADMIN')
+  updatePaymentGatewaySettings(@TenantId() tid: string, @Param('gateway') gateway: string, @Body() dto: any) { return this.svc.updatePaymentGatewaySettings(tid, gateway, dto); }
+
+  @Get('notification-settings') @Roles('SCHOOL_ADMIN')
+  getNotificationSettings(@TenantId() tid: string) { return this.svc.getNotificationSettings(tid); }
+
+  @Put('notification-settings/:channel') @Roles('SCHOOL_ADMIN')
+  updateNotificationSettings(@TenantId() tid: string, @Param('channel') channel: 'sms' | 'email', @Body() dto: any) { return this.svc.updateNotificationSettings(tid, channel, dto); }
 
   // ── Generic Section CRUD — used by: academic-calendar, canteen, certificates,
   // clubs, documents, duty-roster, hostel, id-cards, inventory, medical, notices,
@@ -114,17 +129,4 @@ export class SchoolDataController {
   // Backup
   @Get('backup') @Roles('SCHOOL_ADMIN')
   backup(@TenantId() tid: string) { return this.svc.getBackup(tid); }
-
-  // Generic section CRUD — for canteen, sports, clubs, hostel, inventory, etc.
-  @Get('section/:name') @Roles('SCHOOL_ADMIN','TEACHER','STUDENT','PARENT')
-  getSection(@TenantId() tid: string, @Param('name') name: string) { return this.svc.getSection(tid, name); }
-
-  @Post('section/:name') @Roles('SCHOOL_ADMIN','TEACHER')
-  createItem(@TenantId() tid: string, @Param('name') name: string, @Body() dto: any) { return this.svc.createSectionItem(tid, name, dto); }
-
-  @Put('section/:name/:id') @Roles('SCHOOL_ADMIN','TEACHER')
-  updateItem(@TenantId() tid: string, @Param('name') name: string, @Param('id') id: string, @Body() dto: any) { return this.svc.updateSectionItem(tid, name, id, dto); }
-
-  @Delete('section/:name/:id') @Roles('SCHOOL_ADMIN')
-  deleteItem(@TenantId() tid: string, @Param('name') name: string, @Param('id') id: string) { return this.svc.deleteSectionItem(tid, name, id); }
 }

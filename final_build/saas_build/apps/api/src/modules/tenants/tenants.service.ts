@@ -121,6 +121,50 @@ export class TenantsService {
     await this.cache.delPattern('tenant:*');
   }
 
+  // ── Super-admin: platform-wide view across all tenants ────────────────────
+  // NOTE: these are platform *list* prices, not live Stripe invoice amounts —
+  // computing true MRR would require a Stripe API call per subscription.
+  // The internal "platform" tenant (holds the SUPER_ADMIN account itself,
+  // see prisma/seed.ts) is excluded — it's not a customer school.
+  private readonly PLAN_LIST_PRICE_PKR: Record<string, number> = { STARTER: 4999, GROWTH: 12999, PRO: 29999, ENTERPRISE: 0 };
+  private readonly PLATFORM_TENANT_SLUG = 'platform';
+
+  async listAll() {
+    const tenants = await this.prisma.tenant.findMany({
+      where: { slug: { not: this.PLATFORM_TENANT_SLUG } },
+      include: { schools: { select: { id: true, name: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+    const tenantIds = tenants.map(t => t.id);
+    const [studentCounts, latestSubs] = await Promise.all([
+      this.prisma.student.groupBy({ by: ['tenantId'], where: { tenantId: { in: tenantIds }, isActive: true }, _count: true }),
+      this.prisma.subscription.findMany({ where: { tenantId: { in: tenantIds } }, orderBy: { createdAt: 'desc' } }),
+    ]);
+    const studentMap = Object.fromEntries(studentCounts.map(s => [s.tenantId, s._count]));
+    const subMap = new Map<string, any>();
+    for (const s of latestSubs) if (!subMap.has(s.tenantId)) subMap.set(s.tenantId, s);
+
+    return tenants.map(t => {
+      const sub = subMap.get(t.id);
+      const mrr = t.status === 'ACTIVE' ? (this.PLAN_LIST_PRICE_PKR[t.tier] || 0) : 0;
+      return {
+        id: t.id, name: t.name, slug: t.slug, status: t.status, tier: t.tier,
+        students: studentMap[t.id] || 0, mrr, createdAt: t.createdAt,
+        subscriptionStatus: sub?.status || null,
+      };
+    });
+  }
+
+  async getPlatformSummary() {
+    const list = await this.listAll();
+    const totalRevenue = list.reduce((sum, t) => sum + t.mrr, 0);
+    const totalStudents = list.reduce((sum, t) => sum + t.students, 0);
+    const byStatus = list.reduce((acc: Record<string, number>, t) => { acc[t.status] = (acc[t.status] || 0) + 1; return acc; }, {});
+    const byTier = list.reduce((acc: Record<string, number>, t) => { acc[t.tier] = (acc[t.tier] || 0) + 1; return acc; }, {});
+    const activeStaff = await this.prisma.user.count({ where: { tenantId: { in: list.map(t => t.id) }, role: { in: ['TEACHER', 'STAFF'] }, isActive: true } });
+    return { totalSchools: list.length, totalRevenue, totalStudents, activeStaff, byStatus, byTier };
+  }
+
   private generateSlug(name: string): string {
     return name.toLowerCase()
       .replace(/[^a-z0-9\s-]/g, '')

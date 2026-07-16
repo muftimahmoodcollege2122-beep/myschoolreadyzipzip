@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Topbar } from '@/components/layout/topbar';
 import { PageHeader } from '@/components/shared/page-header';
 import { Badge } from '@/components/shared/badge';
-import { useSchoolInfo, useWebsiteSettings, useSaveWebsiteSettings } from '@/hooks/use-api';
+import { useSchoolInfo, useWebsiteSettings, useSaveWebsiteSettings, useWebsitePages, useSaveWebsitePage, useThemePresets } from '@/hooks/use-api';
 
 const COMPONENTS = [
   { icon: '🦸', label: 'Hero Section', desc: 'Eye-catching banner with CTA' },
@@ -20,20 +20,8 @@ const COMPONENTS = [
   { icon: '📢', label: 'News Ticker', desc: 'Scrolling announcements' },
 ];
 
-const THEMES = [
-  { name: 'Academic Blue', primary: '#2563EB', secondary: '#0F172A', preview: 'bg-blue-600' },
-  { name: 'Forest Green', primary: '#16A34A', secondary: '#14532D', preview: 'bg-green-600' },
-  { name: 'Royal Purple', primary: '#7C3AED', secondary: '#1E1B4B', preview: 'bg-purple-600' },
-  { name: 'Sunset Orange', primary: '#EA580C', secondary: '#431407', preview: 'bg-orange-600' },
-];
-
-const PAGES_BUILT = [
-  { name: 'Home', status: 'Published', components: 7, lastEdit: '2 days ago' },
-  { name: 'About Us', status: 'Published', components: 4, lastEdit: '1 week ago' },
-  { name: 'Admissions', status: 'Draft', components: 3, lastEdit: '3 days ago' },
-  { name: 'Contact', status: 'Published', components: 2, lastEdit: '5 days ago' },
-  { name: 'Faculty', status: 'Draft', components: 2, lastEdit: '1 day ago' },
-];
+// Fallback shown only for the instant before the real presets (GET /themes/presets) load.
+const FALLBACK_THEMES = [{ key: '', name: 'Loading…', primary: '#94A3B8', secondary: '#334155' }];
 
 const DEFAULT_COMPONENTS = ['Hero Section', 'About Us', 'Statistics', 'Events', 'Contact'];
 
@@ -50,7 +38,8 @@ const CONTENT_DEFAULTS = {
 
 export default function WebsiteBuilderPage() {
   const [view, setView] = useState<'builder'|'pages'|'settings'>('builder');
-  const [selectedTheme, setSelectedTheme] = useState(0);
+  const [selectedThemeKey, setSelectedThemeKey] = useState<string>('');
+  const [customColor, setCustomColor] = useState<{ primary: string; secondary: string } | null>(null);
   const [addedComponents, setAddedComponents] = useState(DEFAULT_COMPONENTS);
   const [content, setContent] = useState(CONTENT_DEFAULTS);
   const [publishStatus, setPublishStatus] = useState<'idle'|'saving'|'saved'>('idle');
@@ -58,18 +47,51 @@ export default function WebsiteBuilderPage() {
   const { data: schoolInfo } = useSchoolInfo();
   const { data: websiteData } = useWebsiteSettings();
   const saveSettings = useSaveWebsiteSettings();
+  const { data: pagesData, isLoading: pagesLoading } = useWebsitePages();
+  const savePage = useSaveWebsitePage();
+  const { data: presetsData } = useThemePresets();
+  const [pageActionId, setPageActionId] = useState<string | null>(null);
   const school = schoolInfo as any;
   const wsData = websiteData as any;
+  const pages: any[] = Array.isArray(pagesData) ? pagesData : [];
+
+  const THEMES = React.useMemo(() => {
+    const raw = presetsData as Record<string, any> | undefined;
+    if (!raw || Object.keys(raw).length === 0) return FALLBACK_THEMES;
+    return Object.entries(raw).map(([key, p]) => ({
+      key,
+      name: key.charAt(0).toUpperCase() + key.slice(1),
+      primary: p.primaryColor,
+      secondary: p.secondaryColor,
+    }));
+  }, [presetsData]);
+
+  const togglePageStatus = async (page: any) => {
+    setPageActionId(page.slug);
+    try {
+      await savePage.mutateAsync({ ...page, status: page.status === 'published' ? 'draft' : 'published' });
+    } finally {
+      setPageActionId(null);
+    }
+  };
 
   useEffect(() => {
     if (!wsData) return;
-    // wsData.theme is now { primaryColor, secondaryColor } from the backend (not an index number)
-    // Match it to the closest THEMES preset index instead of overwriting state with the raw object
+    // wsData.theme is { primaryColor, secondaryColor } from the backend.
+    // Match against the FULL live preset list (not a hardcoded subset) so any
+    // previously published color — including ones set outside this exact
+    // 4-swatch picker — is recognized instead of silently resetting to default.
     if (wsData.theme && typeof wsData.theme === 'object' && wsData.theme.primaryColor) {
-      const idx = THEMES.findIndex(t => t.primary.toLowerCase() === wsData.theme.primaryColor.toLowerCase());
-      if (idx >= 0) setSelectedTheme(idx);
-    } else if (typeof wsData.theme === 'number') {
-      setSelectedTheme(wsData.theme);
+      const match = THEMES.find(t => t.primary?.toLowerCase() === wsData.theme.primaryColor.toLowerCase());
+      if (match) {
+        setSelectedThemeKey(match.key);
+        setCustomColor(null);
+      } else {
+        // Saved color doesn't match a named preset exactly — still honor it
+        // instead of falling back to whatever THEMES[0] happens to be.
+        setSelectedThemeKey('');
+        setCustomColor({ primary: wsData.theme.primaryColor, secondary: wsData.theme.secondaryColor || wsData.theme.primaryColor });
+      }
     }
 
     // wsData.components is now { hero: true, about: true, ... } section flags (not a string array)
@@ -99,7 +121,7 @@ export default function WebsiteBuilderPage() {
       statsYears:    wsData.statsYears    ?? prev.statsYears,
       statsPassRate: wsData.statsPassRate ?? prev.statsPassRate,
     }));
-  }, [wsData]);
+  }, [wsData, THEMES]);
 
   const toggleComponent = (label: string) => {
     setAddedComponents(prev => prev.includes(label) ? prev.filter(c=>c!==label) : [...prev, label]);
@@ -109,7 +131,9 @@ export default function WebsiteBuilderPage() {
     setContent(prev => ({ ...prev, [field]: e.target.value }));
   };
 
-  const activeTheme = THEMES[selectedTheme] || THEMES[0];
+  const activeTheme = customColor
+    ? { key: '', name: 'Custom', primary: customColor.primary, secondary: customColor.secondary }
+    : (THEMES.find(t => t.key === selectedThemeKey) || THEMES[0]);
 
   const COMPONENT_TO_SECTION: Record<string, string> = {
     'Hero Section': 'hero',
@@ -138,6 +162,7 @@ export default function WebsiteBuilderPage() {
 
       await saveSettings.mutateAsync({
         theme: {
+          preset: activeTheme.key || undefined,
           primaryColor: theme.primary,
           secondaryColor: theme.secondary,
         },
@@ -290,10 +315,16 @@ export default function WebsiteBuilderPage() {
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-4">
                 <div>
                   <p className="text-xs font-bold text-gray-500 mb-2 uppercase">Color Theme</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {THEMES.map((t,i)=>(
-                      <button key={t.name} onClick={()=>setSelectedTheme(i)} className={`p-2 rounded-xl border-2 transition-all ${selectedTheme===i?'border-blue-500':'border-gray-100 hover:border-gray-300'}`}>
-                        <div className={`w-full h-5 rounded-lg mb-1 ${t.preview}`}/>
+                  <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
+                    {customColor && (
+                      <button className="p-2 rounded-xl border-2 border-blue-500 col-span-2">
+                        <div className="w-full h-5 rounded-lg mb-1" style={{ backgroundColor: customColor.primary }}/>
+                        <p className="text-[10px] font-medium text-gray-600">Custom (currently published)</p>
+                      </button>
+                    )}
+                    {THEMES.map((t)=>(
+                      <button key={t.key || t.name} onClick={()=>{ setSelectedThemeKey(t.key); setCustomColor(null); }} className={`p-2 rounded-xl border-2 transition-all ${!customColor && selectedThemeKey===t.key?'border-blue-500':'border-gray-100 hover:border-gray-300'}`}>
+                        <div className="w-full h-5 rounded-lg mb-1" style={{ backgroundColor: t.primary }}/>
                         <p className="text-[10px] font-medium text-gray-600">{t.name}</p>
                       </button>
                     ))}
@@ -333,21 +364,30 @@ export default function WebsiteBuilderPage() {
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
             <div className="p-4 border-b border-gray-100 flex justify-between items-center">
               <h3 className="font-bold text-gray-900">Website Pages</h3>
-              <button className="px-3 py-1.5 bg-blue-50 text-blue-700 text-xs font-bold rounded-lg border border-blue-200 hover:bg-blue-100">+ New Page</button>
             </div>
             <div className="divide-y divide-gray-50">
-              {PAGES_BUILT.map(p=>(
-                <div key={p.name} className="flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors">
+              {pagesLoading && <div className="px-5 py-6 text-sm text-gray-400">Loading pages…</div>}
+              {!pagesLoading && pages.length === 0 && (
+                <div className="px-5 py-6 text-sm text-gray-400">No pages found.</div>
+              )}
+              {pages.map(p=>(
+                <div key={p.slug} className="flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center font-bold text-blue-600 text-sm">📄</div>
-                    <div><p className="font-semibold text-sm text-gray-900">{p.name}</p><p className="text-xs text-gray-400">{p.components} components · {p.lastEdit}</p></div>
+                    <div>
+                      <p className="font-semibold text-sm text-gray-900">{p.title}</p>
+                      <p className="text-xs text-gray-400">/{p.slug} · updated {p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : '—'}</p>
+                    </div>
                   </div>
                   <div className="flex items-center gap-4">
-                    <Badge variant={p.status==='Published'?'green':'yellow'}>{p.status}</Badge>
-                    <div className="flex gap-2">
-                      <button className="px-2 py-1 text-xs text-blue-600 bg-blue-50 rounded-lg font-semibold hover:bg-blue-100">Edit</button>
-                      <button className="px-2 py-1 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50">Preview</button>
-                    </div>
+                    <Badge variant={p.status==='published'?'green':'yellow'}>{p.status==='published'?'Published':'Draft'}</Badge>
+                    <button
+                      onClick={() => togglePageStatus(p)}
+                      disabled={pageActionId === p.slug}
+                      className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors disabled:opacity-60 ${p.status==='published' ? 'text-gray-600 border border-gray-200 hover:bg-gray-50' : 'text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100'}`}
+                    >
+                      {pageActionId === p.slug ? '⏳' : p.status==='published' ? 'Unpublish' : 'Publish'}
+                    </button>
                   </div>
                 </div>
               ))}

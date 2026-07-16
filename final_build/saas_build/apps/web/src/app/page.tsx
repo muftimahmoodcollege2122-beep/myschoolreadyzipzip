@@ -90,7 +90,7 @@ export default function MarketingPage() {
             ))}
           </div>
           <div className="hidden md:flex items-center gap-3">
-            <Link href="/signup" className={`text-sm font-semibold px-3 py-2 rounded-lg transition-colors ${isScrolled ? 'text-gray-700 hover:bg-gray-100' : 'text-white/80 hover:text-white'}`}>Sign In</Link>
+            <Link href="/login" className={`text-sm font-semibold px-3 py-2 rounded-lg transition-colors ${isScrolled ? 'text-gray-700 hover:bg-gray-100' : 'text-white/80 hover:text-white'}`}>Sign In</Link>
             <Link href="/signup" className="text-sm font-bold px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Start Free Trial</Link>
           </div>
 
@@ -111,7 +111,7 @@ export default function MarketingPage() {
               <Link key={label} href={href} onClick={() => setMobileMenu(false)} className="block px-3 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 rounded-lg">{label}</Link>
             ))}
             <div className="pt-3 border-t border-gray-100 flex flex-col gap-2">
-              <Link href="/signup" onClick={() => setMobileMenu(false)} className="block text-center py-2.5 text-sm font-semibold text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50">Sign In</Link>
+              <Link href="/login" onClick={() => setMobileMenu(false)} className="block text-center py-2.5 text-sm font-semibold text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50">Sign In</Link>
               <Link href="/signup" onClick={() => setMobileMenu(false)} className="block text-center py-2.5 text-sm font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700">Start Free Trial</Link>
             </div>
           </div>

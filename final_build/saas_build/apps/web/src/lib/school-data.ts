@@ -12,8 +12,8 @@ const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 export async function getSchoolTheme(slug: string): Promise<SchoolTheme | null> {
   try {
     const [themeRes, psRes] = await Promise.all([
-      fetch(`${API}/api/v1/themes/school/${slug}`, { next: { revalidate: 300 } }),
-      fetch(`${API}/api/v1/themes/portal-settings/slug/${slug}`, { next: { revalidate: 300 } }),
+      fetch(`${API}/api/v1/themes/school/${slug}`, { cache: 'no-store' }),
+      fetch(`${API}/api/v1/themes/portal-settings/slug/${slug}`, { cache: 'no-store' }),
     ]);
     if (!themeRes.ok) return null;
     const theme: SchoolTheme = await themeRes.json();
