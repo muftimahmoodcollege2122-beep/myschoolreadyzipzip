@@ -124,10 +124,14 @@ export class TenantsService {
   // ── Super-admin: platform-wide view across all tenants ────────────────────
   // NOTE: these are platform *list* prices, not live Stripe invoice amounts —
   // computing true MRR would require a Stripe API call per subscription.
+  // The internal "platform" tenant (holds the SUPER_ADMIN account itself,
+  // see prisma/seed.ts) is excluded — it's not a customer school.
   private readonly PLAN_LIST_PRICE_PKR: Record<string, number> = { STARTER: 4999, GROWTH: 12999, PRO: 29999, ENTERPRISE: 0 };
+  private readonly PLATFORM_TENANT_SLUG = 'platform';
 
   async listAll() {
     const tenants = await this.prisma.tenant.findMany({
+      where: { slug: { not: this.PLATFORM_TENANT_SLUG } },
       include: { schools: { select: { id: true, name: true } } },
       orderBy: { createdAt: 'desc' },
     });
