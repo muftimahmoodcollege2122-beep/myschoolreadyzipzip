@@ -30,7 +30,10 @@ RUN cd /app/apps/api && \
     PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1 \
     ./node_modules/.bin/prisma generate --schema=prisma/schema.prisma 2>&1 | tail -3 || true
 
-# dist/ is pre-built and committed — verify
+# Build NestJS API from source (dist/ is gitignored — never committed, must be built here)
+RUN cd /app/apps/api && ./node_modules/.bin/nest build
+
+# Verify the build actually produced output
 RUN ls -la /app/apps/api/dist/main.js
 
 # Install web deps
