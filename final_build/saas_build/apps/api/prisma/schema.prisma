@@ -5,7 +5,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  engineType = "wasm"
   binaryTargets = ["native", "linux-musl-openssl-3.0.x", "debian-openssl-3.0.x"]
 }
 
