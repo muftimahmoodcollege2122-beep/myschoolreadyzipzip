@@ -14,4 +14,3 @@ coverage/
 terraform.tfvars
 prisma/migrations/migration_lock.toml
 final_build/saas_build/apps/api/dist/
-final_build/saas_build/apps/api/prisma/seed.js

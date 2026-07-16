@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 # ─────────────────────────────────────────────────────────────────────────────
 # MySchool Docker Build
 # ─────────────────────────────────────────────────────────────────────────────
@@ -45,16 +44,14 @@ RUN printf "legacy-peer-deps=true\nfund=false\naudit=false\nallow-scripts=true\n
     > /app/final_build/saas_build/apps/web/.npmrc
 
 # ── Layer 2: Install API deps (cached until api/package.json changes) ─────────
-RUN --mount=type=cache,target=/root/.npm \
-    cd /app/final_build/saas_build/apps/api && \
+RUN cd /app/final_build/saas_build/apps/api && \
     npm install --legacy-peer-deps --no-audit --no-fund 2>&1 | tail -3
 
 RUN test -d /app/final_build/saas_build/apps/api/node_modules/@nestjs/core && \
     echo "✅ @nestjs/core OK" || (echo "❌ @nestjs/core missing" && exit 1)
 
 # ── Layer 3: Install web deps (cached until web/package.json changes) ─────────
-RUN --mount=type=cache,target=/root/.npm \
-    cd /app/final_build/saas_build/apps/web && \
+RUN cd /app/final_build/saas_build/apps/web && \
     npm install --legacy-peer-deps --no-audit --no-fund 2>&1 | tail -3
 
 RUN test -d /app/final_build/saas_build/apps/web/node_modules/next && \
@@ -79,16 +76,8 @@ RUN cd /app/final_build/saas_build/apps/api && \
 RUN test -f /app/final_build/saas_build/apps/api/dist/main.js && \
     echo "✅ dist/main.js OK" || (echo "❌ dist/main.js missing" && exit 1)
 
-# Precompile the platform-admin seed script too (kept out of the main src build
-# on purpose — see tsconfig.json include — so compile it standalone here instead
-# of paying ts-node's cold-start compile cost on every container boot).
-RUN cd /app/final_build/saas_build/apps/api && \
-    ./node_modules/.bin/tsc prisma/seed.ts --outDir prisma --module commonjs \
-      --target ES2021 --esModuleInterop --skipLibCheck --resolveJsonModule 2>&1 | tail -5 || true
-
 # ── Layer 7: Build Next.js ────────────────────────────────────────────────────
-RUN --mount=type=cache,target=/app/final_build/saas_build/apps/web/.next/cache \
-    cd /app/final_build/saas_build/apps/web && \
+RUN cd /app/final_build/saas_build/apps/web && \
     ./node_modules/.bin/next build 2>&1 | tail -10
 
 RUN test -f /app/final_build/saas_build/apps/web/.next/BUILD_ID && \

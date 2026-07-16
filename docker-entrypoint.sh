@@ -52,7 +52,7 @@ if [ -n "$DATABASE_URL" ]; then
 
   echo "==> Ensuring platform super admin exists..."
   cd "$API_DIR"
-  node prisma/seed.js 2>&1 | tail -10 || true
+  ./node_modules/.bin/ts-node --transpile-only prisma/seed.ts 2>&1 | tail -10 || true
   echo "==> Super admin check done"
 fi
 
