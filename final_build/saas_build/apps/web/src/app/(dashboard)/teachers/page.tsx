@@ -18,7 +18,7 @@ export default function TeachersPage() {
   const [copied, setCopied] = useState(false);
   const qc = useQueryClient();
 
-  const { data, isLoading } = useTeachers({ search, limit:50 });
+  const { data, isLoading, isError, error } = useTeachers({ search, limit:50 });
   const create = useCreateTeacher();
   const remove = useDeleteTeacher();
   const teachers: any[] = (data as any)?.data ?? [];
@@ -35,7 +35,13 @@ export default function TeachersPage() {
           <BulkImportExport entity="teachers" label="Teachers" onImported={() => qc.invalidateQueries({ queryKey: ['teachers'] })} />
         </div>
 
-        {isLoading ? <div className="text-center py-16 text-gray-400">Loading...</div> :
+        {isError ? (
+          <div className="text-center py-16 text-red-500">
+            <div className="text-5xl mb-3">⚠️</div>
+            <p className="font-semibold">Couldn't load teachers</p>
+            <p className="text-sm text-gray-500 mt-1">{(error as any)?.response?.status ? `Error ${(error as any).response.status}: ` : ''}{(error as any)?.response?.data?.message || (error as any)?.message || 'Unknown error'}</p>
+          </div>
+        ) : isLoading ? <div className="text-center py-16 text-gray-400">Loading...</div> :
         teachers.length === 0 ? <div className="text-center py-16 text-gray-400"><div className="text-5xl mb-3">👨‍🏫</div><p className="font-semibold">No teachers found</p></div> : (
           <>
             {/* Desktop */}
