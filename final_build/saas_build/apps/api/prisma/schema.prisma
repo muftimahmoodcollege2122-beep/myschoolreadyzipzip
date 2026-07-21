@@ -1,0 +1,2192 @@
+// ============================================================
+// School Management SaaS — Prisma Schema
+// Multi-tenant, partitioned, RLS-enabled PostgreSQL 16
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum TenantTier {
+  STARTER
+  GROWTH
+  PRO
+  ENTERPRISE
+}
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+  CANCELLED
+  TRIAL
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  SCHOOL_ADMIN
+  TEACHER
+  STUDENT
+  PARENT
+  STAFF
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+  HOLIDAY
+}
+
+enum ExamType {
+  QUIZ
+  MIDTERM
+  FINAL
+  ASSIGNMENT
+  PROJECT
+  PRACTICAL
+}
+
+enum FeeStatus {
+  PENDING
+  PAID
+  OVERDUE
+  WAIVED
+  PARTIAL
+}
+
+enum PaymentMethod {
+  CARD
+  BANK_TRANSFER
+  CASH
+  MOBILE_MONEY
+  STRIPE
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  PUSH
+  IN_APP
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+  READ
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum TransportRouteStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  EXPORT
+  PERMISSION_CHANGE
+}
+
+enum ConsentType {
+  DATA_PROCESSING
+  MARKETING
+  PHOTO_USAGE
+  LOCATION_TRACKING
+}
+
+// ============================================================
+// SAAS PLATFORM LAYER
+// ============================================================
+
+model Tenant {
+  id                String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name              String
+  slug              String       @unique
+  tier              TenantTier   @default(STARTER)
+  status            TenantStatus @default(TRIAL)
+  stripeCustomerId  String?      @unique
+  stripeSubId       String?      @unique
+  planLimits        Json         @default("{}")
+  customDomain      String?      @unique
+  logoUrl           String?
+  primaryColor      String?      @default("#1a56db")
+  dataRegion        String       @default("us-east-1")
+  schemaName        String       @unique
+  settings          Json         @default("{}")
+  trialEndsAt       DateTime?
+  suspendedAt       DateTime?
+  cancelledAt       DateTime?
+  dataRetainUntil   DateTime?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  schools           School[]
+  users             User[]
+  subscriptions     Subscription[]
+  usageRecords      UsageRecord[]
+  auditLogs         AuditLog[]
+  outboxEvents      OutboxEvent[]
+  consentRecords    ConsentRecord[]
+
+  @@index([slug])
+  @@index([stripeCustomerId])
+  @@index([status])
+  @@map("tenants")
+}
+
+model Subscription {
+  id                String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId          String     @db.Uuid
+  tier              TenantTier
+  stripeSubId       String     @unique
+  stripePriceId     String
+  status            String
+  currentPeriodStart DateTime
+  currentPeriodEnd  DateTime
+  cancelAtPeriodEnd Boolean    @default(false)
+  metadata          Json       @default("{}")
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  tenant            Tenant     @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@index([stripeSubId])
+  @@map("subscriptions")
+}
+
+model UsageRecord {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String   @db.Uuid
+  metric      String   // sms_sent, api_calls, storage_gb, students_count
+  quantity    Decimal  @db.Decimal(20, 6)
+  recordedAt  DateTime @default(now())
+  billingPeriod String // YYYY-MM
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, metric, billingPeriod])
+  @@map("usage_records")
+}
+
+// ============================================================
+// SCHOOL & USER MANAGEMENT
+// ============================================================
+
+model School {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String   @db.Uuid
+  name         String
+  code         String
+  address      Json
+  phone        String?
+  email        String?
+  website      String?
+  logoUrl      String?
+  timezone     String   @default("UTC")
+  locale       String   @default("en")
+  academicYear String   // e.g. "2024-2025"
+  settings     Json     @default("{}")
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
+
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  classes      Class[]
+  sections     Section[]
+  academicCalendars AcademicCalendar[]
+  departments  Department[]
+  feeStructures FeeStructure[]
+  transportRoutes TransportRoute[]
+  hostels      Hostel[]
+  events       SchoolEvent[]
+  inventoryItems InventoryItem[]
+  libraryBooks LibraryBook[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("schools")
+}
+
+model User {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String    @db.Uuid
+  email           String
+  passwordHash    String?
+  role            UserRole
+  isActive        Boolean   @default(true)
+  emailVerified   Boolean   @default(false)
+  mfaEnabled      Boolean   @default(false)
+  mfaSecret       String?   // encrypted
+  lastLoginAt     DateTime?
+  failedLoginCount Int      @default(0)
+  lockedUntil     DateTime?
+  refreshTokenHash String?
+  preferences     Json      @default("{}")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  tenant          Tenant    @relation(fields: [tenantId], references: [id])
+  profile         UserProfile?
+  studentProfile  Student?
+  teacherProfile  Teacher?
+  staffProfile    Staff?
+  parentProfile   Parent?
+  sessions        UserSession[]
+  notifications   Notification[]
+  sentMessages    Message[]     @relation("SentMessages")
+  receivedMessages Message[]    @relation("ReceivedMessages")
+  consentRecords  ConsentRecord[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId, role])
+  @@index([email])
+  @@map("users")
+}
+
+model UserProfile {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String   @unique @db.Uuid
+  firstName   String   // PII - field-level encrypted at app layer
+  lastName    String   // PII
+  dateOfBirth DateTime? // PII
+  gender      Gender?
+  phone       String?  // PII
+  address     Json?    // PII
+  photoUrl    String?
+  nationalId  String?  // PII - encrypted
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+model UserSession {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String   @db.Uuid
+  tokenHash    String   @unique
+  ipAddress    String?
+  userAgent    String?
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  createdAt    DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@index([expiresAt])
+  @@map("user_sessions")
+}
+
+// ============================================================
+// ACADEMIC STRUCTURE
+// ============================================================
+
+model Department {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schoolId  String   @db.Uuid
+  tenantId  String   @db.Uuid
+  name      String
+  code      String
+  headId    String?  @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  school    School   @relation(fields: [schoolId], references: [id])
+  classes   Class[]
+  teachers  Teacher[]
+
+  @@unique([schoolId, code])
+  @@index([tenantId, schoolId])
+  @@map("departments")
+}
+
+model Class {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schoolId     String   @db.Uuid
+  tenantId     String   @db.Uuid
+  departmentId String?  @db.Uuid
+  name         String   // e.g. "Grade 10", "Form 4"
+  level        Int      // numeric level for sorting
+  academicYear String
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  school       School     @relation(fields: [schoolId], references: [id])
+  department   Department? @relation(fields: [departmentId], references: [id])
+  sections     Section[]
+  subjects     ClassSubject[]
+
+  @@unique([schoolId, name, academicYear])
+  @@index([tenantId, schoolId])
+  @@map("classes")
+}
+
+model Section {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  classId     String   @db.Uuid
+  schoolId    String   @db.Uuid
+  tenantId    String   @db.Uuid
+  name        String   // e.g. "A", "B", "Blue"
+  capacity    Int      @default(40)
+  roomNumber  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  class       Class    @relation(fields: [classId], references: [id])
+  school      School   @relation(fields: [schoolId], references: [id])
+  students    StudentEnrollment[]
+  timetableSlots TimetableSlot[]
+  attendances Attendance[]
+
+  @@unique([classId, name])
+  @@index([tenantId, schoolId])
+  @@map("sections")
+}
+
+model Student {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String   @unique @db.Uuid
+  tenantId       String   @db.Uuid
+  schoolId       String   @db.Uuid
+  rollNumber     String
+  admissionNo    String
+  admissionDate  DateTime
+  bloodGroup     String?
+  medicalNotes   String?  // encrypted
+  biometricId    String?  // for attendance integration
+  transportId    String?  @db.Uuid
+  hostelId       String?  @db.Uuid
+  isActive       Boolean  @default(true)
+  graduatedAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
+
+  user           User     @relation(fields: [userId], references: [id])
+  enrollments    StudentEnrollment[]
+  attendances    Attendance[]
+  grades         Grade[]
+  feeInvoices    FeeInvoice[]
+  parents        StudentParent[]
+  documents      StudentDocument[]
+  examResults    ExamResult[]
+  transportRoute TransportRoute? @relation(fields: [transportId], references: [id])
+  hostel         Hostel?         @relation(fields: [hostelId], references: [id])
+
+  @@unique([tenantId, admissionNo])
+  @@index([tenantId, schoolId])
+  @@index([rollNumber])
+  @@map("students")
+}
+
+model StudentEnrollment {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studentId   String   @db.Uuid
+  sectionId   String   @db.Uuid
+  tenantId    String   @db.Uuid
+  academicYear String
+  enrolledAt  DateTime @default(now())
+  leftAt      DateTime?
+  isActive    Boolean  @default(true)
+
+  student     Student  @relation(fields: [studentId], references: [id])
+  section     Section  @relation(fields: [sectionId], references: [id])
+
+  @@unique([studentId, sectionId, academicYear])
+  @@index([tenantId, sectionId])
+  @@map("student_enrollments")
+}
+
+model Parent {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String   @unique @db.Uuid
+  tenantId     String   @db.Uuid
+  occupation   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User     @relation(fields: [userId], references: [id])
+  children     StudentParent[]
+
+  @@index([tenantId])
+  @@map("parents")
+}
+
+model StudentParent {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studentId    String   @db.Uuid
+  parentId     String   @db.Uuid
+  tenantId     String   @db.Uuid
+  relationship String   // mother, father, guardian
+  isPrimary    Boolean  @default(false)
+  canPickup    Boolean  @default(true)
+
+  student      Student  @relation(fields: [studentId], references: [id])
+  parent       Parent   @relation(fields: [parentId], references: [id])
+
+  @@unique([studentId, parentId])
+  @@index([tenantId])
+  @@map("student_parents")
+}
+
+// ============================================================
+// STAFF & HR
+// ============================================================
+
+model Teacher {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String   @unique @db.Uuid
+  tenantId        String   @db.Uuid
+  schoolId        String   @db.Uuid
+  employeeId      String
+  departmentId    String?  @db.Uuid
+  qualifications  Json     @default("[]")
+  specializations String[]
+  joiningDate     DateTime
+  salary          Decimal? @db.Decimal(12, 2) // encrypted at app layer
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  user            User       @relation(fields: [userId], references: [id])
+  department      Department? @relation(fields: [departmentId], references: [id])
+  subjects        ClassSubject[]
+  timetableSlots  TimetableSlot[]
+  attendances     TeacherAttendance[]
+  leaveRequests   LeaveRequest[]
+  gradedItems     Grade[]
+  performanceReviews PerformanceReview[]
+
+  @@unique([tenantId, employeeId])
+  @@index([tenantId, schoolId])
+  @@map("teachers")
+}
+
+model Staff {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String   @unique @db.Uuid
+  tenantId     String   @db.Uuid
+  schoolId     String   @db.Uuid
+  employeeId   String
+  designation  String
+  department   String?
+  joiningDate  DateTime
+  salary       Decimal? @db.Decimal(12, 2)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
+
+  user         User     @relation(fields: [userId], references: [id])
+  leaveRequests LeaveRequest[]
+
+  @@unique([tenantId, employeeId])
+  @@index([tenantId, schoolId])
+  @@map("staff")
+}
+
+model LeaveRequest {
+  id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String      @db.Uuid
+  teacherId   String?     @db.Uuid
+  staffId     String?     @db.Uuid
+  leaveType   String      // sick, casual, earned, maternity, paternity
+  startDate   DateTime
+  endDate     DateTime
+  reason      String
+  status      LeaveStatus @default(PENDING)
+  approvedBy  String?     @db.Uuid
+  approvedAt  DateTime?
+  remarks     String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  teacher     Teacher?    @relation(fields: [teacherId], references: [id])
+  staff       Staff?      @relation(fields: [staffId], references: [id])
+
+  @@index([tenantId])
+  @@map("leave_requests")
+}
+
+model PerformanceReview {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String   @db.Uuid
+  teacherId   String   @db.Uuid
+  reviewerId  String   @db.Uuid
+  period      String   // e.g. "2024-Q1"
+  scores      Json     // { teaching: 4, punctuality: 5, ... }
+  overall     Decimal  @db.Decimal(3, 2)
+  comments    String?
+  createdAt   DateTime @default(now())
+
+  teacher     Teacher  @relation(fields: [teacherId], references: [id])
+
+  @@index([tenantId, teacherId])
+  @@map("performance_reviews")
+}
+
+// ============================================================
+// CURRICULUM & TIMETABLE
+// ============================================================
+
+model Subject {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String   @db.Uuid
+  schoolId    String   @db.Uuid
+  name        String
+  code        String
+  description String?
+  isElective  Boolean  @default(false)
+  creditHours Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  classSubjects ClassSubject[]
+  exams       Exam[]
+
+  @@unique([schoolId, code])
+  @@index([tenantId, schoolId])
+  @@map("subjects")
+}
+
+model ClassSubject {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  classId   String   @db.Uuid
+  subjectId String   @db.Uuid
+  teacherId String?  @db.Uuid
+  tenantId  String   @db.Uuid
+  weeklyHours Int    @default(4)
+
+  class     Class    @relation(fields: [classId], references: [id])
+  subject   Subject  @relation(fields: [subjectId], references: [id])
+  teacher   Teacher? @relation(fields: [teacherId], references: [id])
+  grades    Grade[]
+  timetableSlots TimetableSlot[]
+
+  @@unique([classId, subjectId])
+  @@index([tenantId])
+  @@map("class_subjects")
+}
+
+model AcademicCalendar {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schoolId    String   @db.Uuid
+  tenantId    String   @db.Uuid
+  academicYear String
+  termName    String
+  startDate   DateTime
+  endDate     DateTime
+  holidays    Json     @default("[]") // [{ date, name, type }]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  school      School   @relation(fields: [schoolId], references: [id])
+
+  @@index([tenantId, schoolId])
+  @@map("academic_calendars")
+}
+
+model TimetableSlot {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sectionId      String   @db.Uuid
+  classSubjectId String   @db.Uuid
+  teacherId      String   @db.Uuid
+  tenantId       String   @db.Uuid
+  dayOfWeek      Int      // 1=Monday, 7=Sunday
+  startTime      String   // HH:MM
+  endTime        String   // HH:MM
+  roomNumber     String?
+  academicYear   String
+  effectiveFrom  DateTime
+  effectiveTo    DateTime?
+
+  section        Section      @relation(fields: [sectionId], references: [id])
+  classSubject   ClassSubject @relation(fields: [classSubjectId], references: [id])
+  teacher        Teacher      @relation(fields: [teacherId], references: [id])
+
+  @@index([tenantId, sectionId])
+  @@index([tenantId, teacherId])
+  @@map("timetable_slots")
+}
+
+// ============================================================
+// ATTENDANCE
+// ============================================================
+
+model Attendance {
+  id          String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studentId   String           @db.Uuid
+  sectionId   String           @db.Uuid
+  tenantId    String           @db.Uuid
+  date        DateTime         @db.Date
+  status      AttendanceStatus
+  markedById  String           @db.Uuid
+  markedAt    DateTime         @default(now())
+  remarks     String?
+  isBiometric Boolean          @default(false)
+
+  student     Student  @relation(fields: [studentId], references: [id])
+  section     Section  @relation(fields: [sectionId], references: [id])
+
+  @@unique([studentId, sectionId, date])
+  @@index([tenantId, sectionId, date])
+  @@index([tenantId, studentId, date])
+  @@map("attendances")
+}
+
+model TeacherAttendance {
+  id          String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  teacherId   String           @db.Uuid
+  tenantId    String           @db.Uuid
+  date        DateTime         @db.Date
+  status      AttendanceStatus
+  checkInTime DateTime?
+  checkOutTime DateTime?
+  remarks     String?
+
+  teacher     Teacher  @relation(fields: [teacherId], references: [id])
+
+  @@unique([teacherId, date])
+  @@index([tenantId, date])
+  @@map("teacher_attendances")
+}
+
+// ============================================================
+// GRADES & ASSESSMENTS
+// ============================================================
+
+model GradingScale {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String   @db.Uuid
+  schoolId  String   @db.Uuid
+  name      String
+  scale     Json     // [{ grade: "A+", minScore: 95, maxScore: 100, gpa: 4.0 }]
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, schoolId])
+  @@map("grading_scales")
+}
+
+model Grade {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studentId      String   @db.Uuid
+  classSubjectId String   @db.Uuid
+  teacherId      String   @db.Uuid
+  tenantId       String   @db.Uuid
+  academicYear   String
+  term           String
+  assessmentType ExamType
+  title          String
+  score          Decimal  @db.Decimal(6, 2)
+  maxScore       Decimal  @db.Decimal(6, 2)
+  weight         Decimal  @db.Decimal(5, 2) @default(1.0)
+  remarks        String?
+  gradedAt       DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  student        Student      @relation(fields: [studentId], references: [id])
+  classSubject   ClassSubject @relation(fields: [classSubjectId], references: [id])
+  teacher        Teacher      @relation(fields: [teacherId], references: [id])
+
+  @@index([tenantId, studentId, academicYear, term])
+  @@index([tenantId, classSubjectId, academicYear])
+  @@map("grades")
+}
+
+model Exam {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String   @db.Uuid
+  schoolId     String   @db.Uuid
+  subjectId    String   @db.Uuid
+  name         String
+  examType     ExamType
+  academicYear String
+  term         String
+  scheduledAt  DateTime
+  duration     Int      // minutes
+  maxMarks     Decimal  @db.Decimal(6, 2)
+  passingMarks Decimal  @db.Decimal(6, 2)
+  venue        String?
+  instructions String?
+  isPublished  Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  subject      Subject  @relation(fields: [subjectId], references: [id])
+  results      ExamResult[]
+
+  @@index([tenantId, schoolId, academicYear])
+  @@map("exams")
+}
+
+model ExamResult {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  examId      String   @db.Uuid
+  studentId   String   @db.Uuid
+  tenantId    String   @db.Uuid
+  marksObtained Decimal @db.Decimal(6, 2)
+  grade       String?
+  rank        Int?
+  remarks     String?
+  isAbsent    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  exam        Exam     @relation(fields: [examId], references: [id])
+  student     Student  @relation(fields: [studentId], references: [id])
+
+  @@unique([examId, studentId])
+  @@index([tenantId, studentId])
+  @@map("exam_results")
+}
+
+// ============================================================
+// FINANCE
+// ============================================================
+
+model FeeStructure {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schoolId     String   @db.Uuid
+  tenantId     String   @db.Uuid
+  name         String
+  academicYear String
+  classIds     String[] @db.Uuid
+  components   Json     // [{ name, amount, isOptional, dueDay }]
+  frequency    String   // monthly, quarterly, annually, one-time
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  school       School   @relation(fields: [schoolId], references: [id])
+  invoices     FeeInvoice[]
+
+  @@index([tenantId, schoolId])
+  @@map("fee_structures")
+}
+
+model FeeInvoice {
+  id              String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studentId       String     @db.Uuid
+  feeStructureId  String     @db.Uuid
+  tenantId        String     @db.Uuid
+  invoiceNo       String
+  amount          Decimal    @db.Decimal(12, 2)
+  discount        Decimal    @db.Decimal(12, 2) @default(0)
+  fine            Decimal    @db.Decimal(12, 2) @default(0)
+  amountPaid      Decimal    @db.Decimal(12, 2) @default(0)
+  status          FeeStatus  @default(PENDING)
+  dueDate         DateTime
+  issuedAt        DateTime   @default(now())
+  paidAt          DateTime?
+  notes           String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  student         Student      @relation(fields: [studentId], references: [id])
+  feeStructure    FeeStructure @relation(fields: [feeStructureId], references: [id])
+  payments        Payment[]
+
+  @@unique([tenantId, invoiceNo])
+  @@index([tenantId, studentId])
+  @@index([tenantId, status, dueDate])
+  @@map("fee_invoices")
+}
+
+model Payment {
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  invoiceId       String        @db.Uuid
+  tenantId        String        @db.Uuid
+  amount          Decimal       @db.Decimal(12, 2)
+  method          PaymentMethod
+  stripePaymentId String?       @unique
+  transactionRef  String?
+  paidAt          DateTime      @default(now())
+  processedBy     String?       @db.Uuid
+  receiptUrl      String?
+  metadata        Json          @default("{}")
+
+  invoice         FeeInvoice    @relation(fields: [invoiceId], references: [id])
+
+  @@index([tenantId, invoiceId])
+  @@map("payments")
+}
+
+// ============================================================
+// COMMUNICATION
+// ============================================================
+
+model Message {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String   @db.Uuid
+  senderId    String   @db.Uuid
+  recipientId String   @db.Uuid
+  subject     String?
+  body        String
+  parentId    String?  @db.Uuid
+  isRead      Boolean  @default(false)
+  readAt      DateTime?
+  deletedBySender Boolean @default(false)
+  deletedByRecipient Boolean @default(false)
+  createdAt   DateTime @default(now())
+
+  sender      User     @relation("SentMessages", fields: [senderId], references: [id])
+  recipient   User     @relation("ReceivedMessages", fields: [recipientId], references: [id])
+  replies     Message[] @relation("MessageReplies")
+  parent      Message?  @relation("MessageReplies", fields: [parentId], references: [id])
+
+  @@index([tenantId, recipientId, isRead])
+  @@index([tenantId, senderId])
+  @@map("messages")
+}
+
+model Announcement {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String    @db.Uuid
+  schoolId    String    @db.Uuid
+  title       String
+  body        String
+  targetRoles UserRole[]
+  targetClassIds String[] @db.Uuid
+  publishAt   DateTime?
+  expiresAt   DateTime?
+  isPinned    Boolean   @default(false)
+  attachments Json      @default("[]")
+  createdById String    @db.Uuid
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([tenantId, schoolId])
+  @@map("announcements")
+}
+
+model Notification {
+  id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String              @db.Uuid
+  userId      String              @db.Uuid
+  channel     NotificationChannel
+  status      NotificationStatus  @default(PENDING)
+  title       String
+  body        String
+  data        Json                @default("{}")
+  externalId  String?             // SES message ID, Twilio SID, FCM ID
+  sentAt      DateTime?
+  deliveredAt DateTime?
+  readAt      DateTime?
+  failedAt    DateTime?
+  failReason  String?
+  retryCount  Int                 @default(0)
+  createdAt   DateTime            @default(now())
+
+  user        User                @relation(fields: [userId], references: [id])
+
+  @@index([tenantId, userId, status])
+  @@index([tenantId, channel, status])
+  @@map("notifications")
+}
+
+// ============================================================
+// LIBRARY
+// ============================================================
+
+model LibraryBook {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schoolId     String   @db.Uuid
+  tenantId     String   @db.Uuid
+  isbn         String?
+  title        String
+  author       String
+  publisher    String?
+  category     String
+  totalCopies  Int      @default(1)
+  availableCopies Int   @default(1)
+  shelfLocation String?
+  coverUrl     String?
+  publishYear  Int?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  school       School   @relation(fields: [schoolId], references: [id])
+  issues       BookIssue[]
+
+  @@index([tenantId, schoolId])
+  @@map("library_books")
+}
+
+model BookIssue {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bookId      String    @db.Uuid
+  userId      String    @db.Uuid
+  tenantId    String    @db.Uuid
+  issuedAt    DateTime  @default(now())
+  dueDate     DateTime
+  returnedAt  DateTime?
+  fineAmount  Decimal?  @db.Decimal(8, 2)
+  finePaid    Boolean   @default(false)
+
+  book        LibraryBook @relation(fields: [bookId], references: [id])
+
+  @@index([tenantId, userId])
+  @@index([tenantId, bookId])
+  @@map("book_issues")
+}
+
+// ============================================================
+// TRANSPORT
+// ============================================================
+
+model TransportRoute {
+  id          String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schoolId    String               @db.Uuid
+  tenantId    String               @db.Uuid
+  name        String
+  routeNo     String
+  stops       Json                 // [{ name, lat, lng, order, arrivalTime }]
+  vehicleNo   String?
+  driverName  String?
+  driverPhone String?
+  capacity    Int
+  status      TransportRouteStatus @default(ACTIVE)
+  fee         Decimal?             @db.Decimal(10, 2)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  school      School   @relation(fields: [schoolId], references: [id])
+  students    Student[]
+
+  @@unique([schoolId, routeNo])
+  @@index([tenantId, schoolId])
+  @@map("transport_routes")
+}
+
+// ============================================================
+// HOSTEL
+// ============================================================
+
+model Hostel {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schoolId    String   @db.Uuid
+  tenantId    String   @db.Uuid
+  name        String
+  type        String   // boys, girls, mixed
+  totalRooms  Int
+  capacity    Int
+  wardenId    String?  @db.Uuid
+  fee         Decimal? @db.Decimal(10, 2)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  school      School   @relation(fields: [schoolId], references: [id])
+  students    Student[]
+
+  @@index([tenantId, schoolId])
+  @@map("hostels")
+}
+
+// ============================================================
+// EVENTS & INVENTORY
+// ============================================================
+
+model SchoolEvent {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schoolId    String   @db.Uuid
+  tenantId    String   @db.Uuid
+  title       String
+  description String?
+  startAt     DateTime
+  endAt       DateTime
+  venue       String?
+  targetRoles UserRole[]
+  isPublic    Boolean  @default(false)
+  coverUrl    String?
+  createdById String   @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  school      School   @relation(fields: [schoolId], references: [id])
+
+  @@index([tenantId, schoolId, startAt])
+  @@map("school_events")
+}
+
+model InventoryItem {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schoolId    String   @db.Uuid
+  tenantId    String   @db.Uuid
+  name        String
+  category    String
+  quantity    Int      @default(0)
+  unit        String   @default("pcs")
+  minStock    Int      @default(5)
+  location    String?
+  vendor      String?
+  unitCost    Decimal? @db.Decimal(10, 2)
+  lastAuditAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  school      School   @relation(fields: [schoolId], references: [id])
+
+  @@index([tenantId, schoolId])
+  @@map("inventory_items")
+}
+
+// ============================================================
+// DOCUMENTS
+// ============================================================
+
+model StudentDocument {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studentId   String   @db.Uuid
+  tenantId    String   @db.Uuid
+  name        String
+  type        String   // report_card, certificate, admission_letter, id_card
+  s3Key       String   // never stored as public URL
+  s3Bucket    String
+  fileSize    Int
+  mimeType    String
+  academicYear String?
+  term        String?
+  generatedAt DateTime @default(now())
+  expiresAt   DateTime?
+  createdById String   @db.Uuid
+
+  student     Student  @relation(fields: [studentId], references: [id])
+
+  @@index([tenantId, studentId, type])
+  @@map("student_documents")
+}
+
+// ============================================================
+// COMPLIANCE & AUDIT
+// ============================================================
+
+model AuditLog {
+  id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String      @db.Uuid
+  userId      String?     @db.Uuid
+  action      AuditAction
+  entity      String      // table name
+  entityId    String      @db.Uuid
+  before      Json?       // sanitized (no PII)
+  after       Json?       // sanitized (no PII)
+  ipAddress   String?
+  userAgent   String?
+  correlationId String?
+  createdAt   DateTime    @default(now())
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, entity, entityId])
+  @@index([tenantId, userId, createdAt])
+  @@index([createdAt]) // for TimescaleDB hypertable conversion
+  @@map("audit_logs")
+}
+
+model ConsentRecord {
+  id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String      @db.Uuid
+  userId      String      @db.Uuid
+  type        ConsentType
+  version     String      // policy version
+  granted     Boolean
+  ipAddress   String?
+  userAgent   String?
+  grantedAt   DateTime    @default(now())
+  revokedAt   DateTime?
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id])
+  user        User        @relation(fields: [userId], references: [id])
+
+  @@index([tenantId, userId, type])
+  @@map("consent_records")
+}
+
+// ============================================================
+// EVENT SOURCING — OUTBOX PATTERN
+// ============================================================
+
+model OutboxEvent {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String   @db.Uuid
+  topic       String   // Kafka topic name
+  key         String   // partition key
+  payload     Json
+  headers     Json     @default("{}")
+  status      String   @default("PENDING") // PENDING, SENT, FAILED
+  attempts    Int      @default(0)
+  sentAt      DateTime?
+  error       String?
+  createdAt   DateTime @default(now())
+  scheduledAt DateTime @default(now())
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@index([status, scheduledAt])
+  @@index([tenantId, topic])
+  @@map("outbox_events")
+}
+
+// ============================================================
+// QUESTION BANK SYSTEM
+// ============================================================
+
+enum QuestionType {
+  MCQ
+  SHORT_ANSWER
+  LONG_ANSWER
+  TRUE_FALSE
+  FILL_BLANK
+  PRACTICAL
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+  VERY_HARD
+}
+
+model QuestionBank {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String   @db.Uuid
+  schoolId    String   @db.Uuid
+  subjectId   String?  @db.Uuid
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  createdById String   @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  questions   Question[]
+
+  @@index([tenantId, schoolId])
+  @@map("question_banks")
+}
+
+model Question {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String       @db.Uuid
+  questionBankId String       @db.Uuid
+  subjectId      String?      @db.Uuid
+  type           QuestionType
+  text           String
+  marks          Decimal      @db.Decimal(6,2)
+  difficulty     Difficulty   @default(MEDIUM)
+  options        Json?        // [{label, text, isCorrect}] for MCQ
+  correctAnswer  String?      // for non-MCQ
+  explanation    String?
+  tags           String[]
+  usageCount     Int          @default(0)
+  createdById    String       @db.Uuid
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  bank           QuestionBank @relation(fields: [questionBankId], references: [id], onDelete: Cascade)
+  answers        OnlineExamAnswer[]
+
+  @@index([tenantId, questionBankId])
+  @@map("questions")
+}
+
+model OnlineExamSession {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String   @db.Uuid
+  examId         String   @db.Uuid
+  studentId      String   @db.Uuid
+  startedAt      DateTime @default(now())
+  submittedAt    DateTime?
+  timeLimit      Int?     // minutes
+  totalMarks     Decimal? @db.Decimal(8,2)
+  obtainedMarks  Decimal? @db.Decimal(8,2)
+  status         String   @default("ONGOING") // ONGOING/SUBMITTED/AUTO_SUBMITTED/GRADED
+  ipAddress      String?
+  createdAt      DateTime @default(now())
+
+  answers        OnlineExamAnswer[]
+
+  @@unique([examId, studentId])
+  @@index([tenantId, examId])
+  @@map("online_exam_sessions")
+}
+
+model OnlineExamAnswer {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sessionId  String   @db.Uuid
+  questionId String   @db.Uuid
+  tenantId   String   @db.Uuid
+  answer     String?
+  isCorrect  Boolean?
+  marksAwarded Decimal? @db.Decimal(6,2)
+  gradedById String?  @db.Uuid
+  gradedAt   DateTime?
+  createdAt  DateTime @default(now())
+
+  session    OnlineExamSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  question   Question          @relation(fields: [questionId], references: [id])
+
+  @@unique([sessionId, questionId])
+  @@index([tenantId, sessionId])
+  @@map("online_exam_answers")
+}
+
+// ============================================================
+// FEE ENHANCEMENTS — DISCOUNTS, SCHOLARSHIPS, INSTALLMENTS
+// ============================================================
+
+model FeeDiscount {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String   @db.Uuid
+  name        String
+  type        String   // PERCENTAGE / FIXED
+  value       Decimal  @db.Decimal(10,2)
+  reason      String?
+  isActive    Boolean  @default(true)
+  startDate   DateTime?
+  endDate     DateTime?
+  createdById String   @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  grants      ScholarshipGrant[]
+
+  @@index([tenantId])
+  @@map("fee_discounts")
+}
+
+model Scholarship {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String   @db.Uuid
+  name        String
+  description String?
+  type        String   // MERIT / NEED_BASED / SPORTS / SPECIAL
+  amount      Decimal  @db.Decimal(10,2)
+  isPercentage Boolean @default(false)
+  criteria    Json     @default("{}")
+  isActive    Boolean  @default(true)
+  maxRecipients Int?
+  currentRecipients Int @default(0)
+  createdById String   @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  grants      ScholarshipGrant[]
+
+  @@index([tenantId])
+  @@map("scholarships")
+}
+
+model ScholarshipGrant {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String   @db.Uuid
+  scholarshipId String?  @db.Uuid
+  discountId    String?  @db.Uuid
+  studentId     String   @db.Uuid
+  invoiceId     String?  @db.Uuid
+  amount        Decimal  @db.Decimal(10,2)
+  grantedById   String   @db.Uuid
+  grantedAt     DateTime @default(now())
+  status        String   @default("ACTIVE") // ACTIVE / EXPIRED / REVOKED
+  remarks       String?
+
+  scholarship   Scholarship? @relation(fields: [scholarshipId], references: [id])
+  discount      FeeDiscount? @relation(fields: [discountId], references: [id])
+
+  @@index([tenantId, studentId])
+  @@map("scholarship_grants")
+}
+
+model FeeInstallmentPlan {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String   @db.Uuid
+  studentId   String   @db.Uuid
+  invoiceId   String   @db.Uuid
+  totalAmount Decimal  @db.Decimal(10,2)
+  noOfInstallments Int
+  status      String   @default("ACTIVE") // ACTIVE / COMPLETED / DEFAULTED
+  createdById String   @db.Uuid
+  createdAt   DateTime @default(now())
+
+  installments FeeInstallment[]
+
+  @@index([tenantId, studentId])
+  @@map("fee_installment_plans")
+}
+
+model FeeInstallment {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  planId      String   @db.Uuid
+  tenantId    String   @db.Uuid
+  installmentNo Int
+  dueDate     DateTime
+  amount      Decimal  @db.Decimal(10,2)
+  status      String   @default("PENDING") // PENDING / PAID / OVERDUE
+  paidAt      DateTime?
+  paymentId   String?  @db.Uuid
+  reminderSent Boolean @default(false)
+  createdAt   DateTime @default(now())
+
+  plan        FeeInstallmentPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, planId])
+  @@map("fee_installments")
+}
+
+// ============================================================
+// FINANCE — BUDGET, EXPENSES, CASHBOOK, LEDGER
+// ============================================================
+
+model Expense {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String   @db.Uuid
+  schoolId    String   @db.Uuid
+  category    String   // SALARY / UTILITIES / MAINTENANCE / SUPPLIES / TRANSPORT / OTHER
+  description String
+  amount      Decimal  @db.Decimal(12,2)
+  vendor      String?
+  receiptUrl  String?
+  status      String   @default("PENDING") // PENDING / APPROVED / REJECTED / PAID
+  approvedById String? @db.Uuid
+  approvedAt  DateTime?
+  expenseDate DateTime
+  createdById String   @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tenantId, schoolId])
+  @@index([tenantId, category])
+  @@map("expenses")
+}
+
+model Budget {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String   @db.Uuid
+  schoolId    String   @db.Uuid
+  category    String
+  period      String   // YYYY-MM or YYYY (annual)
+  allocated   Decimal  @db.Decimal(12,2)
+  spent       Decimal  @db.Decimal(12,2) @default(0)
+  notes       String?
+  createdById String   @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([tenantId, schoolId, category, period])
+  @@index([tenantId, schoolId])
+  @@map("budgets")
+}
+
+model CashbookEntry {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String   @db.Uuid
+  schoolId    String   @db.Uuid
+  type        String   // INCOME / EXPENSE
+  category    String
+  description String
+  amount      Decimal  @db.Decimal(12,2)
+  reference   String?
+  entryDate   DateTime
+  createdById String   @db.Uuid
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId, schoolId, entryDate])
+  @@map("cashbook_entries")
+}
+
+// ============================================================
+// STUDENT EXTENDED RECORDS
+// ============================================================
+
+model StudentBehavior {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String   @db.Uuid
+  studentId    String   @db.Uuid
+  type         String   // POSITIVE / NEGATIVE / NEUTRAL
+  category     String   // ACADEMIC / DISCIPLINE / SOCIAL / SPORTS
+  description  String
+  severity     String   @default("LOW") // LOW / MEDIUM / HIGH / CRITICAL
+  actionTaken  String?
+  reportedById String   @db.Uuid
+  incidentDate DateTime
+  resolved     Boolean  @default(false)
+  resolvedAt   DateTime?
+  createdAt    DateTime @default(now())
+
+  @@index([tenantId, studentId])
+  @@map("student_behaviors")
+}
+
+model StudentMedicalRecord {
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId             String   @db.Uuid
+  studentId            String   @unique @db.Uuid
+  bloodGroup           String?
+  allergies            String[]
+  chronicConditions    String[]
+  currentMedications   String[]
+  vaccinations         Json     @default("[]")
+  emergencyContactName String?
+  emergencyContactPhone String?
+  doctorName           String?
+  doctorPhone          String?
+  insuranceProvider    String?
+  insurancePolicyNo    String?
+  notes                String?
+  lastUpdatedById      String?  @db.Uuid
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([tenantId])
+  @@map("student_medical_records")
+}
+
+model StudentAchievement {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String   @db.Uuid
+  studentId      String   @db.Uuid
+  type           String   // ACADEMIC / SPORTS / ARTS / CULTURAL / OTHER
+  title          String
+  description    String?
+  awardedBy      String?
+  awardedAt      DateTime
+  certificateUrl String?
+  isPublic       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  @@index([tenantId, studentId])
+  @@map("student_achievements")
+}
+
+model StudentWarning {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String   @db.Uuid
+  studentId   String   @db.Uuid
+  type        String   // ACADEMIC / BEHAVIORAL / ATTENDANCE / FEE
+  description String
+  severity    String   @default("MINOR") // MINOR / MAJOR / CRITICAL
+  issuedById  String   @db.Uuid
+  issuedAt    DateTime @default(now())
+  expiresAt   DateTime?
+  resolved    Boolean  @default(false)
+  resolvedAt  DateTime?
+  resolvedById String? @db.Uuid
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId, studentId])
+  @@map("student_warnings")
+}
+
+// ============================================================
+// TEACHER EXTENDED — LESSON PLANS, SUBSTITUTIONS, TRAINING
+// ============================================================
+
+model LessonPlan {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String   @db.Uuid
+  teacherId       String   @db.Uuid
+  classSubjectId  String?  @db.Uuid
+  week            String   // YYYY-WNN
+  title           String
+  topic           String?
+  objectives      String[]
+  content         String?
+  activities      Json     @default("[]")
+  resources       Json     @default("[]")
+  assessment      String?
+  homework        String?
+  status          String   @default("DRAFT") // DRAFT / SUBMITTED / APPROVED / REJECTED
+  approvedById    String?  @db.Uuid
+  approvedAt      DateTime?
+  rejectionNote   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([tenantId, teacherId])
+  @@index([tenantId, week])
+  @@map("lesson_plans")
+}
+
+model TeacherSubstitution {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId         String   @db.Uuid
+  substituteId     String   @db.Uuid  // teacher taking the class
+  originalTeacherId String  @db.Uuid  // absent teacher
+  timetableSlotId  String?  @db.Uuid
+  date             DateTime @db.Date
+  period           String?
+  className        String?
+  subjectName      String?
+  reason           String?
+  status           String   @default("PENDING") // PENDING / CONFIRMED / COMPLETED / CANCELLED
+  notes            String?
+  assignedById     String   @db.Uuid
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([tenantId, date])
+  @@index([tenantId, substituteId])
+  @@map("teacher_substitutions")
+}
+
+model TrainingRecord {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String   @db.Uuid
+  teacherId      String   @db.Uuid
+  title          String
+  provider       String?
+  type           String   // WORKSHOP / SEMINAR / ONLINE / CONFERENCE / CERTIFICATION
+  startDate      DateTime
+  endDate        DateTime?
+  location       String?
+  certificateUrl String?
+  status         String   @default("ENROLLED") // ENROLLED / COMPLETED / CANCELLED
+  hoursCompleted Decimal? @db.Decimal(6,2)
+  notes          String?
+  createdAt      DateTime @default(now())
+
+  @@index([tenantId, teacherId])
+  @@map("training_records")
+}
+
+model TeacherCertification {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String   @db.Uuid
+  teacherId    String   @db.Uuid
+  title        String
+  issuingBody  String
+  issueDate    DateTime
+  expiryDate   DateTime?
+  credentialId String?
+  fileUrl      String?
+  isVerified   Boolean  @default(false)
+  verifiedById String?  @db.Uuid
+  createdAt    DateTime @default(now())
+
+  @@index([tenantId, teacherId])
+  @@map("teacher_certifications")
+}
+
+// ============================================================
+// QR ATTENDANCE & ATTENDANCE ENHANCEMENTS
+// ============================================================
+
+model QrAttendanceCode {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String   @db.Uuid
+  sectionId String   @db.Uuid
+  date      DateTime @db.Date
+  code      String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  usedCount Int      @default(0)
+  createdById String @db.Uuid
+  createdAt DateTime @default(now())
+
+  scans     QrAttendanceScan[]
+
+  @@index([tenantId, sectionId, date])
+  @@index([code])
+  @@map("qr_attendance_codes")
+}
+
+model QrAttendanceScan {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  codeId    String   @db.Uuid
+  studentId String   @db.Uuid
+  tenantId  String   @db.Uuid
+  scannedAt DateTime @default(now())
+  ipAddress String?
+  location  Json?
+
+  code      QrAttendanceCode @relation(fields: [codeId], references: [id])
+
+  @@index([tenantId, codeId])
+  @@map("qr_attendance_scans")
+}
+
+model AttendanceApproval {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String   @db.Uuid
+  studentId       String   @db.Uuid
+  sectionId       String   @db.Uuid
+  date            DateTime @db.Date
+  requestedById   String   @db.Uuid
+  reason          String
+  originalStatus  String
+  requestedStatus String
+  attachmentUrl   String?
+  status          String   @default("PENDING") // PENDING / APPROVED / REJECTED
+  approvedById    String?  @db.Uuid
+  approvedAt      DateTime?
+  remarks         String?
+  createdAt       DateTime @default(now())
+
+  @@index([tenantId, studentId])
+  @@index([tenantId, status])
+  @@map("attendance_approvals")
+}
+
+// ============================================================
+// EXAM ENHANCEMENTS — HALL, SEATING, MERIT, MODERATION
+// ============================================================
+
+model ExamHall {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String   @db.Uuid
+  schoolId    String   @db.Uuid
+  name        String
+  capacity    Int
+  rows        Int      @default(10)
+  columns     Int      @default(5)
+  facilities  String[]
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  seatings    ExamSeating[]
+
+  @@index([tenantId, schoolId])
+  @@map("exam_halls")
+}
+
+model ExamSeating {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String   @db.Uuid
+  examId     String   @db.Uuid
+  hallId     String   @db.Uuid
+  studentId  String   @db.Uuid
+  seatNumber String
+  rowNo      Int?
+  colNo      Int?
+  createdAt  DateTime @default(now())
+
+  hall       ExamHall @relation(fields: [hallId], references: [id])
+
+  @@unique([examId, hallId, seatNumber])
+  @@unique([examId, studentId])
+  @@index([tenantId, examId])
+  @@map("exam_seatings")
+}
+
+model ExamModeration {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String   @db.Uuid
+  examId       String   @db.Uuid
+  moderatorId  String   @db.Uuid
+  status       String   @default("PENDING") // PENDING / IN_PROGRESS / COMPLETED
+  checklist    Json     @default("[]")
+  comments     String?
+  completedAt  DateTime?
+  createdAt    DateTime @default(now())
+
+  @@unique([examId, moderatorId])
+  @@index([tenantId, examId])
+  @@map("exam_moderations")
+}
+
+model ExamRevaluation {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String   @db.Uuid
+  examId         String   @db.Uuid
+  studentId      String   @db.Uuid
+  requestedById  String   @db.Uuid
+  reason         String
+  status         String   @default("PENDING") // PENDING / IN_PROGRESS / COMPLETED / REJECTED
+  originalMarks  Decimal  @db.Decimal(8,2)
+  revisedMarks   Decimal? @db.Decimal(8,2)
+  remarks        String?
+  processedById  String?  @db.Uuid
+  processedAt    DateTime?
+  createdAt      DateTime @default(now())
+
+  @@index([tenantId, examId])
+  @@index([tenantId, studentId])
+  @@map("exam_revaluations")
+}
+
+model MeritListEntry {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String   @db.Uuid
+  examId       String   @db.Uuid
+  studentId    String   @db.Uuid
+  classId      String?  @db.Uuid
+  sectionId    String?  @db.Uuid
+  rank         Int
+  totalMarks   Decimal  @db.Decimal(8,2)
+  obtainedMarks Decimal @db.Decimal(8,2)
+  percentage   Decimal  @db.Decimal(5,2)
+  grade        String
+  gpa          Decimal? @db.Decimal(3,2)
+  isClassTopper Boolean @default(false)
+  isSectionTopper Boolean @default(false)
+  createdAt    DateTime @default(now())
+
+  @@unique([examId, studentId])
+  @@index([tenantId, examId])
+  @@map("merit_list_entries")
+}
+
+// ============================================================
+// CONTENT — BLOG, GALLERY, EVENTS ENHANCED
+// ============================================================
+
+model BlogPost {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String   @db.Uuid
+  schoolId       String   @db.Uuid
+  title          String
+  slug           String
+  content        String
+  excerpt        String?
+  coverUrl       String?
+  category       String   @default("NEWS") // NEWS / BLOG / ANNOUNCEMENT / ACHIEVEMENT
+  tags           String[]
+  status         String   @default("DRAFT") // DRAFT / PUBLISHED / ARCHIVED
+  publishedAt    DateTime?
+  authorId       String   @db.Uuid
+  seoTitle       String?
+  seoDescription String?
+  views          Int      @default(0)
+  isPublic       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([schoolId, slug])
+  @@index([tenantId, schoolId])
+  @@index([status, publishedAt])
+  @@map("blog_posts")
+}
+
+model GalleryAlbum {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String   @db.Uuid
+  schoolId    String   @db.Uuid
+  title       String
+  description String?
+  coverUrl    String?
+  isPublic    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdById String   @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items       GalleryItem[]
+
+  @@index([tenantId, schoolId])
+  @@map("gallery_albums")
+}
+
+model GalleryItem {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  albumId     String   @db.Uuid
+  tenantId    String   @db.Uuid
+  url         String
+  thumbnailUrl String?
+  type        String   @default("IMAGE") // IMAGE / VIDEO
+  title       String?
+  caption     String?
+  sortOrder   Int      @default(0)
+  fileSize    Int?
+  mimeType    String?
+  createdAt   DateTime @default(now())
+
+  album       GalleryAlbum @relation(fields: [albumId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, albumId])
+  @@map("gallery_items")
+}
+
+// ============================================================
+// SUPPORT TICKET SYSTEM
+// ============================================================
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING
+  RESOLVED
+  CLOSED
+}
+
+model SupportTicket {
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String        @db.Uuid
+  ticketNo      String        @unique
+  subject       String
+  description   String
+  priority      TicketPriority @default(MEDIUM)
+  status        TicketStatus   @default(OPEN)
+  category      String         // BILLING / TECHNICAL / ACADEMIC / FEATURE_REQUEST / OTHER
+  submittedById String         @db.Uuid
+  assignedToId  String?        @db.Uuid
+  resolvedAt    DateTime?
+  closedAt      DateTime?
+  slaDeadline   DateTime?
+  satisfaction  Int?           // 1-5
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  responses     TicketResponse[]
+
+  @@index([tenantId])
+  @@index([status, priority])
+  @@map("support_tickets")
+}
+
+model TicketResponse {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ticketId    String   @db.Uuid
+  tenantId    String   @db.Uuid
+  authorId    String   @db.Uuid
+  content     String
+  isInternal  Boolean  @default(false)
+  attachments Json     @default("[]")
+  createdAt   DateTime @default(now())
+
+  ticket      SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@map("ticket_responses")
+}
+
+// ============================================================
+// SAAS COUPON SYSTEM
+// ============================================================
+
+model Coupon {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code           String   @unique
+  description    String?
+  type           String   // PERCENTAGE / FIXED
+  value          Decimal  @db.Decimal(8,2)
+  maxUses        Int?
+  usedCount      Int      @default(0)
+  minAmount      Decimal? @db.Decimal(10,2)
+  applicablePlans Json    @default("[]")
+  validFrom      DateTime
+  validTo        DateTime?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  usages         CouponUsage[]
+
+  @@map("coupons")
+}
+
+model CouponUsage {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  couponId       String   @db.Uuid
+  tenantId       String   @db.Uuid
+  discountAmount Decimal  @db.Decimal(10,2)
+  appliedAt      DateTime @default(now())
+
+  coupon         Coupon   @relation(fields: [couponId], references: [id])
+
+  @@index([couponId])
+  @@index([tenantId])
+  @@map("coupon_usages")
+}
+
+// ============================================================
+// SCHOOL POLICIES, RULES, ONBOARDING
+// ============================================================
+
+model SchoolPolicy {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String   @db.Uuid
+  schoolId    String   @db.Uuid
+  title       String
+  category    String   // ACADEMIC / BEHAVIORAL / FEE / ATTENDANCE / GENERAL
+  content     String
+  isActive    Boolean  @default(true)
+  version     String   @default("1.0")
+  createdById String   @db.Uuid
+  publishedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tenantId, schoolId])
+  @@map("school_policies")
+}
+
+model SetupChecklist {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String   @unique @db.Uuid
+  items           Json     @default("[]") // [{key, label, done, required}]
+  completedCount  Int      @default(0)
+  totalCount      Int      @default(0)
+  isComplete      Boolean  @default(false)
+  lastUpdatedAt   DateTime @default(now())
+
+  @@map("setup_checklists")
+}
+
+model AcademicRule {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String   @db.Uuid
+  schoolId   String   @db.Uuid
+  type       String   // PROMOTION / GRADUATION / ATTENDANCE / EXAM / FEE
+  title      String
+  conditions Json     @default("{}")
+  actions    Json     @default("{}")
+  isActive   Boolean  @default(true)
+  createdById String  @db.Uuid
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([tenantId, schoolId, type])
+  @@map("academic_rules")
+}
+
+// ============================================================
+// CUSTOM FORMS BUILDER
+// ============================================================
+
+model CustomForm {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String   @db.Uuid
+  schoolId    String   @db.Uuid
+  title       String
+  description String?
+  targetRoles Json     @default("[]") // [STUDENT, TEACHER, PARENT, STAFF]
+  fields      Json     @default("[]") // [{id, type, label, required, options}]
+  isActive    Boolean  @default(true)
+  isPublic    Boolean  @default(false)
+  deadline    DateTime?
+  createdById String   @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  responses   FormResponse[]
+
+  @@index([tenantId, schoolId])
+  @@map("custom_forms")
+}
+
+model FormResponse {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  formId      String   @db.Uuid
+  tenantId    String   @db.Uuid
+  respondentId String  @db.Uuid
+  data        Json
+  submittedAt DateTime @default(now())
+
+  form        CustomForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  @@index([formId, respondentId])
+  @@map("form_responses")
+}
+
+// ============================================================
+// ALUMNI MANAGEMENT
+// ============================================================
+
+model Alumni {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId          String   @db.Uuid
+  schoolId          String   @db.Uuid
+  firstName         String
+  lastName          String
+  email             String?
+  phone             String?
+  graduationYear    Int
+  className         String?
+  currentOccupation String?
+  currentCompany    String?
+  currentCity       String?
+  country           String?
+  linkedIn          String?
+  photoUrl          String?
+  isVerified        Boolean  @default(false)
+  verifiedById      String?  @db.Uuid
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([tenantId, schoolId])
+  @@index([tenantId, graduationYear])
+  @@map("alumni")
+}
+
+// ============================================================
+// SECURITY — IP RESTRICTION, LOGIN HISTORY
+// ============================================================
+
+model IpRestriction {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String   @db.Uuid
+  ipAddress   String
+  type        String   // WHITELIST / BLACKLIST
+  description String?
+  isActive    Boolean  @default(true)
+  createdById String   @db.Uuid
+  createdAt   DateTime @default(now())
+
+  @@unique([tenantId, ipAddress, type])
+  @@index([tenantId, type])
+  @@map("ip_restrictions")
+}
+
+model LoginHistory {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String   @db.Uuid
+  tenantId   String   @db.Uuid
+  ipAddress  String?
+  userAgent  String?
+  location   String?
+  status     String   // SUCCESS / FAILED / BLOCKED / MFA_REQUIRED
+  failReason String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([tenantId, createdAt])
+  @@map("login_history")
+}
+
+model SuspiciousActivity {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String?  @db.Uuid
+  tenantId    String   @db.Uuid
+  type        String   // BRUTE_FORCE / UNUSUAL_LOCATION / MASS_DOWNLOAD / ACCOUNT_SHARING
+  description String
+  severity    String   @default("MEDIUM")
+  metadata    Json     @default("{}")
+  resolved    Boolean  @default(false)
+  resolvedAt  DateTime?
+  resolvedById String? @db.Uuid
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId, resolved])
+  @@index([userId, createdAt])
+  @@map("suspicious_activities")
+}
+
+// ============================================================
+// NOTIFICATION PREFERENCES
+// ============================================================
+
+model NotificationPreference {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String   @unique @db.Uuid
+  tenantId      String   @db.Uuid
+  emailEnabled  Boolean  @default(true)
+  smsEnabled    Boolean  @default(true)
+  pushEnabled   Boolean  @default(true)
+  inAppEnabled  Boolean  @default(true)
+  categories    Json     @default("{}") // {attendance: true, fees: true, exams: true}
+  quietHoursStart String? // HH:MM
+  quietHoursEnd   String? // HH:MM
+  updatedAt     DateTime @updatedAt
+
+  @@index([tenantId])
+  @@map("notification_preferences")
+}
+
+// ============================================================
+// INVENTORY ENHANCEMENTS
+// ============================================================
+
+model InventoryTransaction {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String   @db.Uuid
+  itemId      String   @db.Uuid
+  type        String   // IN / OUT / ADJUSTMENT / DAMAGED
+  quantity    Int
+  reason      String?
+  reference   String?
+  performedById String @db.Uuid
+  transactionDate DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId, itemId])
+  @@map("inventory_transactions")
+}
+
+// ============================================================
+// HOSTEL ENHANCEMENTS
+// ============================================================
+
+model HostelRoom {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  hostelId   String   @db.Uuid
+  tenantId   String   @db.Uuid
+  roomNumber String
+  type       String   @default("SHARED") // SHARED / PRIVATE / DORMITORY
+  capacity   Int      @default(4)
+  floor      Int      @default(0)
+  facilities String[]
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  allocations HostelAllocation[]
+
+  @@unique([hostelId, roomNumber])
+  @@index([tenantId, hostelId])
+  @@map("hostel_rooms")
+}
+
+model HostelAllocation {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  roomId      String   @db.Uuid
+  studentId   String   @db.Uuid
+  tenantId    String   @db.Uuid
+  joinedAt    DateTime @default(now())
+  leftAt      DateTime?
+  isActive    Boolean  @default(true)
+  bedNumber   String?
+  monthlyFee  Decimal? @db.Decimal(10,2)
+  createdAt   DateTime @default(now())
+
+  room        HostelRoom @relation(fields: [roomId], references: [id])
+
+  @@unique([roomId, studentId, joinedAt])
+  @@index([tenantId, studentId])
+  @@map("hostel_allocations")
+}

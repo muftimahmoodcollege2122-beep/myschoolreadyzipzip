@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.next/
+.turbo/
+coverage/
+*.env
+!*.env.example
+.DS_Store
+*.log
+*.tsbuildinfo
+.terraform/
+*.tfstate
+*.tfstate.backup
+terraform.tfvars
+prisma/migrations/migration_lock.toml
+final_build/saas_build/apps/api/dist/

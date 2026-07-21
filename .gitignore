@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+.next/
+out/
+build/
+
+# Env files (never commit secrets)
+.env
+.env.local
+.env.*.local
+
+# Redis dump
+dump.rdb
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Replit (removed but prevent future re-add)
+.replit
+replit.nix
+.agents/
+
+# Misc
+*.zip
+attached_assets/

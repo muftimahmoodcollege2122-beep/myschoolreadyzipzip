@@ -1,0 +1,96 @@
+groups:
+  - name: school_saas_slos
+    interval: 30s
+    rules:
+      # API Error Rate SLO (< 1% errors)
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{job="school-saas-api",status=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total{job="school-saas-api"}[5m]))
+          ) > 0.01
+        for: 2m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 1%)"
+          runbook: "https://runbooks.schoolsaas.com/high-error-rate"
+
+      # API Latency SLO (p95 < 300ms)
+      - alert: HighLatencyP95
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket{job="school-saas-api"}[5m])) by (le)
+          ) > 0.3
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "p95 latency exceeds SLO"
+          description: "p95 latency is {{ $value | humanizeDuration }} (threshold: 300ms)"
+
+      # Database connection pool exhaustion
+      - alert: DatabasePoolExhausted
+        expr: pg_stat_activity_count{state="idle"} < 2
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Database connection pool near exhaustion"
+
+      # Redis memory pressure
+      - alert: RedisHighMemory
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis memory usage above 85%"
+
+      # Kafka consumer lag
+      - alert: KafkaConsumerLagHigh
+        expr: kafka_consumergroup_lag_sum > 10000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Kafka consumer lag is high: {{ $value }} messages"
+
+      # Pod crash looping
+      - alert: PodCrashLooping
+        expr: |
+          rate(kube_pod_container_status_restarts_total{namespace="school-saas"}[15m]) > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Pod {{ $labels.pod }} is crash-looping"
+
+      # Outbox relay stalled
+      - alert: OutboxRelayStalled
+        expr: |
+          sum(school_saas_outbox_pending_events) > 1000
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Outbox relay stalled: {{ $value }} pending events"
+
+      # Error budget burn rate
+      - alert: ErrorBudgetBurnRate
+        expr: |
+          (
+            sum(rate(http_requests_total{job="school-saas-api",status=~"5.."}[1h]))
+            /
+            sum(rate(http_requests_total{job="school-saas-api"}[1h]))
+          ) > 0.02
+        for: 30m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Error budget burning too fast (2x target rate)"
+          description: "At this rate, the monthly error budget will be exhausted in < 12 hours"
