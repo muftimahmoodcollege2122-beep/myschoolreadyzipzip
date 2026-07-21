@@ -36,7 +36,7 @@ BEGIN;
 ALTER TABLE "audit_logs" RENAME TO "audit_logs_old";
 
 CREATE TABLE "audit_logs" (
-  id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id             uuid DEFAULT gen_random_uuid(),
   "tenantId"     uuid NOT NULL,
   "userId"       uuid,
   action         "AuditAction" NOT NULL,
@@ -47,7 +47,8 @@ CREATE TABLE "audit_logs" (
   "ipAddress"    text,
   "userAgent"    text,
   "correlationId" text,
-  "createdAt"    timestamp(3) NOT NULL DEFAULT now()
+  "createdAt"    timestamp(3) NOT NULL DEFAULT now(),
+  PRIMARY KEY (id, "createdAt")
 ) PARTITION BY RANGE ("createdAt");
 
 CREATE INDEX ON "audit_logs" ("tenantId", entity, "entityId");
@@ -71,7 +72,7 @@ CREATE POLICY tenant_isolation ON "audit_logs"
 ALTER TABLE "attendances" RENAME TO "attendances_old";
 
 CREATE TABLE "attendances" (
-  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id            uuid DEFAULT gen_random_uuid(),
   "studentId"   uuid NOT NULL,
   "sectionId"   uuid NOT NULL,
   "tenantId"    uuid NOT NULL,
@@ -81,6 +82,7 @@ CREATE TABLE "attendances" (
   "markedAt"    timestamp(3) NOT NULL DEFAULT now(),
   remarks       text,
   "isBiometric" boolean NOT NULL DEFAULT false,
+  PRIMARY KEY (id, date),
   UNIQUE ("studentId", "sectionId", date)
 ) PARTITION BY RANGE (date);
 
@@ -113,7 +115,7 @@ CREATE POLICY tenant_isolation ON "attendances"
 ALTER TABLE "payments" RENAME TO "payments_old";
 
 CREATE TABLE "payments" (
-  id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id                uuid DEFAULT gen_random_uuid(),
   "invoiceId"       uuid NOT NULL,
   "tenantId"        uuid NOT NULL,
   amount            numeric(12,2) NOT NULL,
@@ -124,6 +126,7 @@ CREATE TABLE "payments" (
   "processedBy"     uuid,
   "receiptUrl"      text,
   metadata          jsonb NOT NULL DEFAULT '{}',
+  PRIMARY KEY (id, "paidAt"),
   UNIQUE ("stripePaymentId", "paidAt")
 ) PARTITION BY RANGE ("paidAt");
 
