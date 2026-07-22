@@ -24,10 +24,10 @@ export function Topbar({ title, subtitle, action }: TopbarProps) {
         {subtitle && <p className="text-xs text-gray-400 truncate hidden sm:block">{subtitle}</p>}
       </div>
       {action && <div className="flex-shrink-0 hidden sm:block">{action}</div>}
-      <Link href="/notifications" className="relative w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 flex-shrink-0 text-base">
+      <div className="relative w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 flex-shrink-0 text-base">
         🔔
         {unread > 0 && <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center px-1">{unread > 99 ? '99+' : unread}</span>}
-      </Link>
+      </div>
       <button onClick={logout} className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 flex-shrink-0 text-sm" title="Logout">⏻</button>
     </header>
   );

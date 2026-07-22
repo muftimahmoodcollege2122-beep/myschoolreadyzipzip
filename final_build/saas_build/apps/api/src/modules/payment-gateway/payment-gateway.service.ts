@@ -142,7 +142,7 @@ export class PaymentGatewayService {
 
     const outbox = await this.prisma.outboxEvent.findFirst({
       where: {
-        eventType: 'payment.initiated',
+        topic: 'payment.initiated',
         payload: { string_contains: dto.paymentId },
       },
     });
@@ -263,7 +263,7 @@ export class PaymentGatewayService {
       where: { topic: 'payment.verified', status: 'PENDING' },
       orderBy: { createdAt: 'desc' },
     });
-    return events.map(e => ({ id: e.id, ...JSON.parse(e.payload as string) }));
+    return events.map(e => ({ id: e.id, ...(e.payload as Record<string, unknown>) }));
   }
 
   async approveManualPayment(outboxId: string) {
@@ -280,7 +280,7 @@ export class PaymentGatewayService {
       data:  { status: 'SENT', sentAt: new Date() },
     });
 
-    await this.events.publishDirect({ topic: 'payment.confirmed', key: 'payment', tenantId: '', payload: { ...payload, approvedManually: true } });
+    await this.events.publishDirect({ topic: 'payment.confirmed', key: 'payment', tenantId: payload.tenantId, payload: { ...payload, approvedManually: true } });
 
     return { success: true, message: `Tenant ${payload.tenantId} activated` };
   }

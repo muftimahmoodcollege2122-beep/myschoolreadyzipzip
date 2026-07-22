@@ -16,41 +16,11 @@ const sections: NavSection[] = [
   { title: 'Academic', items: [
     { href: '/students',          icon: '👩‍🎓', label: 'Students',           roles: ['SCHOOL_ADMIN','TEACHER'] },
     { href: '/teachers',          icon: '👨‍🏫', label: 'Teachers',           roles: ['SCHOOL_ADMIN'] },
-    { href: '/classes',           icon: '🏫', label: 'Classes',            roles: ['SCHOOL_ADMIN','TEACHER'] },
-    { href: '/subjects',          icon: '📚', label: 'Subjects',           roles: ['SCHOOL_ADMIN','TEACHER'] },
-    { href: '/timetable',         icon: '🗓️', label: 'Timetable',          roles: ['SCHOOL_ADMIN','TEACHER','STUDENT'] },
-    { href: '/attendance',        icon: '✅', label: 'Attendance',         roles: ['SCHOOL_ADMIN','TEACHER'] },
-    { href: '/grades',            icon: '🎯', label: 'Grades',             roles: ['SCHOOL_ADMIN','TEACHER'] },
-    { href: '/exams',             icon: '📝', label: 'Exams',              roles: ['SCHOOL_ADMIN','TEACHER'] },
-    { href: '/question-bank',     icon: '🧠', label: 'Question Bank',      roles: ['SCHOOL_ADMIN','TEACHER'] },
-  ]},
-  { title: 'Admissions & HR', items: [
-    { href: '/admissions',        icon: '📝', label: 'Admissions CRM',     roles: ['SCHOOL_ADMIN'] },
-    { href: '/staff',             icon: '👥', label: 'Staff',              roles: ['SCHOOL_ADMIN'] },
-  ]},
-  { title: 'Finance', items: [
-    { href: '/fees',              icon: '💰', label: 'Fees',               roles: ['SCHOOL_ADMIN','ACCOUNTANT'] },
-    { href: '/reports',           icon: '📄', label: 'Reports',            roles: ['SCHOOL_ADMIN'] },
-  ]},
-  { title: 'Students & Parents', items: [
-    { href: '/parents',           icon: '👨‍👩‍👧', label: 'Parents',            roles: ['SCHOOL_ADMIN'] },
-  ]},
-  { title: 'Resources', items: [
-    { href: '/events',            icon: '🎉', label: 'Events',             roles: ['SCHOOL_ADMIN','TEACHER','STUDENT','PARENT'] },
-  ]},
-  { title: 'Academic Tools', items: [
-    { href: '/gradebook',         icon: '📊', label: 'Gradebook',          roles: ['SCHOOL_ADMIN','TEACHER'] },
-    { href: '/announcements',     icon: '📢', label: 'Announcements',      roles: ['SCHOOL_ADMIN','TEACHER'] },
   ]},
   { title: 'Portals', items: [
     { href: '/teacher-portal',    icon: '👨‍🏫', label: 'Teacher Portal',    roles: ['TEACHER','SCHOOL_ADMIN'] },
     { href: '/student-portal',    icon: '👩‍🎓', label: 'Student Portal',    roles: ['STUDENT','SCHOOL_ADMIN'] },
     { href: '/parent-portal',     icon: '👨‍👩‍👧', label: 'Parent Portal',     roles: ['PARENT','SCHOOL_ADMIN'] },
-  ]},
-  { title: 'Communication', items: [
-    { href: '/communications',    icon: '💬', label: 'Communications',     roles: ['SCHOOL_ADMIN','TEACHER'] },
-    { href: '/notices',           icon: '📢', label: 'Notices & Circulars',roles: ['SCHOOL_ADMIN','TEACHER'] },
-    { href: '/notifications',     icon: '🔔', label: 'Notifications',      roles: ['SCHOOL_ADMIN','TEACHER','STUDENT','PARENT'] },
   ]},
   { title: 'Content', items: [
     { href: '/website-builder',   icon: '🌐', label: 'Website Builder',    roles: ['SCHOOL_ADMIN'] },
@@ -62,7 +32,7 @@ const sections: NavSection[] = [
 ];
 
 // Quick access items shown in bottom mobile nav
-const MOBILE_QUICK = ['/dashboard', '/students', '/attendance', '/fees', '/settings'];
+const MOBILE_QUICK = ['/dashboard', '/students', '/settings'];
 
 interface SidebarProps {
   mobileOpen: boolean;

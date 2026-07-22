@@ -1,8 +1,18 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CacheService } from '../../common/cache/cache.service';
+import { AuthService } from '../auth/auth.service';
+import * as crypto from 'crypto';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Generates a random, human-typeable temp password (no ambiguous chars: 0/O, 1/l/I). */
+function generateTempPassword(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+  let out = '';
+  for (let i = 0; i < 10; i++) out += chars[crypto.randomInt(chars.length)];
+  return out;
+}
 
 @Injectable()
 export class SchoolDataService {
@@ -10,6 +20,7 @@ export class SchoolDataService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cache: CacheService,
+    private readonly authService: AuthService,
   ) {}
 
   private async resolveSchoolId(tenantId: string, sid?: string): Promise<string | undefined> {
@@ -175,12 +186,18 @@ export class SchoolDataService {
     const sid = await this.resolveSchoolId(tenantId, schoolId);
     const existing = await this.prisma.user.findFirst({ where: { tenantId, email: dto.email } });
     if (existing) {
+      if (!['TEACHER', 'STAFF', 'SCHOOL_ADMIN'].includes(existing.role)) {
+        throw new NotFoundException(`Email ${dto.email} is already registered to a non-staff account`);
+      }
       return this.prisma.staff.create({ data: { tenantId, schoolId: sid!, userId: existing.id, employeeId: dto.employeeId, designation: dto.designation, department: dto.department, joiningDate: new Date(dto.joiningDate), salary: dto.salary ? Number(dto.salary) : undefined } });
     }
-    return this.prisma.$transaction(async tx => {
-      const user = await tx.user.create({ data: { tenantId, email: dto.email, role: 'TEACHER', profile: { create: { firstName: dto.firstName, lastName: dto.lastName, phone: dto.phone } } } });
+    const tempPassword = generateTempPassword();
+    const passwordHash = await this.authService.hashPassword(tempPassword);
+    const staff = await this.prisma.$transaction(async tx => {
+      const user = await tx.user.create({ data: { tenantId, email: dto.email, passwordHash, role: 'TEACHER', profile: { create: { firstName: dto.firstName, lastName: dto.lastName, phone: dto.phone } } } });
       return tx.staff.create({ data: { tenantId, schoolId: sid!, userId: user.id, employeeId: dto.employeeId, designation: dto.designation, department: dto.department, joiningDate: new Date(dto.joiningDate), salary: dto.salary ? Number(dto.salary) : undefined } });
     });
+    return { ...staff, credentials: { username: dto.email, tempPassword } };
   }
 
   // ── Events ─────────────────────────────────────────────────────────────────

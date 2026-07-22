@@ -18,14 +18,24 @@ import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../../common/audit/audit.service';
 import { EventPublisher } from '../../events/event-publisher.service';
 import { PlanGuard } from '../../common/guards/plan.guard';
+import { AuthService } from '../auth/auth.service';
 import { parseSpreadsheet, buildTemplate, buildExport, cleanCell, ImportResult, RowError } from '../../common/import/xlsx-import.util';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
 import { StudentListQueryDto } from './dto/student-list-query.dto';
 import { PaginatedResult } from '../../common/types/pagination.types';
 import { Prisma, Student } from '@prisma/client';
+import * as crypto from 'crypto';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Generates a random, human-typeable temp password (no ambiguous chars: 0/O, 1/l/I). */
+function generateTempPassword(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+  let out = '';
+  for (let i = 0; i < 10; i++) out += chars[crypto.randomInt(chars.length)];
+  return out;
+}
 
 @Injectable()
 export class StudentsService {
@@ -42,6 +52,7 @@ export class StudentsService {
     private readonly audit: AuditService,
     private readonly events: EventPublisher,
     private readonly planGuard: PlanGuard,
+    private readonly authService: AuthService,
   ) {}
 
   async create(
@@ -67,12 +78,16 @@ export class StudentsService {
       throw new ConflictException(`Admission number ${dto.admissionNo} already exists`);
     }
 
+    const tempPassword = generateTempPassword();
+    const passwordHash = await this.authService.hashPassword(tempPassword);
+
     const student = await this.prisma.$transaction(async (tx) => {
       // Create user account
       const user = await tx.user.create({
         data: {
           tenantId,
           email: dto.email,
+          passwordHash,
           role: 'STUDENT',
           profile: {
             create: {
@@ -142,7 +157,10 @@ export class StudentsService {
     });
 
     this.logger.log(`Student created: ${student.id} in tenant ${tenantId}`);
-    return student;
+    return {
+      ...student,
+      credentials: { username: dto.email, tempPassword },
+    };
   }
 
   async findAll(
@@ -495,8 +513,10 @@ export class StudentsService {
         }
 
         const student = await this.prisma.$transaction(async tx => {
+          const tempPassword = generateTempPassword();
+          const passwordHash = await this.authService.hashPassword(tempPassword);
           const user = await tx.user.create({
-            data: { tenantId, email: email!, role: 'STUDENT', profile: { create: { firstName, lastName, dateOfBirth, gender: gender as any, phone } } },
+            data: { tenantId, email: email!, passwordHash, role: 'STUDENT', profile: { create: { firstName, lastName, dateOfBirth, gender: gender as any, phone } } },
           });
           const s = await tx.student.create({
             data: { userId: user.id, tenantId, schoolId: schoolId!, rollNumber: rollNumber!, admissionNo: admissionNo!, admissionDate },
@@ -504,7 +524,7 @@ export class StudentsService {
           if (sectionId) {
             await tx.studentEnrollment.create({ data: { studentId: s.id, sectionId, tenantId, academicYear: academicYear ?? new Date().getFullYear().toString() } });
           }
-          return s;
+          return { ...s, credentials: { username: email!, tempPassword } };
         });
 
         existingEmails.add(email!);

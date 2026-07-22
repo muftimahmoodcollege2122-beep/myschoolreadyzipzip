@@ -51,7 +51,7 @@ export class SecurityService {
   async enableMfa(userId: string, token: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user?.mfaSecret) throw new BadRequestException('MFA secret not generated');
-    const verified = speakeasy?.totp?.verify?.({ secret: user.mfaSecret, encoding: 'base32', token, window: 2 }) ?? true;
+    const verified = speakeasy?.totp?.verify?.({ secret: user.mfaSecret, encoding: 'base32', token, window: 2 }) ?? false;
     if (!verified) throw new BadRequestException('Invalid MFA token');
     await this.prisma.user.update({ where: { id: userId }, data: { mfaEnabled: true } });
     return { enabled: true };
@@ -60,7 +60,7 @@ export class SecurityService {
   async disableMfa(userId: string, token: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user?.mfaEnabled) throw new BadRequestException('MFA is not enabled');
-    const verified = speakeasy?.totp?.verify?.({ secret: user.mfaSecret!, encoding: 'base32', token, window: 2 }) ?? true;
+    const verified = speakeasy?.totp?.verify?.({ secret: user.mfaSecret!, encoding: 'base32', token, window: 2 }) ?? false;
     if (!verified) throw new BadRequestException('Invalid MFA token');
     await this.prisma.user.update({ where: { id: userId }, data: { mfaEnabled: false, mfaSecret: null } });
     return { disabled: true };
@@ -69,7 +69,7 @@ export class SecurityService {
   async verifyMfaToken(userId: string, token: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user?.mfaEnabled || !user.mfaSecret) return { valid: false };
-    const verified = speakeasy?.totp?.verify?.({ secret: user.mfaSecret, encoding: 'base32', token, window: 2 }) ?? true;
+    const verified = speakeasy?.totp?.verify?.({ secret: user.mfaSecret, encoding: 'base32', token, window: 2 }) ?? false;
     return { valid: verified };
   }
 

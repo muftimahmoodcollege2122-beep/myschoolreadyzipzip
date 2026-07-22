@@ -235,6 +235,7 @@ export class NotificationsService {
         data: userIds.map((uid) => ({
           userId: uid,
           tenantId,
+          channel: 'IN_APP' as any,
           title,
           body,
           data: { type: 'broadcast', audience },
