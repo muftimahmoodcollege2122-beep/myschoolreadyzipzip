@@ -27,7 +27,9 @@
     "strict": false,
     "strictPropertyInitialization": false,
     "types": [
-      "node"
+      "node",
+      "express",
+      "multer"
     ]
   },
   "include": [

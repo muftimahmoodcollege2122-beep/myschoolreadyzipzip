@@ -37,7 +37,7 @@ export function GlobalSearch() {
       {open && q.trim().length >= 2 && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-80 overflow-y-auto">
           {isLoading ? <div className="p-4 text-center text-sm text-gray-400">Searching...</div>
-          : !hasResults ? <div className="p-4 text-center text-sm text-gray-400">No results for "{q}"</div>
+          : !hasResults ? <div className="p-4 text-center text-sm text-gray-400">No results for &quot;{q}&quot;</div>
           : <>
               {results.students?.length > 0 && (
                 <div>

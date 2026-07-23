@@ -32,14 +32,14 @@ export function AdmissionForm({ theme, slug, onClose }: { theme: SchoolTheme; sl
           <div style={{ textAlign: 'center', padding: '32px 0' }}>
             <div style={{ fontSize: '3.5rem', marginBottom: 16 }}>✅</div>
             <h3 style={{ fontFamily: 'var(--font-heading)', color: theme.primaryColor, marginBottom: 8 }}>Application Submitted!</h3>
-            <p style={{ color: '#6B7280', lineHeight: 1.7 }}>Thank you! We'll contact you within 24-48 hours to discuss next steps.</p>
+            <p style={{ color: '#6B7280', lineHeight: 1.7 }}>Thank you! We&apos;ll contact you within 24-48 hours to discuss next steps.</p>
             <button className="btn-primary" style={{ marginTop: 20 }} onClick={onClose}>Close</button>
           </div>
         ) : (
           <>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 12px' }}>
               <div><label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 5 }}>Student Name *</label><input placeholder="Full name" value={form.studentName} onChange={f('studentName')} style={inputStyle} /></div>
-              <div><label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 5 }}>Father's Name</label><input placeholder="Father name" value={form.fatherName} onChange={f('fatherName')} style={inputStyle} /></div>
+              <div><label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 5 }}>Father&apos;s Name</label><input placeholder="Father name" value={form.fatherName} onChange={f('fatherName')} style={inputStyle} /></div>
               <div><label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 5 }}>Phone *</label><input placeholder="0300-0000000" value={form.phone} onChange={f('phone')} style={inputStyle} /></div>
               <div><label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 5 }}>Email</label><input type="email" placeholder="email@example.com" value={form.email} onChange={f('email')} style={inputStyle} /></div>
             </div>

@@ -66,7 +66,7 @@ export function ContactPage({ theme, slug }: { theme: SchoolTheme; slug: string 
               <div style={{ textAlign: 'center', padding: '48px 20px', background: '#F0FDF4', borderRadius: 'var(--radius)', border: '1px solid #BBF7D0' }}>
                 <div style={{ fontSize: '3rem', marginBottom: 12 }}>✅</div>
                 <h4 style={{ fontFamily: 'var(--font-heading)', color: '#15803D', margin: '0 0 8px' }}>Message Sent!</h4>
-                <p style={{ color: '#16A34A', fontSize: '0.88rem', margin: 0 }}>Thank you for contacting us. We'll get back to you within 24 hours.</p>
+                <p style={{ color: '#16A34A', fontSize: '0.88rem', margin: 0 }}>Thank you for contacting us. We&apos;ll get back to you within 24 hours.</p>
               </div>
             ) : (
               <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

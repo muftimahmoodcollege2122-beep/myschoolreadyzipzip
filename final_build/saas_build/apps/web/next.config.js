@@ -28,10 +28,10 @@ const nextConfig = {
     // which is where the NestJS API runs inside the container.
     // NEVER point this at the public Railway URL — that creates an infinite loop.
     const apiTarget = process.env.API_INTERNAL_URL || 'http://localhost:3099';
-    return [{
-      source: '/api/v1/:path*',
-      destination: `${apiTarget}/api/v1/:path*`,
-    }];
+    return [
+      { source: '/api/v1/:path*', destination: `${apiTarget}/api/v1/:path*` },
+      { source: '/uploads/:path*', destination: `${apiTarget}/uploads/:path*` },
+    ];
   },
 };
 

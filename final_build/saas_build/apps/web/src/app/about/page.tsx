@@ -85,7 +85,7 @@ export default function AboutPage() {
         <div className="max-w-4xl mx-auto">
           <span className="inline-block px-4 py-1 bg-blue-500/20 border border-blue-400/30 text-blue-300 text-xs font-bold rounded-full mb-5 tracking-widest uppercase">Our Story</span>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white leading-tight mb-5">
-            We're on a mission to<br /><span className="text-blue-400">transform education</span>
+            We&apos;re on a mission to<br /><span className="text-blue-400">transform education</span>
           </h1>
           <p className="text-lg text-white/70 max-w-2xl mx-auto mb-8">
             MySchool was born in 2021 when we watched a school principal in Lahore managing 500 students on paper registers and Excel. That day changed everything.
@@ -212,7 +212,7 @@ export default function AboutPage() {
       <section className="py-16 sm:py-20 px-4 sm:px-6" style={{background:'linear-gradient(135deg,#0C1E35,#0F3D6E)'}}>
         <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl sm:text-4xl font-black text-white text-center mb-4">Our Role in Education</h2>
-          <p className="text-white/60 text-center mb-12 max-w-xl mx-auto">We don't teach students. We give schools the infrastructure to teach better.</p>
+          <p className="text-white/60 text-center mb-12 max-w-xl mx-auto">We don&apos;t teach students. We give schools the infrastructure to teach better.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {ROLES.map(r => (
               <div key={r.title} className="bg-white/10 border border-white/20 rounded-2xl p-6 text-center hover:bg-white/15 transition-colors">

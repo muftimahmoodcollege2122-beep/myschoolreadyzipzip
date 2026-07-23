@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 
 interface Alert {
   id: string;
@@ -11,6 +11,13 @@ interface Alert {
 
 export function LiveAlertBanner() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
+
+  const dismiss = useCallback((id: string) => setAlerts(prev => prev.filter(a => a.id !== id)), []);
+
+  const push = useCallback((alert: Alert) => {
+    setAlerts(prev => [alert, ...prev].slice(0, 5));
+    setTimeout(() => dismiss(alert.id), alert.severity === 'high' ? 10000 : 6000);
+  }, [dismiss]);
 
   useEffect(() => {
     const onAbsent = (e: Event) => {
@@ -35,14 +42,7 @@ export function LiveAlertBanner() {
       window.removeEventListener('exam:results', onExam);
       window.removeEventListener('announcement:new', onAnnouncement);
     };
-  }, []);
-
-  const push = (alert: Alert) => {
-    setAlerts(prev => [alert, ...prev].slice(0, 5));
-    setTimeout(() => dismiss(alert.id), alert.severity === 'high' ? 10000 : 6000);
-  };
-
-  const dismiss = (id: string) => setAlerts(prev => prev.filter(a => a.id !== id));
+  }, [push]);
 
   if (!alerts.length) return null;
 

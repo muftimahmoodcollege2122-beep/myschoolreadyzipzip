@@ -6,7 +6,7 @@
  * Redirects to admin dashboard on success.
  */
 export const dynamic = 'force-dynamic';
-import React, { Suspense } from 'react';
+import React, { Suspense, useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
 import Link from 'next/link';

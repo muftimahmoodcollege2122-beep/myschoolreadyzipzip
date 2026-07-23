@@ -6,6 +6,7 @@ import { GradesModule } from '../grades/grades.module';
 import { AttendanceModule } from '../attendance/attendance.module';
 import { S3StorageService } from '../../common/storage/s3-storage.service';
 import { PrismaService } from '../../database/prisma.service';
+import { ReplicaService } from '../../database/replica.service';
 
 @Module({
   imports: [
@@ -14,7 +15,7 @@ import { PrismaService } from '../../database/prisma.service';
     AttendanceModule,
   ],
   controllers: [ReportsController],
-  providers: [ReportsService, PrismaService, S3StorageService],
+  providers: [ReportsService, PrismaService, ReplicaService, S3StorageService],
   exports: [ReportsService],
 })
 export class ReportsModule {}

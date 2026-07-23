@@ -8,6 +8,7 @@ import {
   usePaymentGatewaySettings, useUpdatePaymentGatewaySettings,
   useNotificationSettings, useUpdateNotificationSettings,
   useBillingSubscription, useBillingCheckout, useBillingPortal, useSchoolStats, useRolesOverview,
+  useCurrentTenant, useUpdateBranding, useUploadLogo,
   useSecurityDashboard, useLoginHistory, useSetupMfa, useEnableMfa, useDisableMfa,
 } from '@/hooks/use-api';
 
@@ -41,6 +42,18 @@ export default function SettingsPage() {
   const [tab, setTab] = useState<TabId>('profile');
   const [primaryColor, setPrimaryColor] = useState('#2563EB');
   const [logoText, setLogoText] = useState('');
+  const [logoUrl, setLogoUrl] = useState('');
+  const { data: tenantData, isLoading: tenantLoading } = useCurrentTenant();
+  const updateBranding = useUpdateBranding();
+  const uploadLogo = useUploadLogo();
+  useEffect(() => {
+    const t = tenantData as any;
+    if (t) {
+      setLogoText(prev => prev || t.name || '');
+      setLogoUrl(prev => prev || t.logoUrl || '');
+      setPrimaryColor(prev => (t.primaryColor && prev === '#2563EB') ? t.primaryColor : prev);
+    }
+  }, [tenantData]);
   const [saved, setSaved] = useState(false);
   const [saveErr, setSaveErr] = useState('');
   const [backupLoading, setBackupLoading] = useState(false);
@@ -194,8 +207,28 @@ export default function SettingsPage() {
               {tab==='branding' && (
                 <div>
                   <h3 className="font-black text-gray-900 text-lg mb-5">🎨 Branding & Theme</h3>
+                  {tenantLoading ? <div className="h-64 bg-gray-100 rounded-2xl animate-pulse"/> : (
                   <div className="grid grid-cols-2 gap-6">
                     <div>
+                      <div className="mb-4">
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-2">School Display Name</label>
+                        <input value={logoText} onChange={e=>setLogoText(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400"/>
+                        <p className="text-xs text-gray-400 mt-1">Shown on your public website header and browser tab.</p>
+                      </div>
+                      <div className="mb-4">
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Logo</label>
+                        <div className="flex items-center gap-3 mb-2">
+                          <label className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl cursor-pointer transition-colors">
+                            {uploadLogo.isPending ? 'Uploading…' : '📁 Upload from device'}
+                            <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" disabled={uploadLogo.isPending}
+                              onChange={e => { const f = e.target.files?.[0]; if (f) uploadLogo.mutate(f, { onSuccess: res => setLogoUrl(res.logoUrl) }); }}/>
+                          </label>
+                          {uploadLogo.isSuccess && <span className="text-green-600 text-xs font-bold">✅ Uploaded</span>}
+                          {uploadLogo.isError && <span className="text-red-600 text-xs">{(uploadLogo.error as any)?.response?.data?.message || 'Upload failed'}</span>}
+                        </div>
+                        <p className="text-xs text-gray-400 mb-2">PNG, JPEG, or WebP — max 2MB. Or paste a link instead:</p>
+                        <input value={logoUrl} onChange={e=>setLogoUrl(e.target.value)} placeholder="https://…/logo.png" className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400"/>
+                      </div>
                       <div className="mb-4">
                         <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Primary Color</label>
                         <div className="flex items-center gap-3">
@@ -203,23 +236,17 @@ export default function SettingsPage() {
                           <input value={primaryColor} onChange={e=>setPrimaryColor(e.target.value)} className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm font-mono outline-none focus:border-blue-400"/>
                         </div>
                       </div>
-                      <div className="mb-4">
-                        <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Font Family</label>
-                        <select className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white">
-                          <option>Inter (Default)</option><option>Poppins</option><option>Roboto</option><option>Open Sans</option>
-                        </select>
-                      </div>
-                      <div className="mb-4">
-                        <label className="block text-xs font-bold text-gray-500 uppercase mb-2">School Display Name</label>
-                        <input value={logoText} onChange={e=>setLogoText(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400"/>
-                      </div>
                     </div>
                     <div>
                       <p className="text-xs font-bold text-gray-500 uppercase mb-2">Live Preview</p>
                       <div className="border-2 border-dashed border-gray-200 rounded-xl p-4">
                         <div className="flex items-center gap-2 mb-3 p-2 rounded-xl" style={{background:primaryColor+'20',border:`1px solid ${primaryColor}40`}}>
-                          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-black text-sm" style={{background:primaryColor}}>{(logoText||'M')[0]}</div>
-                          <span className="font-bold text-sm" style={{color:primaryColor}}>{logoText||school?.name||'MySchool'}</span>
+                          {logoUrl ? (
+                            <img src={logoUrl} alt="Logo" className="w-8 h-8 rounded-lg object-cover" onError={e=>{(e.target as HTMLImageElement).style.display='none';}}/>
+                          ) : (
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-black text-sm" style={{background:primaryColor}}>{(logoText||'M')[0]}</div>
+                          )}
+                          <span className="font-bold text-sm" style={{color:primaryColor}}>{logoText||'MySchool'}</span>
                         </div>
                         <button className="w-full py-2 rounded-xl text-white text-sm font-bold mb-2" style={{background:primaryColor}}>Primary Button</button>
                         <div className="p-3 rounded-xl border" style={{borderColor:primaryColor+'40',background:primaryColor+'10'}}>
@@ -228,7 +255,14 @@ export default function SettingsPage() {
                       </div>
                     </div>
                   </div>
-                  <button className="mt-5 px-5 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-500">Apply Theme</button>
+                  )}
+                  <button
+                    onClick={()=>updateBranding.mutate({ name: logoText, logoUrl, primaryColor })}
+                    disabled={updateBranding.isPending || tenantLoading}
+                    className="mt-5 px-5 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-500 disabled:opacity-60">
+                    {updateBranding.isPending ? 'Applying…' : updateBranding.isSuccess ? '✅ Applied — live on your website' : 'Apply Theme'}
+                  </button>
+                  {updateBranding.isError && <p className="text-red-600 text-xs mt-2">Failed to save — please try again.</p>}
                 </div>
               )}
 

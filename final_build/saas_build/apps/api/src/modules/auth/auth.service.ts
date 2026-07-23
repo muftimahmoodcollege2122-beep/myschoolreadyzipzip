@@ -171,7 +171,7 @@ export class AuthService {
    * acting super-admin's id so it's traceable.
    */
   async impersonate(actorUserId: string, targetTenantId: string): Promise<TokenPair & { user: any }> {
-    const target = await this.prisma.user.findFirst({
+    const target = await this.prisma.unscoped.user.findFirst({
       where: { tenantId: targetTenantId, role: 'SCHOOL_ADMIN', isActive: true, deletedAt: null },
       include: { profile: true },
       orderBy: { createdAt: 'asc' },
@@ -234,7 +234,11 @@ export class AuthService {
     };
     const planLimits = planLimitsMap[dto.plan || 'Professional'] || planLimitsMap['Professional'];
 
-    await this.prisma.$transaction(async tx => {
+    await this.prisma.$transaction!(async tx => {
+      // School/User below have RLS enabled — set the session var to this
+      // brand-new tenantId up front so the inserts pass WITH CHECK.
+      await tx.$executeRaw`SELECT set_config('app.current_tenant_id', ${tenantId}, true)`;
+
       await tx.tenant.create({
         data: {
           id: tenantId, name: dto.schoolName, slug,

@@ -37,7 +37,7 @@ export default function StudentLogin() {
         expectedRole: 'STUDENT',
       });
       if (data?.accessToken) {
-        setAuth(data.accessToken, data.user);
+        setAuth(data.user, data.accessToken, data.refreshToken);
         router.push(`/learn/${slug}`);
       } else {
         setError(data?.message || 'Invalid credentials');

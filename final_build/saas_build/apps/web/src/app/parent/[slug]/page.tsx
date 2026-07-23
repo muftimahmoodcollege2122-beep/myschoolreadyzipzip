@@ -28,11 +28,11 @@ function StatCard({ icon, label, value, color, alert }: { icon: string; label: s
   );
 }
 
-function ChildrenView({ children }: { children: any[] }) {
+function ChildrenView({ kids }: { kids: any[] }) {
   return (
     <div>
       <h2 className="text-xl font-bold text-gray-800 mb-6">My Children</h2>
-      {children.length === 0 ? (
+      {kids.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <div className="text-5xl mb-3">👧</div>
           <p>No children linked to your account yet</p>
@@ -40,7 +40,7 @@ function ChildrenView({ children }: { children: any[] }) {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {children.map((child: any, i: number) => (
+          {kids.map((child: any, i: number) => (
             <div key={i} className="bg-white border border-gray-200 rounded-2xl p-6">
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-400 to-pink-600 flex items-center justify-center text-2xl font-black text-white">
@@ -71,8 +71,8 @@ function ChildrenView({ children }: { children: any[] }) {
   );
 }
 
-function AttendanceTracker({ children }: { children: any[] }) {
-  const [selected, setSelected] = useState(children[0]?.id || '');
+function AttendanceTracker({ kids }: { kids: any[] }) {
+  const [selected, setSelected] = useState(kids[0]?.id || '');
   const { data, isLoading } = useQuery({
     queryKey: ['parent-attendance', selected],
     queryFn:  () => apiClient.get(`/attendance/student/${selected}`),
@@ -86,9 +86,9 @@ function AttendanceTracker({ children }: { children: any[] }) {
   return (
     <div>
       <h2 className="text-xl font-bold text-gray-800 mb-6">Attendance Tracker</h2>
-      {children.length > 1 && (
+      {kids.length > 1 && (
         <div className="flex gap-2 mb-6 flex-wrap">
-          {children.map((c: any) => (
+          {kids.map((c: any) => (
             <button key={c.id} onClick={() => setSelected(c.id)}
               className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                 selected === c.id ? 'bg-rose-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -144,8 +144,8 @@ function AttendanceTracker({ children }: { children: any[] }) {
   );
 }
 
-function ReportCard({ children }: { children: any[] }) {
-  const [selected, setSelected] = useState(children[0]?.id || '');
+function ReportCard({ kids }: { kids: any[] }) {
+  const [selected, setSelected] = useState(kids[0]?.id || '');
   const { data, isLoading } = useQuery({
     queryKey: ['parent-grades', selected],
     queryFn:  () => apiClient.get(`/grades/student/${selected}`),
@@ -156,9 +156,9 @@ function ReportCard({ children }: { children: any[] }) {
   return (
     <div>
       <h2 className="text-xl font-bold text-gray-800 mb-6">Report Card</h2>
-      {children.length > 1 && (
+      {kids.length > 1 && (
         <div className="flex gap-2 mb-6 flex-wrap">
-          {children.map((c: any) => (
+          {kids.map((c: any) => (
             <button key={c.id} onClick={() => setSelected(c.id)}
               className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                 selected === c.id ? 'bg-rose-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -205,8 +205,8 @@ function ReportCard({ children }: { children: any[] }) {
   );
 }
 
-function FeePayments({ children }: { children: any[] }) {
-  const [selected, setSelected] = useState(children[0]?.id || '');
+function FeePayments({ kids }: { kids: any[] }) {
+  const [selected, setSelected] = useState(kids[0]?.id || '');
   const { data, isLoading } = useQuery({
     queryKey: ['parent-fees', selected],
     queryFn:  () => apiClient.get(`/fees/student/${selected}`),
@@ -220,9 +220,9 @@ function FeePayments({ children }: { children: any[] }) {
   return (
     <div>
       <h2 className="text-xl font-bold text-gray-800 mb-6">Fee & Payments</h2>
-      {children.length > 1 && (
+      {kids.length > 1 && (
         <div className="flex gap-2 mb-6 flex-wrap">
-          {children.map((c: any) => (
+          {kids.map((c: any) => (
             <button key={c.id} onClick={() => setSelected(c.id)}
               className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                 selected === c.id ? 'bg-rose-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -292,18 +292,18 @@ export default function ParentPortal() {
     queryKey: ['my-children', slug],
     queryFn:  () => apiClient.get(`/students?parentPortal=true&tenantSlug=${slug}`),
   });
-  const children: any[] = Array.isArray(students) ? students : (students as any)?.data || [];
+  const kids: any[] = Array.isArray(students) ? students : (students as any)?.data || [];
 
   const renderContent = () => {
     switch (active) {
-      case 'dashboard':  return <ParentDashboard children={children} slug={slug} />;
-      case 'children':   return <ChildrenView children={children} />;
-      case 'attendance': return <AttendanceTracker children={children} />;
-      case 'grades':     return <ReportCard children={children} />;
-      case 'fees':       return <FeePayments children={children} />;
-      case 'timetable':  return <ParentTimetable children={children} />;
+      case 'dashboard':  return <ParentDashboard kids={kids} slug={slug} />;
+      case 'children':   return <ChildrenView kids={kids} />;
+      case 'attendance': return <AttendanceTracker kids={kids} />;
+      case 'grades':     return <ReportCard kids={kids} />;
+      case 'fees':       return <FeePayments kids={kids} />;
+      case 'timetable':  return <ParentTimetable kids={kids} />;
       case 'notices':    return <ParentNotices slug={slug} />;
-      case 'transport':  return <ParentTransport children={children} />;
+      case 'transport':  return <ParentTransport kids={kids} />;
       case 'messages':   return <ParentMessages slug={slug} />;
       case 'events':     return <ParentEvents slug={slug} />;
       default:           return null;
@@ -337,7 +337,7 @@ export default function ParentPortal() {
         </nav>
         <div className="p-4 border-t border-rose-700">
           <div className="text-rose-200 text-xs text-center">
-            {children.length} child{children.length !== 1 ? 'ren' : ''} linked
+            {kids.length} child{kids.length !== 1 ? 'ren' : ''} linked
           </div>
         </div>
       </aside>
@@ -347,16 +347,16 @@ export default function ParentPortal() {
   );
 }
 
-function ParentDashboard({ children, slug }: { children: any[]; slug: string }) {
+function ParentDashboard({ kids, slug }: { kids: any[]; slug: string }) {
   const { data: notices } = useQuery({
     queryKey: ['parent-notices', slug],
     queryFn:  () => apiClient.get(`/announcements?tenantSlug=${slug}`),
   });
   const noticeList: any[] = Array.isArray(notices) ? notices : (notices as any)?.data || [];
 
-  const totalPending = children.reduce((sum, c) => sum + (c.pendingFees ? 1 : 0), 0);
-  const avgAttendance = children.length
-    ? Math.round(children.reduce((sum, c) => sum + (c.attendanceRate || 0), 0) / children.length)
+  const totalPending = kids.reduce((sum, c) => sum + (c.pendingFees ? 1 : 0), 0);
+  const avgAttendance = kids.length
+    ? Math.round(kids.reduce((sum, c) => sum + (c.attendanceRate || 0), 0) / kids.length)
     : 0;
 
   return (
@@ -369,7 +369,7 @@ function ParentDashboard({ children, slug }: { children: any[]; slug: string }) 
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard icon="👧" label="Children"        value={children.length}   color="bg-gradient-to-br from-rose-500 to-rose-700" />
+        <StatCard icon="👧" label="Children"        value={kids.length}   color="bg-gradient-to-br from-rose-500 to-rose-700" />
         <StatCard icon="✅" label="Avg Attendance"  value={`${avgAttendance}%`} color="bg-gradient-to-br from-green-500 to-green-700" />
         <StatCard icon="💰" label="Fee Alerts"      value={totalPending}      color="bg-gradient-to-br from-amber-500 to-amber-700" alert={totalPending > 0} />
         <StatCard icon="📢" label="Notices"         value={noticeList.length} color="bg-gradient-to-br from-blue-500 to-blue-700" />
@@ -378,14 +378,14 @@ function ParentDashboard({ children, slug }: { children: any[]; slug: string }) 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-2xl border border-gray-200 p-6">
           <h3 className="font-bold text-gray-800 mb-4">Children Summary</h3>
-          {children.length === 0 ? (
+          {kids.length === 0 ? (
             <div className="text-center py-8 text-gray-400 text-sm">
               <div className="text-3xl mb-2">👧</div>
               <p>No children linked yet</p>
             </div>
           ) : (
             <div className="space-y-3">
-              {children.map((child: any, i: number) => (
+              {kids.map((child: any, i: number) => (
                 <div key={i} className="flex items-center justify-between p-3 bg-rose-50 border border-rose-100 rounded-xl">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-full bg-rose-500 flex items-center justify-center font-bold text-white text-sm">
@@ -431,8 +431,8 @@ function ParentDashboard({ children, slug }: { children: any[]; slug: string }) 
 
 // ── Missing Parent Portal Components ──────────────────────────────────────────
 
-function ParentTimetable({ children }: { children: any[] }) {
-  const [selectedChild, setSelectedChild] = React.useState(children[0]?.id ?? '');
+function ParentTimetable({ kids }: { kids: any[] }) {
+  const [selectedChild, setSelectedChild] = React.useState(kids[0]?.id ?? '');
   const { data } = useQuery({
     queryKey: ['parent-timetable', selectedChild],
     queryFn: () => apiClient.get(`/timetable?studentId=${selectedChild}`),
@@ -447,9 +447,9 @@ function ParentTimetable({ children }: { children: any[] }) {
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="font-black text-gray-900 text-lg">🗓️ Timetable</h2>
-        {children.length > 1 && (
+        {kids.length > 1 && (
           <select value={selectedChild} onChange={e => setSelectedChild(e.target.value)} className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-white">
-            {children.map((c: any) => <option key={c.id} value={c.id}>{c.user?.profile?.firstName}</option>)}
+            {kids.map((c: any) => <option key={c.id} value={c.id}>{c.user?.profile?.firstName}</option>)}
           </select>
         )}
       </div>
@@ -498,8 +498,8 @@ function ParentNotices({ slug }: { slug: string }) {
   );
 }
 
-function ParentTransport({ children }: { children: any[] }) {
-  const [selectedChild, setSelectedChild] = React.useState(children[0]?.id ?? '');
+function ParentTransport({ kids }: { kids: any[] }) {
+  const [selectedChild, setSelectedChild] = React.useState(kids[0]?.id ?? '');
   const { data } = useQuery({
     queryKey: ['parent-transport', selectedChild],
     queryFn: () => apiClient.get(`/transport/assignments?studentId=${selectedChild}`),
@@ -512,9 +512,9 @@ function ParentTransport({ children }: { children: any[] }) {
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="font-black text-gray-900 text-lg">🚌 Transport</h2>
-        {children.length > 1 && (
+        {kids.length > 1 && (
           <select value={selectedChild} onChange={e => setSelectedChild(e.target.value)} className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-white">
-            {children.map((c: any) => <option key={c.id} value={c.id}>{c.user?.profile?.firstName}</option>)}
+            {kids.map((c: any) => <option key={c.id} value={c.id}>{c.user?.profile?.firstName}</option>)}
           </select>
         )}
       </div>

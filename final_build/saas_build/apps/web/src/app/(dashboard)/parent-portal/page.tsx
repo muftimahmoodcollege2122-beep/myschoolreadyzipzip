@@ -109,7 +109,7 @@ function ChildDetail({ student }: { student: any }) {
                 {attendance.slice(0,10).map((a:any) => (
                   <div key={a.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
                     <span className="text-sm text-gray-600">{new Date(a.date).toLocaleDateString('en',{weekday:'short',month:'short',day:'numeric'})}</span>
-                    <Badge label={a.status} color={a.status==='PRESENT'?'green':a.status==='LATE'?'yellow':'red'} size="sm"/>
+                    <Badge variant={a.status==='PRESENT'?'green':a.status==='LATE'?'yellow':'red'}>{a.status}</Badge>
                   </div>
                 ))}
               </div>
@@ -155,7 +155,7 @@ function ChildDetail({ student }: { student: any }) {
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-bold text-gray-700">Rs. {Number(f.amount).toLocaleString()}</p>
-                      <Badge label={f.status} color={f.status==='PAID'?'green':f.status==='OVERDUE'?'red':'yellow'} size="sm"/>
+                      <Badge variant={f.status==='PAID'?'green':f.status==='OVERDUE'?'red':'yellow'}>{f.status}</Badge>
                     </div>
                   </div>
                 ))}
@@ -192,7 +192,7 @@ export default function ParentPortalPage() {
             <span className="text-2xl">👀</span>
             <div>
               <p className="font-bold text-amber-800 text-sm">Admin Preview</p>
-              <p className="text-amber-600 text-xs">Parents see their children's grades, attendance and fees here. You're viewing all students as admin.</p>
+              <p className="text-amber-600 text-xs">Parents see their children&apos;s grades, attendance and fees here. You&apos;re viewing all students as admin.</p>
             </div>
           </div>
         )}

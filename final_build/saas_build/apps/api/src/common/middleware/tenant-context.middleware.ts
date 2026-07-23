@@ -10,6 +10,7 @@ import { Injectable, NestMiddleware, UnauthorizedException, ForbiddenException, 
 import { Request, Response, NextFunction } from 'express';
 import { PrismaService } from '../../database/prisma.service';
 import { CacheService } from '../cache/cache.service';
+import { tenantContextStorage } from '../tenant-context.storage';
 
 export interface TenantContext {
   tenantId: string;
@@ -99,12 +100,14 @@ export class TenantContextMiddleware implements NestMiddleware {
 
     req.tenantContext = ctx;
 
-    // RLS — set PostgreSQL session variable per request
-    // Using fire-and-forget to avoid adding latency to every request
-    this.prisma.$executeRaw`SELECT set_config('app.current_tenant_id', ${ctx.tenantId}, true)`
-      .catch(err => this.logger.error(`RLS set_config failed: ${err.message}`));
-
-    next();
+    // Real RLS propagation — every Prisma query made anywhere during this
+    // request's async chain (via PrismaService's scopedClient) reads this
+    // from AsyncLocalStorage and sets the Postgres session var itself,
+    // inside its own transaction, on whichever connection it actually runs
+    // on. This replaced a fire-and-forget set_config() call that ran on a
+    // throwaway connection and never reliably reached the query that
+    // followed it — see git history if you need the old (broken) version.
+    tenantContextStorage.run({ tenantId: ctx.tenantId }, () => next());
   }
 
   private async resolveBySlug(slug: string): Promise<TenantContext | null> {

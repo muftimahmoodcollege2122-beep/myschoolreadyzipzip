@@ -193,7 +193,7 @@ export class SchoolDataService {
     }
     const tempPassword = generateTempPassword();
     const passwordHash = await this.authService.hashPassword(tempPassword);
-    const staff = await this.prisma.$transaction(async tx => {
+    const staff = await this.prisma.$transaction!(async tx => {
       const user = await tx.user.create({ data: { tenantId, email: dto.email, passwordHash, role: 'TEACHER', profile: { create: { firstName: dto.firstName, lastName: dto.lastName, phone: dto.phone } } } });
       return tx.staff.create({ data: { tenantId, schoolId: sid!, userId: user.id, employeeId: dto.employeeId, designation: dto.designation, department: dto.department, joiningDate: new Date(dto.joiningDate), salary: dto.salary ? Number(dto.salary) : undefined } });
     });

@@ -16,6 +16,9 @@ import { CreateTenantDto } from './dto/create-tenant.dto';
 import { TenantStatus, TenantTier } from '../../common/prisma-enums';
 import { randomUUID } from 'crypto';
 import * as bcrypt from 'bcryptjs';
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import { UPLOADS_DIR } from '../../config/uploads.config';
 
 @Injectable()
 export class TenantsService {
@@ -35,7 +38,12 @@ export class TenantsService {
     const tenantId = randomUUID();
     const schemaName = `tenant_${slug.replace(/-/g, '_')}`;
 
-    const result = await this.prisma.$transaction(async tx => {
+    const result = await this.prisma.$transaction!(async tx => {
+      // School/User/OutboxEvent below have RLS enabled — this transaction
+      // creates all of them for the SAME new tenantId, so it's safe (and
+      // required) to set the session var to it up front.
+      await tx.$executeRaw`SELECT set_config('app.current_tenant_id', ${tenantId}, true)`;
+
       const tenant = await tx.tenant.create({
         data: {
           id: tenantId, name: dto.schoolName, slug,
@@ -97,10 +105,30 @@ export class TenantsService {
     return tenant;
   }
 
+  private readonly ALLOWED_LOGO_TYPES: Record<string, string> = {
+    'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp',
+  };
+
+  async saveLogoFile(tenantId: string, file: { buffer: Buffer; mimetype: string; size: number }): Promise<{ logoUrl: string }> {
+    const ext = this.ALLOWED_LOGO_TYPES[file.mimetype];
+    if (!ext) throw new ConflictException('Logo must be a PNG, JPEG, or WebP image');
+    if (file.size > 2 * 1024 * 1024) throw new ConflictException('Logo must be under 2MB');
+
+    const dir = path.join(UPLOADS_DIR, 'branding');
+    await fs.mkdir(dir, { recursive: true });
+    const filename = `${tenantId}.${ext}`;
+    await fs.writeFile(path.join(dir, filename), file.buffer);
+
+    const logoUrl = `/uploads/branding/${filename}?v=${Date.now()}`;
+    await this.updateConfig(tenantId, { logoUrl });
+    return { logoUrl };
+  }
+
   async updateConfig(tenantId: string, config: any): Promise<void> {
     await this.prisma.tenant.update({
       where: { id: tenantId },
       data: {
+        ...(config.name && { name: config.name }),
         ...(config.logoUrl && { logoUrl: config.logoUrl }),
         ...(config.primaryColor && { primaryColor: config.primaryColor }),
         ...(config.customDomain && { customDomain: config.customDomain }),
@@ -137,8 +165,8 @@ export class TenantsService {
     });
     const tenantIds = tenants.map(t => t.id);
     const [studentCounts, latestSubs] = await Promise.all([
-      this.prisma.student.groupBy({ by: ['tenantId'], where: { tenantId: { in: tenantIds }, isActive: true }, _count: true }),
-      this.prisma.subscription.findMany({ where: { tenantId: { in: tenantIds } }, orderBy: { createdAt: 'desc' } }),
+      this.prisma.unscoped.student.groupBy({ by: ['tenantId'], where: { tenantId: { in: tenantIds }, isActive: true }, _count: true }),
+      this.prisma.unscoped.subscription.findMany({ where: { tenantId: { in: tenantIds } }, orderBy: { createdAt: 'desc' } }),
     ]);
     const studentMap = Object.fromEntries(studentCounts.map(s => [s.tenantId, s._count]));
     const subMap = new Map<string, any>();
@@ -161,7 +189,7 @@ export class TenantsService {
     const totalStudents = list.reduce((sum, t) => sum + t.students, 0);
     const byStatus = list.reduce((acc: Record<string, number>, t) => { acc[t.status] = (acc[t.status] || 0) + 1; return acc; }, {});
     const byTier = list.reduce((acc: Record<string, number>, t) => { acc[t.tier] = (acc[t.tier] || 0) + 1; return acc; }, {});
-    const activeStaff = await this.prisma.user.count({ where: { tenantId: { in: list.map(t => t.id) }, role: { in: ['TEACHER', 'STAFF'] }, isActive: true } });
+    const activeStaff = await this.prisma.unscoped.user.count({ where: { tenantId: { in: list.map(t => t.id) }, role: { in: ['TEACHER', 'STAFF'] }, isActive: true } });
     return { totalSchools: list.length, totalRevenue, totalStudents, activeStaff, byStatus, byTier };
   }
 

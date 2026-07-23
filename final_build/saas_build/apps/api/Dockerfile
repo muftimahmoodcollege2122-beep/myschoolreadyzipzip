@@ -25,10 +25,12 @@ RUN test -d /app/apps/api/node_modules/@nestjs/core && \
     echo "✅ @nestjs/core found" || \
     (echo "❌ FATAL: @nestjs/core missing" && exit 1)
 
-# Generate Prisma
+# Generate Prisma — must fail the build if this fails, otherwise the API ships
+# with a stale/missing client and queries fail at runtime with cryptic
+# PrismaClientValidationError 400s that look unrelated to this step.
 RUN cd /app/apps/api && \
     PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1 \
-    ./node_modules/.bin/prisma generate --schema=prisma/schema.prisma 2>&1 | tail -3 || true
+    ./node_modules/.bin/prisma generate --schema=prisma/schema.prisma
 
 # Build NestJS API from source (dist/ is gitignored — never committed, must be built here)
 RUN cd /app/apps/api && ./node_modules/.bin/nest build
@@ -41,10 +43,10 @@ RUN cd /app/apps/web && \
     PUPPETEER_SKIP_DOWNLOAD=true \
     npm install --legacy-peer-deps --no-audit --no-fund
 
-# Build Next.js fresh (middleware.ts was fixed)
+# Build Next.js fresh — must also fail loudly on error, same reasoning as above.
 RUN cd /app/apps/web && \
     NEXT_PUBLIC_API_URL=http://localhost:3001 \
-    ./node_modules/.bin/next build 2>&1 | tail -10 || true
+    ./node_modules/.bin/next build
 
 ENV NODE_ENV=production
 

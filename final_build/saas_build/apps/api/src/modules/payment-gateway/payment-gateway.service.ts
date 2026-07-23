@@ -143,13 +143,27 @@ export class PaymentGatewayService {
     const outbox = await this.prisma.outboxEvent.findFirst({
       where: {
         topic: 'payment.initiated',
-        payload: { string_contains: dto.paymentId },
+        payload: { path: ['paymentId'], equals: dto.paymentId },
       },
     });
 
     if (!outbox) throw new NotFoundException('Payment record not found');
 
     const payload = outbox.payload as any;
+
+    // Idempotency guard: manual-verification proof can be resubmitted
+    // (double form submit, browser retry). Don't create a second
+    // PENDING_REVIEW record for the same payment.
+    const alreadySubmitted = await this.prisma.outboxEvent.findFirst({
+      where: { topic: 'payment.verified', key: dto.paymentId },
+    });
+    if (alreadySubmitted) {
+      return {
+        success: true,
+        message: 'Payment proof already submitted. Your school account will be activated within 2-4 hours.',
+        status: 'PENDING_REVIEW',
+      };
+    }
 
     await this.prisma.outboxEvent.create({
       data: {
@@ -189,15 +203,35 @@ export class PaymentGatewayService {
   }
 
   async capturePayPal(paypalOrderId: string, internalOrderId: string) {
+    // Idempotency guard: PayPal / the client can call capture more than
+    // once for the same order (double-click, browser retry on timeout).
+    const alreadyConfirmed = await this.prisma.outboxEvent.findFirst({
+      where: { topic: 'payment.confirmed', key: internalOrderId },
+    });
+    if (alreadyConfirmed) {
+      return { success: true, alreadyProcessed: true };
+    }
+
     const capture = await this.paypal.captureOrder(paypalOrderId);
 
     if (capture.success) {
       const outbox = await this.prisma.outboxEvent.findFirst({
-        where: { topic: 'payment.initiated', key: { contains: internalOrderId } },
+        where: { topic: 'payment.initiated', key: internalOrderId },
       });
 
       if (outbox) {
         const payload = outbox.payload as any;
+        await this.prisma.outboxEvent.create({
+          data: {
+            tenantId: payload.tenantId,
+            topic:    'payment.confirmed',
+            key:      internalOrderId,
+            payload:  { ...payload, captureId: capture.captureId },
+            headers:  { source: 'payment-gateway' },
+            status:   'SENT',
+            sentAt:   new Date(),
+          },
+        });
         await this.events.publishDirect({
           topic: 'payment.confirmed',
           key: payload.tenantId,
@@ -227,14 +261,36 @@ export class PaymentGatewayService {
 
     if (payload.pp_ResponseCode === '000') {
       const orderId = payload.pp_TxnRefNo;
+
+      // Idempotency guard: JazzCash retries webhooks on timeout/no-2xx.
+      // Without this, every retry re-fires payment.confirmed and
+      // re-activates the tenant.
+      const alreadyConfirmed = await this.prisma.outboxEvent.findFirst({
+        where: { topic: 'payment.confirmed', key: orderId },
+      });
+      if (alreadyConfirmed) {
+        return { success: true, alreadyProcessed: true };
+      }
+
       this.logger.log(`JazzCash payment confirmed for order ${orderId}`);
 
       const outbox = await this.prisma.outboxEvent.findFirst({
-        where: { topic: 'payment.initiated', key: { contains: orderId } },
+        where: { topic: 'payment.initiated', key: orderId },
       });
 
       if (outbox) {
         const data = outbox.payload as any;
+        await this.prisma.outboxEvent.create({
+          data: {
+            tenantId: data.tenantId,
+            topic:    'payment.confirmed',
+            key:      orderId,
+            payload:  { ...data, transactionId: payload.pp_TxnRefNo },
+            headers:  { source: 'payment-gateway' },
+            status:   'SENT',
+            sentAt:   new Date(),
+          },
+        });
         await this.events.publishDirect({
           topic: 'payment.confirmed',
           key: data.tenantId,

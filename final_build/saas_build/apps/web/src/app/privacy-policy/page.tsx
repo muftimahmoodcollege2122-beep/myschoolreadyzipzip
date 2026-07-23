@@ -133,7 +133,7 @@ export default function PrivacyPolicyPage() {
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6 mb-10">
           <p className="text-blue-900 text-sm leading-relaxed">
-            MySchool Technologies ("MySchool", "we", "us") is committed to protecting the privacy and security of your institutional and personal data. This Privacy Policy explains how we collect, use, store, and protect information when you use the MySchool school management platform.
+            MySchool Technologies (&quot;MySchool&quot;, &quot;we&quot;, &quot;us&quot;) is committed to protecting the privacy and security of your institutional and personal data. This Privacy Policy explains how we collect, use, store, and protect information when you use the MySchool school management platform.
           </p>
         </div>
 

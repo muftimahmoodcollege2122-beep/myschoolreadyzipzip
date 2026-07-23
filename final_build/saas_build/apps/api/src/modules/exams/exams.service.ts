@@ -21,7 +21,7 @@ export class ExamsService {
       if (!school) throw new NotFoundException('School not found for this tenant');
       schoolId = school.id;
     }
-    return this.prisma.$transaction(async tx => {
+    return this.prisma.$transaction!(async tx => {
       const exam = await tx.exam.create({
         data: {
           tenantId,
@@ -64,7 +64,7 @@ export class ExamsService {
   async enterResults(examId: string, results: Array<{ studentId: string; marksObtained: number; remarks?: string }>, tenantId: string) {
     const exam = await this.prisma.exam.findFirst({ where: { id: examId, tenantId } });
     if (!exam) throw new NotFoundException('Exam not found');
-    return this.prisma.$transaction(async tx => {
+    return this.prisma.$transaction!(async tx => {
       for (const r of results) {
         const pct = (Number(r.marksObtained) / Number(exam.maxMarks)) * 100;
         const grade = pct >= 90 ? 'A+' : pct >= 80 ? 'A' : pct >= 70 ? 'B' : pct >= 60 ? 'C' : pct >= 50 ? 'D' : 'F';

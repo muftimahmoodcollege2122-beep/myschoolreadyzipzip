@@ -214,7 +214,7 @@ export default function TeacherPortalPage() {
                             <p className="text-sm font-medium text-gray-800">{t.user?.profile?.firstName} {t.user?.profile?.lastName}</p>
                             <p className="text-xs text-gray-400">{t.department?.name || t.employeeId || ''}</p>
                           </div>
-                          <Badge label={t.isActive ? 'Active' : 'Inactive'} color={t.isActive ? 'green' : 'red'} size="sm"/>
+                          <Badge variant={t.isActive ? 'green' : 'red'}>{t.isActive ? 'Active' : 'Inactive'}</Badge>
                         </div>
                       ))}
                     </div>
@@ -285,7 +285,7 @@ export default function TeacherPortalPage() {
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-600">{s.admissionNo || '—'}</td>
                           <td className="px-4 py-3 text-sm text-gray-600">{enroll ? `${enroll.section?.class?.name || ''}${enroll.section?.name || ''}` : '—'}</td>
-                          <td className="px-4 py-3"><Badge label={s.isActive ? 'Active' : 'Inactive'} color={s.isActive ? 'green' : 'red'} size="sm"/></td>
+                          <td className="px-4 py-3"><Badge variant={s.isActive ? 'green' : 'red'}>{s.isActive ? 'Active' : 'Inactive'}</Badge></td>
                         </tr>
                       );
                     })}
@@ -315,7 +315,7 @@ export default function TeacherPortalPage() {
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-600">{e.startDate ? new Date(e.startDate).toLocaleDateString() : '—'}</td>
                         <td className="px-4 py-3 text-sm text-gray-600">{e.endDate ? new Date(e.endDate).toLocaleDateString() : '—'}</td>
-                        <td className="px-4 py-3"><Badge label={e.status || 'Scheduled'} color={e.status==='COMPLETED'?'green':e.status==='ONGOING'?'blue':'yellow'} size="sm"/></td>
+                        <td className="px-4 py-3"><Badge variant={e.status==='COMPLETED'?'green':e.status==='ONGOING'?'blue':'yellow'}>{e.status || 'Scheduled'}</Badge></td>
                       </tr>
                     ))}
                   </tbody>

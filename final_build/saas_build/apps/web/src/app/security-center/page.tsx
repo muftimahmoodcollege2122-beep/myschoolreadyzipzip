@@ -109,12 +109,12 @@ export default function SecurityPage() {
             <span className="text-green-300 text-xs font-semibold">All Systems Secure</span>
           </div>
           <h1 className="text-3xl sm:text-5xl font-black text-white mb-4 sm:mb-5 leading-tight">
-            Your school's data is<br />
+            Your school&apos;s data is<br />
             <span className="text-green-400">protected at every layer</span>
           </h1>
           <p className="text-white/60 text-lg max-w-2xl mx-auto leading-relaxed mb-10">
             We apply the same security standards used by financial institutions to protect
-            your students' data. From encryption to compliance, security is not an afterthought —
+            your students&apos; data. From encryption to compliance, security is not an afterthought —
             it is the foundation everything else is built on.
           </p>
 
@@ -234,7 +234,7 @@ export default function SecurityPage() {
                 </div>
                 <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5">
                   <p className="text-blue-800 font-bold text-sm mb-2">✓ Tested against real attacks</p>
-                  <p className="text-blue-700 text-sm leading-relaxed">Our penetration testers specifically test for tenant isolation bypass attacks. To date, no tester has successfully accessed another tenant's data. The architecture is built so that cross-tenant access is structurally impossible, not just unlikely.</p>
+                  <p className="text-blue-700 text-sm leading-relaxed">Our penetration testers specifically test for tenant isolation bypass attacks. To date, no tester has successfully accessed another tenant&apos;s data. The architecture is built so that cross-tenant access is structurally impossible, not just unlikely.</p>
                 </div>
               </div>
             </div>
@@ -246,7 +246,7 @@ export default function SecurityPage() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12 sm:py-20">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-black text-gray-900 mb-3">Student Data Protection</h2>
-          <p className="text-gray-500 max-w-xl mx-auto">Children's data requires the highest level of protection. Here's our commitment.</p>
+          <p className="text-gray-500 max-w-xl mx-auto">Children&apos;s data requires the highest level of protection. Here&apos;s our commitment.</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
           {[
@@ -303,7 +303,7 @@ export default function SecurityPage() {
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 py-16">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center text-white">
           <h2 className="text-3xl font-black mb-3">Security you can trust</h2>
-          <p className="text-blue-200 mb-8">Your students' data deserves the best protection. We built MySchool with security first.</p>
+          <p className="text-blue-200 mb-8">Your students&apos; data deserves the best protection. We built MySchool with security first.</p>
           <div className="flex gap-4 justify-center">
             <Link href="/signup" className="px-8 py-3.5 bg-white text-blue-700 font-black rounded-xl hover:bg-blue-50 transition-all">
               Start Free Trial

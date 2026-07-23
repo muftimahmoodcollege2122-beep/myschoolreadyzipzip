@@ -31,7 +31,7 @@ export default function ParentLogin() {
     try {
       const data: any = await apiClient.post('/auth/login', { email, password, slug, expectedRole: 'PARENT' });
       if (data?.accessToken) {
-        setAuth(data.accessToken, data.user);
+        setAuth(data.user, data.accessToken, data.refreshToken);
         router.push(`/parent/${slug}`);
       } else {
         setError(data?.message || 'Invalid credentials');
@@ -56,7 +56,7 @@ export default function ParentLogin() {
 
         <div className="bg-white rounded-3xl shadow-2xl p-8">
           <h2 className="text-lg font-bold text-gray-800 mb-2">Sign in to your portal</h2>
-          <p className="text-sm text-gray-500 mb-6">Monitor your child's attendance, grades and fees</p>
+          <p className="text-sm text-gray-500 mb-6">Monitor your child&apos;s attendance, grades and fees</p>
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
@@ -106,7 +106,7 @@ export default function ParentLogin() {
 
           <div className="mt-6 pt-6 border-t border-gray-100">
             <div className="rounded-xl p-3 text-xs mb-4" style={{ background: `${theme.primaryColor}10`, border: `1px solid ${theme.primaryColor}40`, color: theme.secondaryColor }}>
-              <span className="font-bold">First time?</span> Your account credentials were sent to this email by your school's administrator. Check your inbox.
+              <span className="font-bold">First time?</span> Your account credentials were sent to this email by your school&apos;s administrator. Check your inbox.
             </div>
             <p className="text-xs text-gray-400 text-center">
               Not a parent?{' '}

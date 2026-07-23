@@ -19,13 +19,13 @@ import { AuditService } from '../../common/audit/audit.service';
 import { EventPublisher } from '../../events/event-publisher.service';
 import { PlanGuard } from '../../common/guards/plan.guard';
 import { AuthService } from '../auth/auth.service';
+import * as crypto from 'crypto';
 import { parseSpreadsheet, buildTemplate, buildExport, cleanCell, ImportResult, RowError } from '../../common/import/xlsx-import.util';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
 import { StudentListQueryDto } from './dto/student-list-query.dto';
 import { PaginatedResult } from '../../common/types/pagination.types';
 import { Prisma, Student } from '@prisma/client';
-import * as crypto from 'crypto';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -81,7 +81,7 @@ export class StudentsService {
     const tempPassword = generateTempPassword();
     const passwordHash = await this.authService.hashPassword(tempPassword);
 
-    const student = await this.prisma.$transaction(async (tx) => {
+    const student = await this.prisma.$transaction!(async (tx) => {
       // Create user account
       const user = await tx.user.create({
         data: {
@@ -157,10 +157,7 @@ export class StudentsService {
     });
 
     this.logger.log(`Student created: ${student.id} in tenant ${tenantId}`);
-    return {
-      ...student,
-      credentials: { username: dto.email, tempPassword },
-    };
+    return { ...student, credentials: { username: dto.email, tempPassword } };
   }
 
   async findAll(
@@ -279,7 +276,7 @@ export class StudentsService {
   ): Promise<any> {
     const existing = await this.findOne(id, tenantId);
 
-    const updated = await this.prisma.$transaction(async (tx) => {
+    const updated = await this.prisma.$transaction!(async (tx) => {
       if (dto.firstName || dto.lastName || dto.phone || dto.gender) {
         await tx.userProfile.update({
           where: { userId: existing.userId },
@@ -319,7 +316,7 @@ export class StudentsService {
   async deactivate(id: string, tenantId: string, deactivatedById: string): Promise<void> {
     const student = await this.findOne(id, tenantId);
 
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction!(async (tx) => {
       await tx.student.update({
         where: { id },
         data: { isActive: false },
@@ -357,7 +354,7 @@ export class StudentsService {
   async erasePersonalData(id: string, tenantId: string, requestedById: string): Promise<void> {
     const student = await this.findOne(id, tenantId);
 
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction!(async (tx) => {
       // Anonymize PII fields, retain academic records for legal compliance
       await tx.userProfile.update({
         where: { userId: student.userId },
@@ -512,7 +509,7 @@ export class StudentsService {
           if (!sectionId) { errors.push({ row: rowNum, message: `No section found matching Class "${className}" + Section "${sectionName}"` }); continue; }
         }
 
-        const student = await this.prisma.$transaction(async tx => {
+        const student = await this.prisma.$transaction!(async tx => {
           const tempPassword = generateTempPassword();
           const passwordHash = await this.authService.hashPassword(tempPassword);
           const user = await tx.user.create({

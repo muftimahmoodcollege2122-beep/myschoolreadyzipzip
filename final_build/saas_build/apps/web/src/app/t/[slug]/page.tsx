@@ -249,7 +249,7 @@ export default function TeacherPortal() {
 
   const renderContent = () => {
     switch (active) {
-      case 'dashboard':   return <Dashboard teacher={t} slug={slug} />;
+      case 'dashboard':   return <Dashboard teacher={t} slug={slug} onNavigate={setActive} />;
       case 'attendance':  return <AttendanceView slug={slug} />;
       case 'grades':      return <GradesView slug={slug} />;
       case 'timetable':   return <TimetableView slug={slug} />;
@@ -311,12 +311,24 @@ export default function TeacherPortal() {
   );
 }
 
-function Dashboard({ teacher, slug }: { teacher: any; slug: string }) {
+function Dashboard({ teacher, slug, onNavigate }: { teacher: any; slug: string; onNavigate: (id: string) => void }) {
   const { data: stats } = useQuery({
     queryKey: ['teacher-dashboard', slug],
-    queryFn:  () => apiClient.get(`/dashboard/stats?tenantSlug=${slug}`),
+    queryFn:  () => apiClient.get(`/dashboard`),
   });
   const s = stats as any;
+  const attendanceRate = s?.attendance?.rate;
+
+  const teacherId = teacher?.id;
+  const { data: slotsData } = useQuery({
+    queryKey: ['teacher-timetable', teacherId],
+    queryFn:  () => apiClient.get(`/timetable/teacher/${teacherId}`),
+    enabled:  !!teacherId,
+  });
+  const allSlots: any[] = Array.isArray(slotsData) ? slotsData : (slotsData as any)?.data ?? [];
+  const uniqueSections = new Set(allSlots.map((sl: any) => sl.sectionId).filter(Boolean)).size;
+  const todayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+  const todaySlots = allSlots.filter((sl: any) => sl.dayOfWeek === todayName).sort((a: any, b: any) => (a.startTime || '').localeCompare(b.startTime || ''));
 
   return (
     <div>
@@ -328,10 +340,10 @@ function Dashboard({ teacher, slug }: { teacher: any; slug: string }) {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard icon="👩‍🎓" label="My Students"   value={s?.totalStudents  || '—'} color="bg-gradient-to-br from-teal-500 to-teal-700" />
-        <StatCard icon="🏫" label="My Classes"    value={s?.totalClasses   || '—'} color="bg-gradient-to-br from-indigo-500 to-indigo-700" />
-        <StatCard icon="✅" label="Avg Attendance" value={s?.attendanceRate ? `${s.attendanceRate}%` : '—'} color="bg-gradient-to-br from-green-500 to-green-700" />
-        <StatCard icon="📝" label="Pending Grades" value={s?.pendingGrades  || '0'} color="bg-gradient-to-br from-amber-500 to-amber-700" />
+        <StatCard icon="👩‍🎓" label="Students (School)" value={s?.totalStudents  ?? '—'} color="bg-gradient-to-br from-teal-500 to-teal-700" />
+        <StatCard icon="🏫" label="My Classes"    value={uniqueSections || '—'} color="bg-gradient-to-br from-indigo-500 to-indigo-700" />
+        <StatCard icon="✅" label="Avg Attendance" value={attendanceRate !== undefined ? `${attendanceRate}%` : '—'} color="bg-gradient-to-br from-green-500 to-green-700" />
+        <StatCard icon="📝" label="Upcoming Exams" value={s?.upcomingExams?.length ?? '0'} color="bg-gradient-to-br from-amber-500 to-amber-700" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -344,7 +356,7 @@ function Dashboard({ teacher, slug }: { teacher: any; slug: string }) {
               { icon: '📋', label: 'View Timetable',  id: 'timetable'  },
               { icon: '🏖️', label: 'Apply Leave',     id: 'leave'      },
             ].map(a => (
-              <button key={a.id}
+              <button key={a.id} onClick={() => onNavigate(a.id)}
                 className="flex flex-col items-center gap-2 p-4 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-xl transition-all text-center">
                 <span className="text-2xl">{a.icon}</span>
                 <span className="text-xs font-semibold text-teal-700">{a.label}</span>
@@ -354,16 +366,31 @@ function Dashboard({ teacher, slug }: { teacher: any; slug: string }) {
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-200 p-6">
-          <h3 className="font-bold text-gray-800 mb-4">Today's Classes</h3>
-          <div className="space-y-3 text-sm text-gray-500">
+          <h3 className="font-bold text-gray-800 mb-4">Today&apos;s Classes</h3>
+          {todaySlots.length === 0 ? (
             <div className="flex items-center gap-3 bg-teal-50 border border-teal-100 rounded-xl p-3">
               <span className="text-2xl">🗓️</span>
               <div>
-                <p className="font-medium text-gray-700">View your timetable to see today's schedule</p>
-                <p className="text-xs text-gray-400">Go to Timetable from the sidebar</p>
+                <p className="font-medium text-gray-700">No classes scheduled today</p>
+                <p className="text-xs text-gray-400">Go to Timetable from the sidebar for the full week</p>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="space-y-2">
+              {todaySlots.map((sl: any, i: number) => (
+                <div key={i} className="flex items-center gap-3 bg-teal-50 border border-teal-100 rounded-xl p-3">
+                  <div className="min-w-14 text-center">
+                    <p className="text-xs font-bold text-teal-700">{sl.startTime}</p>
+                    <p className="text-xs text-teal-400">{sl.endTime}</p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-700 text-sm">{sl.subject?.name || 'Subject'}</p>
+                    <p className="text-xs text-gray-400">{sl.room ? `Room ${sl.room}` : ''}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -45,7 +45,7 @@ export function ElegantTemplate({ theme, slug }: { theme: SchoolTheme; slug: str
 function AdmissionFormInline({ theme, slug }: { theme: SchoolTheme; slug: string }) {
   const [name, setName] = useState(''); const [phone, setPhone] = useState(''); const [cls, setCls] = useState(''); const [sent, setSent] = useState(false);
   const inputStyle: React.CSSProperties = { width: '100%', padding: '10px 14px', border: '1.5px solid #E4EBF0', borderRadius: 8, fontFamily: 'inherit', fontSize: '0.9rem', outline: 'none', marginBottom: 12 };
-  return sent ? <div style={{ textAlign: 'center', padding: 20 }}><div style={{ fontSize: '2rem', marginBottom: 8 }}>✅</div><p style={{ color: theme.primaryColor, fontWeight: 700 }}>Application Received!</p><p style={{ color: '#6B7280', fontSize: '0.88rem' }}>We'll contact you within 24 hours.</p></div>
+  return sent ? <div style={{ textAlign: 'center', padding: 20 }}><div style={{ fontSize: '2rem', marginBottom: 8 }}>✅</div><p style={{ color: theme.primaryColor, fontWeight: 700 }}>Application Received!</p><p style={{ color: '#6B7280', fontSize: '0.88rem' }}>We&apos;ll contact you within 24 hours.</p></div>
     : <><input placeholder="Student Name" value={name} onChange={e => setName(e.target.value)} style={inputStyle} />
         <input placeholder="Parent Phone" value={phone} onChange={e => setPhone(e.target.value)} style={inputStyle} />
         <select value={cls} onChange={e => setCls(e.target.value)} style={{ ...inputStyle, background: '#fff' }}>

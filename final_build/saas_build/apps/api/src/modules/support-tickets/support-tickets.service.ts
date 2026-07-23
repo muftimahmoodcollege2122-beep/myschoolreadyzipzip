@@ -35,7 +35,7 @@ export class SupportTicketsService {
   async respondToTicket(ticketId: string, dto: any, tenantId: string, authorId: string) {
     const ticket = await this.prisma.supportTicket.findFirst({ where: { id: ticketId, tenantId } });
     if (!ticket) throw new NotFoundException('Ticket not found');
-    return this.prisma.$transaction(async tx => {
+    return this.prisma.$transaction!(async tx => {
       const response = await tx.ticketResponse.create({ data: { ticketId, tenantId, authorId, content: dto.content, isInternal: dto.isInternal ?? false, attachments: dto.attachments ?? [] } });
       if (ticket.status === 'OPEN') await tx.supportTicket.update({ where: { id: ticketId }, data: { status: 'IN_PROGRESS', assignedToId: authorId } });
       return response;

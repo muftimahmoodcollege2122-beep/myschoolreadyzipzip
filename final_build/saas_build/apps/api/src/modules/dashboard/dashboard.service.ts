@@ -108,7 +108,7 @@ export class DashboardService {
 
   async getPlatformStats(): Promise<any> {
     return this.cache.remember('platform:stats', 120, async () => {
-      const db = this.replica;
+      const db = this.replica.unscoped; // cross-tenant aggregate — intentional RLS bypass
       const [totalTenants, activeTenants, totalStudents, totalTeachers, planBreakdown] = await Promise.all([
         withTimeout(db.tenant.count(), 5000, 0),
         withTimeout(db.tenant.count({ where: { status: 'ACTIVE' } }), 5000, 0),

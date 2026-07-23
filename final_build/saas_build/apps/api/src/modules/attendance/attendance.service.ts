@@ -54,7 +54,7 @@ export class AttendanceService {
     });
     if (!section) throw new NotFoundException(`Section ${sectionId} not found`);
 
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction!(async (tx) => {
       const upserts = records.map((record) =>
         (tx as any).attendance.upsert({
           where: { studentId_sectionId_date: { studentId: record.studentId, sectionId, date } },

@@ -17,6 +17,7 @@ import { ReplicaService } from './database/replica.service';
 import { CacheService } from './common/cache/cache.service';
 import { TenantContextMiddleware } from './common/middleware/tenant-context.middleware';
 import { TenantProvisioningProcessor } from './jobs/tenant-provisioning.processor';
+import { PartitionMaintenanceJob } from './jobs/partition-maintenance.job';
 
 import { AuthModule } from './modules/auth/auth.module';
 import { TenantsModule } from './modules/tenants/tenants.module';
@@ -105,6 +106,7 @@ import awsConfig from './config/aws.config';
     ReplicaService,
     CacheService,
     ScheduledJobs,
+    PartitionMaintenanceJob,
     TenantProvisioningProcessor,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: ThrottleGuard },

@@ -8,15 +8,16 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { ReplicaService } from '../../database/replica.service';
 
 @Injectable()
 export class AiAnalyticsService {
   private readonly logger = new Logger(AiAnalyticsService.name);
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly replica: ReplicaService) {}
 
   // ── Predictive Analytics ───────────────────────────────────
   async getDropoutRiskStudents(tenantId: string, schoolId?: string) {
-    const students = await this.prisma.student.findMany({
+    const students = await this.replica.student.findMany({
       where: { tenantId, isActive: true, ...(schoolId && { schoolId }) },
       include: { attendances: { take: 60, orderBy: { date: 'desc' } }, feeInvoices: { where: { status: { in: ['PENDING', 'OVERDUE'] } } }, user: { include: { profile: true } }, enrollments: { where: { isActive: true } } },
     });
@@ -33,9 +34,9 @@ export class AiAnalyticsService {
 
   async getPerformancePrediction(tenantId: string, studentId: string) {
     const [grades, attendance, exams] = await Promise.all([
-      this.prisma.grade.findMany({ where: { tenantId, studentId }, orderBy: { createdAt: 'desc' }, take: 20 }),
-      this.prisma.attendance.findMany({ where: { tenantId, studentId }, take: 90, orderBy: { date: 'desc' } }),
-      this.prisma.examResult.findMany({ where: { tenantId, studentId }, take: 10, orderBy: { createdAt: 'desc' }, include: { exam: true } }),
+      this.replica.grade.findMany({ where: { tenantId, studentId }, orderBy: { createdAt: 'desc' }, take: 20 }),
+      this.replica.attendance.findMany({ where: { tenantId, studentId }, take: 90, orderBy: { date: 'desc' } }),
+      this.replica.examResult.findMany({ where: { tenantId, studentId }, take: 10, orderBy: { createdAt: 'desc' }, include: { exam: true } }),
     ]);
     const avgGrade = grades.length > 0 ? grades.reduce((s, g) => s + Number(g.score ?? 0), 0) / grades.length : 0;
     const attRate = attendance.length > 0 ? (attendance.filter(a => a.status === 'PRESENT').length / attendance.length) * 100 : 0;
@@ -47,8 +48,8 @@ export class AiAnalyticsService {
   async getAttendanceAnalytics(tenantId: string, schoolId?: string) {
     const where: any = { tenantId, ...(schoolId && { student: { schoolId } }) };
     const [byStatus, daily30] = await Promise.all([
-      this.prisma.attendance.groupBy({ by: ['status'], where, _count: true }),
-      this.prisma.$queryRaw`SELECT DATE(date) as day, COUNT(*)::int as total, SUM(CASE WHEN status='PRESENT' THEN 1 ELSE 0 END)::int as present FROM attendances WHERE tenant_id = ${tenantId}::uuid AND date >= NOW() - INTERVAL '30 days' GROUP BY DATE(date) ORDER BY day DESC`,
+      this.replica.attendance.groupBy({ by: ['status'], where, _count: true }),
+      this.replica.$queryRaw`SELECT DATE(date) as day, COUNT(*)::int as total, SUM(CASE WHEN status='PRESENT' THEN 1 ELSE 0 END)::int as present FROM attendances WHERE tenant_id = ${tenantId}::uuid AND date >= NOW() - INTERVAL '30 days' GROUP BY DATE(date) ORDER BY day DESC`,
     ]);
     const total = byStatus.reduce((s, b) => s + b._count, 0) || 1;
     const present = byStatus.find(b => b.status === 'PRESENT')?._count ?? 0;
@@ -57,9 +58,9 @@ export class AiAnalyticsService {
 
   async getFeeAnalytics(tenantId: string) {
     const [byStatus, monthlyRevenue, overdueTrend] = await Promise.all([
-      this.prisma.feeInvoice.groupBy({ by: ['status'], where: { tenantId }, _sum: { amount: true }, _count: true }),
-      this.prisma.$queryRaw`SELECT TO_CHAR(created_at,'YYYY-MM') as month, SUM(amount_paid)::float as collected, SUM(amount)::float as billed, COUNT(*)::int as invoices FROM fee_invoices WHERE tenant_id = ${tenantId}::uuid AND created_at >= NOW() - INTERVAL '6 months' GROUP BY TO_CHAR(created_at,'YYYY-MM') ORDER BY month DESC`,
-      this.prisma.feeInvoice.count({ where: { tenantId, status: 'OVERDUE' } }),
+      this.replica.feeInvoice.groupBy({ by: ['status'], where: { tenantId }, _sum: { amount: true }, _count: true }),
+      this.replica.$queryRaw`SELECT TO_CHAR(created_at,'YYYY-MM') as month, SUM(amount_paid)::float as collected, SUM(amount)::float as billed, COUNT(*)::int as invoices FROM fee_invoices WHERE tenant_id = ${tenantId}::uuid AND created_at >= NOW() - INTERVAL '6 months' GROUP BY TO_CHAR(created_at,'YYYY-MM') ORDER BY month DESC`,
+      this.replica.feeInvoice.count({ where: { tenantId, status: 'OVERDUE' } }),
     ]);
     const total = byStatus.reduce((s, b) => s + Number(b._sum.amount ?? 0), 0);
     const paid = Number(byStatus.find(b => b.status === 'PAID')?._sum.amount ?? 0);
@@ -68,11 +69,11 @@ export class AiAnalyticsService {
 
   async getSchoolPerformanceDashboard(tenantId: string) {
     const [studentCount, teacherCount, attendanceRate, collectionRate, examsCount] = await Promise.all([
-      this.prisma.student.count({ where: { tenantId, isActive: true } }),
-      this.prisma.teacher.count({ where: { tenantId, isActive: true } }),
-      this.prisma.attendance.groupBy({ by: ['status'], where: { tenantId }, _count: true }),
-      this.prisma.feeInvoice.groupBy({ by: ['status'], where: { tenantId }, _sum: { amount: true } }),
-      this.prisma.exam.count({ where: { tenantId } }),
+      this.replica.student.count({ where: { tenantId, isActive: true } }),
+      this.replica.teacher.count({ where: { tenantId, isActive: true } }),
+      this.replica.attendance.groupBy({ by: ['status'], where: { tenantId }, _count: true }),
+      this.replica.feeInvoice.groupBy({ by: ['status'], where: { tenantId }, _sum: { amount: true } }),
+      this.replica.exam.count({ where: { tenantId } }),
     ]);
     const totalAtt = attendanceRate.reduce((s, a) => s + a._count, 0) || 1;
     const presentAtt = attendanceRate.find(a => a.status === 'PRESENT')?._count ?? 0;
@@ -83,9 +84,9 @@ export class AiAnalyticsService {
 
   async getBenchmarkingData(tenantId: string) {
     const [students, attendance, fees] = await Promise.all([
-      this.prisma.student.count({ where: { tenantId, isActive: true } }),
-      this.prisma.attendance.groupBy({ by: ['status'], where: { tenantId }, _count: true }),
-      this.prisma.feeInvoice.groupBy({ by: ['status'], where: { tenantId }, _sum: { amount: true } }),
+      this.replica.student.count({ where: { tenantId, isActive: true } }),
+      this.replica.attendance.groupBy({ by: ['status'], where: { tenantId }, _count: true }),
+      this.replica.feeInvoice.groupBy({ by: ['status'], where: { tenantId }, _sum: { amount: true } }),
     ]);
     const totalAtt = attendance.reduce((s, a) => s + a._count, 0) || 1;
     const presentAtt = attendance.find(a => a.status === 'PRESENT')?._count ?? 0;

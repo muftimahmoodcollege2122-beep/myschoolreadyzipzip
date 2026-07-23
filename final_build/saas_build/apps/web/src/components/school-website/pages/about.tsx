@@ -99,7 +99,7 @@ export function AboutPage({ theme, slug }: { theme: SchoolTheme; slug: string })
           <div>
             <span style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 700, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Message from the Principal</span>
             <h2 style={{ color: '#fff', fontSize: 'clamp(1.4rem,3vw,2rem)', fontFamily: 'var(--font-heading)', margin: '12px 0 20px', fontWeight: 800 }}>A Commitment to Excellence</h2>
-            <div style={{ fontSize: '3rem', color: 'rgba(255,255,255,0.2)', lineHeight: 1, marginBottom: -8 }}>"</div>
+            <div style={{ fontSize: '3rem', color: 'rgba(255,255,255,0.2)', lineHeight: 1, marginBottom: -8 }}>&quot;</div>
             <p style={{ color: 'rgba(255,255,255,0.88)', lineHeight: 1.9, fontSize: '0.95rem', fontStyle: 'italic', margin: '0 0 16px', paddingLeft: 20, borderLeft: '3px solid rgba(255,255,255,0.25)' }}>
               {theme.aboutText || `Welcome to ${theme.schoolName}. Education is not merely the transfer of information — it is the cultivation of minds and the building of character. Our dedicated team of educators, our state-of-the-art facilities, and our unwavering commitment to excellence ensure that every student who passes through our gates emerges as a confident, capable, and compassionate individual ready to face the world.`}
             </p>

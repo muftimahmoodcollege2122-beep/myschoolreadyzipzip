@@ -90,7 +90,7 @@ export default function StudentPortalPage() {
             <span className="text-2xl">👀</span>
             <div>
               <p className="font-bold text-amber-800 text-sm">Admin Preview Mode</p>
-              <p className="text-amber-600 text-xs">You're viewing as admin. When students log in they see their personal data here.</p>
+              <p className="text-amber-600 text-xs">You&apos;re viewing as admin. When students log in they see their personal data here.</p>
             </div>
           </div>
         )}
@@ -185,7 +185,7 @@ export default function StudentPortalPage() {
                       {attendance.slice(0,8).map((a:any) => (
                         <div key={a.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
                           <span className="text-sm text-gray-600">{new Date(a.date).toLocaleDateString('en',{weekday:'short',month:'short',day:'numeric'})}</span>
-                          <Badge label={a.status} color={a.status==='PRESENT'?'green':a.status==='LATE'?'yellow':'red'} size="sm"/>
+                          <Badge variant={a.status==='PRESENT'?'green':a.status==='LATE'?'yellow':'red'}>{a.status}</Badge>
                         </div>
                       ))}
                     </div>
@@ -201,7 +201,7 @@ export default function StudentPortalPage() {
                             <p className="text-sm font-medium text-gray-800">{s.user?.profile?.firstName} {s.user?.profile?.lastName}</p>
                             <p className="text-xs text-gray-400">{s.admissionNo || s.rollNumber || ''}</p>
                           </div>
-                          <Badge label={s.isActive ? 'Active' : 'Inactive'} color={s.isActive ? 'green' : 'red'} size="sm"/>
+                          <Badge variant={s.isActive ? 'green' : 'red'}>{s.isActive ? 'Active' : 'Inactive'}</Badge>
                         </div>
                       ))}
                     </div>
@@ -242,7 +242,7 @@ export default function StudentPortalPage() {
                                   <span className="text-sm font-semibold">{pct}%</span>
                                 </div>
                               </td>
-                              <td className="px-4 py-3"><Badge label={grade} color={pct>=80?'green':pct>=60?'yellow':'red'} size="sm"/></td>
+                              <td className="px-4 py-3"><Badge variant={pct>=80?'green':pct>=60?'yellow':'red'}>{grade}</Badge></td>
                             </tr>
                           );
                         })}
@@ -313,7 +313,7 @@ export default function StudentPortalPage() {
                             <td className="px-4 py-3 text-sm font-medium text-gray-800">{f.description || f.feeType || 'Fee'}</td>
                             <td className="px-4 py-3 text-sm font-bold text-gray-700">Rs. {Number(f.amount).toLocaleString()}</td>
                             <td className="px-4 py-3 text-sm text-gray-500">{f.dueDate ? new Date(f.dueDate).toLocaleDateString() : '—'}</td>
-                            <td className="px-4 py-3"><Badge label={f.status} color={f.status==='PAID'?'green':f.status==='OVERDUE'?'red':'yellow'} size="sm"/></td>
+                            <td className="px-4 py-3"><Badge variant={f.status==='PAID'?'green':f.status==='OVERDUE'?'red':'yellow'}>{f.status}</Badge></td>
                           </tr>
                         ))}
                       </tbody>

@@ -59,34 +59,41 @@ async function main() {
     console.log(`ℹ️  Platform tenant already exists (slug: "${PLATFORM_TENANT_SLUG}")`);
   }
 
-  const existingUser = await prisma.user.findUnique({
-    where: { tenantId_email: { tenantId: tenant.id, email } },
-  });
+  // Every operation below touches the User table, which has RLS enabled
+  // (see prisma/migrations/manual_rls). Wrap in a transaction that sets the
+  // session var first — same pattern the app uses for every real request.
+  await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT set_config('app.current_tenant_id', ${tenant.id}, true)`;
 
-  if (existingUser && !resetPassword) {
-    console.log(`ℹ️  Super admin "${email}" already exists — nothing to do.`);
-    console.log(`   Run with --reset-password to rotate its password instead.`);
-    return;
-  }
-
-  const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
-
-  if (existingUser && resetPassword) {
-    await prisma.user.update({ where: { id: existingUser.id }, data: { passwordHash, isActive: true } });
-    console.log(`✅ Password reset for existing super admin "${email}"`);
-  } else {
-    await prisma.user.create({
-      data: {
-        tenantId: tenant.id,
-        email,
-        passwordHash,
-        role: 'SUPER_ADMIN',
-        emailVerified: true,
-        profile: { create: { firstName: 'Platform', lastName: 'Admin' } },
-      },
+    const existingUser = await tx.user.findUnique({
+      where: { tenantId_email: { tenantId: tenant.id, email } },
     });
-    console.log(`✅ Created super admin "${email}"`);
-  }
+
+    if (existingUser && !resetPassword) {
+      console.log(`ℹ️  Super admin "${email}" already exists — nothing to do.`);
+      console.log(`   Run with --reset-password to rotate its password instead.`);
+      return;
+    }
+
+    const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+
+    if (existingUser && resetPassword) {
+      await tx.user.update({ where: { id: existingUser.id }, data: { passwordHash, isActive: true } });
+      console.log(`✅ Password reset for existing super admin "${email}"`);
+    } else {
+      await tx.user.create({
+        data: {
+          tenantId: tenant.id,
+          email,
+          passwordHash,
+          role: 'SUPER_ADMIN',
+          emailVerified: true,
+          profile: { create: { firstName: 'Platform', lastName: 'Admin' } },
+        },
+      });
+      console.log(`✅ Created super admin "${email}"`);
+    }
+  });
 
   console.log('\n──────────────────────────────────────────────');
   console.log('Log in at /login with:');

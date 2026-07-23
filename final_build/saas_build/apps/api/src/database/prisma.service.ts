@@ -9,6 +9,10 @@
 
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { tenantContextStorage } from '../common/tenant-context.storage';
+
+// Models with no tenantId column — never RLS-scoped, safe to query directly.
+const GLOBAL_MODELS = new Set(['tenant']);
 
 /**
  * PrismaService — wraps PrismaClient with:
@@ -30,10 +34,37 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     if (!dbUrl) return null;
 
     const isProd = (process.env.NODE_ENV ?? this.config.get('NODE_ENV')) === 'production';
-    const poolSize = isProd ? 5 : 10;
-    return dbUrl.includes('connection_limit')
+    // DB_POOL_MAX is a per-instance limit — with N pods each holding up to
+    // this many connections, N * DB_POOL_MAX must stay under Neon's plan
+    // connection ceiling. Going through Neon's pooler endpoint (host
+    // contains "-pooler", transaction-mode PgBouncer) is what actually lets
+    // this scale past a handful of pods — direct-to-Postgres connections
+    // don't. Default stays conservative; override via DB_POOL_MAX per pod
+    // count when there's a pooler in front.
+    const configuredMax = parseInt(process.env.DB_POOL_MAX || '', 10);
+    const poolSize = Number.isFinite(configuredMax) && configuredMax > 0
+      ? configuredMax
+      : (isProd ? 5 : 10);
+
+    let url = dbUrl.includes('connection_limit')
       ? dbUrl
       : `${dbUrl}${dbUrl.includes('?') ? '&' : '?'}connection_limit=${poolSize}&pool_timeout=10&connect_timeout=10`;
+
+    // Neon's pooled endpoint (and PgBouncer transaction-pooling in general)
+    // doesn't support session-level prepared statements the way Prisma uses
+    // by default. Without pgbouncer=true, queries randomly fail under
+    // concurrent load with "prepared statement already exists" errors —
+    // this is exactly the kind of thing that looks fine in dev (low
+    // concurrency, one connection reused) and falls over in production at
+    // scale. Auto-detect and fix rather than relying on every operator to
+    // remember the flag.
+    const isPooledEndpoint = /-pooler\.|pgbouncer/i.test(url);
+    if (isPooledEndpoint && !/pgbouncer=true/i.test(url)) {
+      url += `${url.includes('?') ? '&' : '?'}pgbouncer=true`;
+      this.logger.log('Detected pooled DB endpoint — added pgbouncer=true to avoid prepared-statement errors under load');
+    }
+
+    return url;
   }
 
   async onModuleInit(): Promise<void> {
@@ -99,103 +130,197 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  private _scopedClientCache: any = null;
+
+  /**
+   * Tenant-scoped Prisma client — every model query gets automatically wrapped
+   * in a transaction that sets the Postgres RLS session variable for the
+   * current request's tenant (read from AsyncLocalStorage, populated by
+   * TenantContextMiddleware). This means the ~40 service files DON'T need to
+   * change: `this.prisma.student.findMany(...)` is now RLS-safe by default.
+   *
+   * If no tenant context is present (e.g. platform bootstrap, tenant
+   * resolution itself before context exists), falls back to the raw client
+   * unscoped — same behavior as before this change, no new failure mode.
+   *
+   * Real isolation ALSO requires the matching `CREATE POLICY` migration to
+   * exist on each table — see prisma/migrations/*_enable_rls. This proxy is
+   * the application-side half; the database-side half is a separate file.
+   */
+  private get scopedClient(): any {
+    if (!this._client) return null;
+    if (!this._scopedClientCache) {
+      const raw = this._client;
+      this._scopedClientCache = new Proxy(raw, {
+        get: (target, modelName: string) => {
+          const delegate = target[modelName];
+          if (!delegate || typeof delegate !== 'object' || GLOBAL_MODELS.has(modelName)) return delegate;
+          return new Proxy(delegate, {
+            get: (delegateTarget, method: string) => {
+              const fn = delegateTarget[method];
+              if (typeof fn !== 'function') return fn;
+              return (...args: any[]) => {
+                const ctx = tenantContextStorage.getStore();
+                if (!ctx?.tenantId || ctx.isPlatformAdmin) return fn.apply(delegateTarget, args);
+                return raw.$transaction(async (tx: any) => {
+                  await tx.$executeRaw`SELECT set_config('app.current_tenant_id', ${ctx.tenantId}, true)`;
+                  return tx[modelName][method](...args);
+                });
+              };
+            },
+          });
+        },
+      });
+    }
+    return this._scopedClientCache;
+  }
+
+  /**
+   * Raw, unscoped client — bypasses RLS entirely. ONLY use for legitimate
+   * cross-tenant platform-admin queries (e.g. super-admin aggregating stats
+   * across all schools). Everywhere else, use the regular model getters.
+   */
+  get unscoped(): any { return this._client; }
+
   private modelHasSoftDelete(model: string | undefined): boolean {
     return ['User', 'Student', 'Teacher', 'Staff', 'School'].includes(model ?? '');
   }
 
   // ── Proxy all Prisma model accessors ────────────────────────────────────────
-  get user()                  { return this._client?.user; }
-  get tenant()                { return this._client?.tenant; }
-  get school()                { return this._client?.school; }
-  get student()               { return this._client?.student; }
-  get teacher()               { return this._client?.teacher; }
-  get staff()                 { return this._client?.staff; }
-  get class()                 { return this._client?.class; }
-  get section()               { return this._client?.section; }
-  get subject()               { return this._client?.subject; }
-  get attendance()            { return this._client?.attendance; }
-  get teacherAttendance()     { return this._client?.teacherAttendance; }
-  get exam()                  { return this._client?.exam; }
-  get examResult()            { return this._client?.examResult; }
-  get grade()                 { return this._client?.grade; }
-  get feeStructure()          { return this._client?.feeStructure; }
-  get feeInvoice()            { return this._client?.feeInvoice; }
-  get feeDiscount()           { return this._client?.feeDiscount; }
-  get scholarship()           { return this._client?.scholarship; }
-  get scholarshipGrant()      { return this._client?.scholarshipGrant; }
-  get notification()          { return this._client?.notification; }
-  get outboxEvent()           { return this._client?.outboxEvent; }
-  get auditLog()              { return this._client?.auditLog; }
-  get studentEnrollment()     { return this._client?.studentEnrollment; }
-  get studentParent()         { return this._client?.studentParent; }
-  get studentDocument()       { return this._client?.studentDocument; }
-  get studentWarning()        { return this._client?.studentWarning; }
-  get studentBehavior()       { return this._client?.studentBehavior; }
-  get studentMedicalRecord()  { return this._client?.studentMedicalRecord; }
-  get studentAchievement()    { return this._client?.studentAchievement; }
-  get leaveRequest()          { return this._client?.leaveRequest; }
-  get timetableSlot()         { return this._client?.timetableSlot; }
-  get announcement()          { return this._client?.announcement; }
-  get libraryBook()           { return this._client?.libraryBook; }
-  get bookIssue()             { return this._client?.bookIssue; }
-  get transportRoute()        { return this._client?.transportRoute; }
-  get hostelRoom()            { return this._client?.hostelRoom; }
-  get hostelAllocation()      { return this._client?.hostelAllocation; }
-  get budget()                { return this._client?.budget; }
-  get expense()               { return this._client?.expense; }
-  get paymentOrder()          { return this._client?.paymentOrder; }
-  get customForm()            { return this._client?.customForm; }
-  get formResponse()          { return this._client?.formResponse; }
-  get alumni()                { return this._client?.alumni; }
-  get supportTicket()         { return this._client?.supportTicket; }
-  get userSession()           { return this._client?.userSession; }
-  get classSubject()          { return this._client?.classSubject; }
-  get department()            { return this._client?.department; }
-  get academicCalendar()      { return this._client?.academicCalendar; }
-  get schoolTheme()           { return this._client?.schoolTheme; }
-  get websiteContent()        { return this._client?.websiteContent; }
-  get blogPost()              { return this._client?.blogPost; }
-  get media()                 { return this._client?.media; }
-  get qrAttendanceCode()      { return this._client?.qrAttendanceCode; }
-  get inventoryItem()         { return this._client?.inventoryItem; }
-  get assignment()            { return this._client?.assignment; }
-  get assignmentSubmission()  { return this._client?.assignmentSubmission; }
-  get lessonPlan()            { return this._client?.lessonPlan; }
+  get user()                  { return this.scopedClient?.user; }
+  get tenant()                { return this.scopedClient?.tenant; }
+  get school()                { return this.scopedClient?.school; }
+  get student()               { return this.scopedClient?.student; }
+  get teacher()               { return this.scopedClient?.teacher; }
+  get staff()                 { return this.scopedClient?.staff; }
+  get class()                 { return this.scopedClient?.class; }
+  get section()               { return this.scopedClient?.section; }
+  get subject()               { return this.scopedClient?.subject; }
+  get attendance()            { return this.scopedClient?.attendance; }
+  get teacherAttendance()     { return this.scopedClient?.teacherAttendance; }
+  get exam()                  { return this.scopedClient?.exam; }
+  get examResult()            { return this.scopedClient?.examResult; }
+  get grade()                 { return this.scopedClient?.grade; }
+  get feeStructure()          { return this.scopedClient?.feeStructure; }
+  get feeInvoice()            { return this.scopedClient?.feeInvoice; }
+  get feeDiscount()           { return this.scopedClient?.feeDiscount; }
+  get scholarship()           { return this.scopedClient?.scholarship; }
+  get scholarshipGrant()      { return this.scopedClient?.scholarshipGrant; }
+  get notification()          { return this.scopedClient?.notification; }
+  get outboxEvent()           { return this.scopedClient?.outboxEvent; }
+  get auditLog()              { return this.scopedClient?.auditLog; }
+  get studentEnrollment()     { return this.scopedClient?.studentEnrollment; }
+  get studentParent()         { return this.scopedClient?.studentParent; }
+  get studentDocument()       { return this.scopedClient?.studentDocument; }
+  get studentWarning()        { return this.scopedClient?.studentWarning; }
+  get studentBehavior()       { return this.scopedClient?.studentBehavior; }
+  get studentMedicalRecord()  { return this.scopedClient?.studentMedicalRecord; }
+  get studentAchievement()    { return this.scopedClient?.studentAchievement; }
+  get leaveRequest()          { return this.scopedClient?.leaveRequest; }
+  get timetableSlot()         { return this.scopedClient?.timetableSlot; }
+  get announcement()          { return this.scopedClient?.announcement; }
+  get libraryBook()           { return this.scopedClient?.libraryBook; }
+  get bookIssue()             { return this.scopedClient?.bookIssue; }
+  get transportRoute()        { return this.scopedClient?.transportRoute; }
+  get hostelRoom()            { return this.scopedClient?.hostelRoom; }
+  get hostelAllocation()      { return this.scopedClient?.hostelAllocation; }
+  get budget()                { return this.scopedClient?.budget; }
+  get expense()               { return this.scopedClient?.expense; }
+  get paymentOrder()          { return this.scopedClient?.paymentOrder; }
+  get customForm()            { return this.scopedClient?.customForm; }
+  get formResponse()          { return this.scopedClient?.formResponse; }
+  get alumni()                { return this.scopedClient?.alumni; }
+  get supportTicket()         { return this.scopedClient?.supportTicket; }
+  get userSession()           { return this.scopedClient?.userSession; }
+  get classSubject()          { return this.scopedClient?.classSubject; }
+  get department()            { return this.scopedClient?.department; }
+  get academicCalendar()      { return this.scopedClient?.academicCalendar; }
+  get schoolTheme()           { return this.scopedClient?.schoolTheme; }
+  get websiteContent()        { return this.scopedClient?.websiteContent; }
+  get blogPost()              { return this.scopedClient?.blogPost; }
+  get media()                 { return this.scopedClient?.media; }
+  get qrAttendanceCode()      { return this.scopedClient?.qrAttendanceCode; }
+  get inventoryItem()         { return this.scopedClient?.inventoryItem; }
+  get assignment()            { return this.scopedClient?.assignment; }
+  get assignmentSubmission()  { return this.scopedClient?.assignmentSubmission; }
+  get lessonPlan()            { return this.scopedClient?.lessonPlan; }
 
-  get academicRule() { return this._client?.academicRule; }
-  get cashbookEntry() { return this._client?.cashbookEntry; }
-  get consentRecord() { return this._client?.consentRecord; }
-  get coupon() { return this._client?.coupon; }
-  get couponUsage() { return this._client?.couponUsage; }
-  get feeInstallment() { return this._client?.feeInstallment; }
-  get feeInstallmentPlan() { return this._client?.feeInstallmentPlan; }
-  get galleryAlbum() { return this._client?.galleryAlbum; }
-  get galleryItem() { return this._client?.galleryItem; }
-  get ipRestriction() { return this._client?.ipRestriction; }
-  get loginHistory() { return this._client?.loginHistory; }
-  get message() { return this._client?.message; }
-  get messageThread() { return this._client?.messageThread; }
-  get onlineExamAnswer() { return this._client?.onlineExamAnswer; }
-  get onlineExamSession() { return this._client?.onlineExamSession; }
-  get payment() { return this._client?.payment; }
-  get question() { return this._client?.question; }
-  get questionBank() { return this._client?.questionBank; }
-  get schoolEvent() { return this._client?.schoolEvent; }
-  get schoolPolicy() { return this._client?.schoolPolicy; }
-  get setupChecklist() { return this._client?.setupChecklist; }
-  get suspiciousActivity() { return this._client?.suspiciousActivity; }
-  get teacherCertification() { return this._client?.teacherCertification; }
-  get teacherSubstitution() { return this._client?.teacherSubstitution; }
-  get trainingRecord() { return this._client?.trainingRecord; }
-  get usageRecord() { return this._client?.usageRecord; }
-  get subscription() { return this._client?.subscription; }
+  get academicRule() { return this.scopedClient?.academicRule; }
+  get cashbookEntry() { return this.scopedClient?.cashbookEntry; }
+  get consentRecord() { return this.scopedClient?.consentRecord; }
+  get coupon() { return this.scopedClient?.coupon; }
+  get couponUsage() { return this.scopedClient?.couponUsage; }
+  get feeInstallment() { return this.scopedClient?.feeInstallment; }
+  get feeInstallmentPlan() { return this.scopedClient?.feeInstallmentPlan; }
+  get galleryAlbum() { return this.scopedClient?.galleryAlbum; }
+  get galleryItem() { return this.scopedClient?.galleryItem; }
+  get ipRestriction() { return this.scopedClient?.ipRestriction; }
+  get loginHistory() { return this.scopedClient?.loginHistory; }
+  get message() { return this.scopedClient?.message; }
+  get messageThread() { return this.scopedClient?.messageThread; }
+  get onlineExamAnswer() { return this.scopedClient?.onlineExamAnswer; }
+  get onlineExamSession() { return this.scopedClient?.onlineExamSession; }
+  get payment() { return this.scopedClient?.payment; }
+  get question() { return this.scopedClient?.question; }
+  get questionBank() { return this.scopedClient?.questionBank; }
+  get schoolEvent() { return this.scopedClient?.schoolEvent; }
+  get schoolPolicy() { return this.scopedClient?.schoolPolicy; }
+  get setupChecklist() { return this.scopedClient?.setupChecklist; }
+  get suspiciousActivity() { return this.scopedClient?.suspiciousActivity; }
+  get teacherCertification() { return this.scopedClient?.teacherCertification; }
+  get teacherSubstitution() { return this.scopedClient?.teacherSubstitution; }
+  get trainingRecord() { return this.scopedClient?.trainingRecord; }
+  get usageRecord() { return this.scopedClient?.usageRecord; }
+  get subscription() { return this.scopedClient?.subscription; }
 
   // ── Raw query helpers ────────────────────────────────────────────────────────
-  get $queryRaw()    { return this._client?.$queryRaw?.bind(this._client); }
+  get $queryRaw() {
+    const raw = this._client;
+    if (!raw) return undefined;
+    // Raw queries hit FORCE-RLS tables too. Binding straight to the raw
+    // client (the old behavior) never sets app.current_tenant_id, so the
+    // fail-closed policy silently returns zero rows for any RLS table —
+    // wrap in the same transaction pattern as scopedClient/$transaction.
+    return (strings: any, ...values: any[]) => {
+      const ctx = tenantContextStorage.getStore();
+      if (!ctx?.tenantId || ctx.isPlatformAdmin) return raw.$queryRaw(strings, ...values);
+      return raw.$transaction(async (tx: any) => {
+        await tx.$executeRaw`SELECT set_config('app.current_tenant_id', ${ctx.tenantId}, true)`;
+        return tx.$queryRaw(strings, ...values);
+      });
+    };
+  }
   get $executeRaw()  { return this._client?.$executeRaw?.bind(this._client); }
-  get $transaction() { return this._client?.$transaction?.bind(this._client); }
   get $connect()     { return this._client?.$connect?.bind(this._client); }
   get $disconnect()  { return this._client?.$disconnect?.bind(this._client); }
+
+  /**
+   * Wraps interactive transactions ($transaction(async tx => {...})) so the
+   * RLS session var gets set automatically from AsyncLocalStorage before the
+   * callback runs — this covers every raw `this.prisma.$transaction(...)`
+   * call across the codebase without editing each one individually.
+   *
+   * Batch-form transactions ($transaction([query1, query2])) are passed
+   * through unchanged — they don't get a callback to inject into, and in
+   * practice every raw $transaction() in this codebase uses the callback
+   * form. If a batch-form transaction against an RLS table is ever added
+   * without going through the interactive form, its writes will be
+   * rejected — treat that as a signal to convert it to the callback form.
+   */
+  get $transaction() {
+    if (!this._client) return undefined;
+    const raw = this._client.$transaction.bind(this._client);
+    return (arg: any, options?: any) => {
+      if (typeof arg !== 'function') return raw(arg, options);
+      return raw(async (tx: any) => {
+        const ctx = tenantContextStorage.getStore();
+        if (ctx?.tenantId && !ctx.isPlatformAdmin) {
+          await tx.$executeRaw`SELECT set_config('app.current_tenant_id', ${ctx.tenantId}, true)`;
+        }
+        return arg(tx);
+      }, options);
+    };
+  }
 
   async queryTenantScoped<T>(tenantId: string, query: (prisma: any) => Promise<T>): Promise<T> {
     return this._client.$transaction(async (tx: any) => {

@@ -36,7 +36,7 @@ export function ClassicTemplate({ theme, slug }: { theme: SchoolTheme; slug: str
         <div className="container" style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr)', gap: 40, alignItems: 'center' }} data-responsive-2col>
           <div>
             <span style={{ color: theme.primaryColor, fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>About Us</span>
-            <h2 style={{ fontSize: 'clamp(1.8rem,3vw,2.5rem)', fontFamily: 'var(--font-heading)', margin: '12px 0 20px', color: theme.secondaryColor }}>Shaping Tomorrow's Leaders Since {theme.established}</h2>
+            <h2 style={{ fontSize: 'clamp(1.8rem,3vw,2.5rem)', fontFamily: 'var(--font-heading)', margin: '12px 0 20px', color: theme.secondaryColor }}>Shaping Tomorrow&apos;s Leaders Since {theme.established}</h2>
             <p style={{ color: '#4A5E6D', lineHeight: 1.8, marginBottom: 16 }}>
               {theme.aboutText || `${theme.schoolName} is dedicated to providing world-class education in ${theme.city}. Our experienced faculty and modern facilities ensure every student reaches their full potential.`}
             </p>

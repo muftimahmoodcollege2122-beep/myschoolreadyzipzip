@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useMemo } from 'react';
 import { useAuthStore } from '@/stores/auth.store';
+import { useCurrentTenant } from '@/hooks/use-api';
 
 const COPY_ICON = '📋';
 const CHECK_ICON = '✅';
@@ -39,7 +40,8 @@ function getPortalBaseUrl(port: number): string {
 
 export default function PortalLinksPage() {
   const user = useAuthStore(s => s.user) as any;
-  const slug = user?.school?.slug || user?.tenantSlug || 'your-school';
+  const { data: tenant, isLoading: tenantLoading, isError: tenantError } = useCurrentTenant();
+  const slug = (tenant as any)?.slug || user?.school?.slug || user?.tenantSlug || '';
 
   const currentBase = typeof window !== 'undefined'
     ? `${window.location.protocol}//${window.location.host}`
@@ -152,6 +154,17 @@ export default function PortalLinksPage() {
 
   return (
     <div className="p-6 max-w-5xl">
+      {tenantLoading ? (
+        <div className="space-y-4">
+          <div className="h-8 w-64 bg-gray-100 rounded-lg animate-pulse" />
+          {[...Array(5)].map((_, i) => <div key={i} className="h-28 bg-gray-100 rounded-2xl animate-pulse" />)}
+        </div>
+      ) : (tenantError || !slug) ? (
+        <div className="p-6 bg-red-50 border border-red-200 rounded-2xl text-red-700 text-sm">
+          Couldn't load your school's portal links — your account isn't linked to a school yet. Try refreshing, or contact support if this persists.
+        </div>
+      ) : (
+      <>
       <div className="mb-8">
         <h1 className="text-2xl font-black text-gray-900">Your School Portals</h1>
         <p className="text-gray-500 mt-1">Share these links with your teachers, students and parents to get them started.</p>
@@ -223,6 +236,8 @@ export default function PortalLinksPage() {
           </div>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }

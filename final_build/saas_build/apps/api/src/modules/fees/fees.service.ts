@@ -40,7 +40,7 @@ export class FeesService {
     const student = await this.prisma.student.findFirst({ where: { id: dto.studentId, tenantId } });
     if (!student) throw new NotFoundException('Student not found');
 
-    return this.prisma.$transaction(async tx => {
+    return this.prisma.$transaction!(async tx => {
       const structure = await tx.feeStructure.create({
         data: {
           tenantId,
@@ -84,7 +84,7 @@ export class FeesService {
     const dueDate = dayjs().date(components[0]?.dueDay || 15).toDate();
     let created = 0, skipped = 0;
 
-    await this.prisma.$transaction(async tx => {
+    await this.prisma.$transaction!(async tx => {
       for (const studentId of studentIds) {
         const existing = await tx.feeInvoice.findFirst({ where: { studentId, feeStructureId, tenantId, dueDate: { gte: dayjs().startOf('month').toDate(), lte: dayjs().endOf('month').toDate() } } });
         if (existing) { skipped++; continue; }
@@ -107,7 +107,7 @@ export class FeesService {
     if (dto.amount > outstanding) throw new BadRequestException(`Payment ${dto.amount} exceeds outstanding ${outstanding}`);
 
     let createdPaymentId = '';
-    await this.prisma.$transaction(async tx => {
+    await this.prisma.$transaction!(async tx => {
       const payment = await tx.payment.create({ data: { invoiceId: dto.invoiceId, tenantId, amount: dto.amount, method: dto.method as any, transactionRef: dto.transactionRef ?? null, processedBy: processedById } });
       createdPaymentId = payment.id;
       const newPaid = Number(invoice.amountPaid ?? 0) + dto.amount;

@@ -36,7 +36,7 @@ export class CommunicationService {
   }
 
   async createAnnouncement(dto: any, authorId: string, tenantId: string) {
-    return this.prisma.$transaction(async tx => {
+    return this.prisma.$transaction!(async tx => {
       const a = await tx.announcement.create({ data: { ...dto, tenantId, authorId } });
       await tx.outboxEvent.create({ data: { tenantId, topic: 'announcement.created', key: a.id, payload: { announcementId: a.id, schoolId: dto.schoolId }, headers: {} } });
       return a;

@@ -273,7 +273,7 @@ function PaymentPageInner() {
                 onClick={() => setStep('verify')}
                 className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-2xl transition-all"
               >
-                I've Sent the Payment →
+                I&apos;ve Sent the Payment →
               </button>
             </div>
           )}
@@ -300,7 +300,7 @@ function PaymentPageInner() {
 
               <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4">
                 <p className="text-sm text-amber-800">
-                  <span className="font-bold">💡 Tip:</span> Find your transaction ID in your payment app under "Transaction History" or on the confirmation SMS.
+                  <span className="font-bold">💡 Tip:</span> Find your transaction ID in your payment app under &quot;Transaction History&quot; or on the confirmation SMS.
                 </p>
               </div>
 
@@ -373,7 +373,7 @@ function PaymentPageInner() {
 
               {!provisionResult?.slug && (
                 <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 text-sm text-amber-800">
-                  Payment verified ✅ — your account is being activated. You'll receive an email at <strong>{email}</strong> within a few minutes with your login link.
+                  Payment verified ✅ — your account is being activated. You&apos;ll receive an email at <strong>{email}</strong> within a few minutes with your login link.
                 </div>
               )}
 

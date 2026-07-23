@@ -58,7 +58,7 @@ export class DiscountsService {
     if (scholarship.maxRecipients && scholarship.currentRecipients >= scholarship.maxRecipients) {
       throw new BadRequestException('Scholarship recipient limit reached');
     }
-    return this.prisma.$transaction(async tx => {
+    return this.prisma.$transaction!(async tx => {
       const grant = await tx.scholarshipGrant.create({
         data: { tenantId, scholarshipId: dto.scholarshipId, studentId: dto.studentId, invoiceId: dto.invoiceId, amount: dto.amount || scholarship.amount, grantedById, remarks: dto.remarks },
       });
@@ -78,7 +78,7 @@ export class DiscountsService {
   async revokeGrant(id: string, tenantId: string, userId: string) {
     const g = await this.prisma.scholarshipGrant.findFirst({ where: { id, tenantId } });
     if (!g) throw new NotFoundException('Grant not found');
-    return this.prisma.$transaction(async tx => {
+    return this.prisma.$transaction!(async tx => {
       await tx.scholarshipGrant.update({ where: { id }, data: { status: 'REVOKED' } });
       if (g.scholarshipId) await tx.scholarship.update({ where: { id: g.scholarshipId }, data: { currentRecipients: { decrement: 1 } } });
     });
@@ -90,7 +90,7 @@ export class DiscountsService {
     if (!invoice) throw new NotFoundException('Invoice not found');
     const totalAmount = Number(invoice.amount);
     const installmentAmount = totalAmount / dto.noOfInstallments;
-    return this.prisma.$transaction(async tx => {
+    return this.prisma.$transaction!(async tx => {
       const plan = await tx.feeInstallmentPlan.create({
         data: { tenantId, studentId: invoice.studentId, invoiceId: dto.invoiceId, totalAmount, noOfInstallments: dto.noOfInstallments, createdById },
       });

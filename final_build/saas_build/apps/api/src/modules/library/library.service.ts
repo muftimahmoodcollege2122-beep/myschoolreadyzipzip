@@ -67,7 +67,7 @@ export class LibraryService {
     if (book.availableCopies <= 0) throw new BadRequestException('No copies available');
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + dueDays);
-    const [issue] = await this.prisma.$transaction([
+    const [issue] = await this.prisma.$transaction!([
       this.prisma.bookIssue.create({ data: { bookId, userId, tenantId, dueDate } }),
       this.prisma.libraryBook.update({ where: { id: bookId }, data: { availableCopies: book.availableCopies - 1 } }),
     ]);
@@ -80,7 +80,7 @@ export class LibraryService {
     if (issue.returnedAt) throw new BadRequestException('Already returned');
     const overdueDays = Math.max(0, Math.floor((Date.now() - issue.dueDate.getTime()) / 86400000));
     const fineAmount = overdueDays * 5;
-    await this.prisma.$transaction([
+    await this.prisma.$transaction!([
       this.prisma.bookIssue.update({ where: { id: issueId }, data: { returnedAt: new Date(), fineAmount: fineAmount > 0 ? fineAmount : null } }),
       this.prisma.libraryBook.update({ where: { id: issue.bookId }, data: { availableCopies: { increment: 1 } } }),
     ]);

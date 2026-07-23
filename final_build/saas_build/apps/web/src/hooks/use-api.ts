@@ -332,6 +332,25 @@ export const useReactivateTenant = () => {
   return useMutation({ mutationFn: (id: string) => apiClient.post(`/tenants/${id}/reactivate`, {}), onSuccess: () => { qc.invalidateQueries({ queryKey: ['tenants-list'] }); qc.invalidateQueries({ queryKey: ['platform-summary'] }); } });
 };
 
+export const useCurrentTenant = () =>
+  useQuery({ queryKey: ['current-tenant'], queryFn: () => apiClient.get('/tenants/current'), staleTime: 10 * 60 * 1000 });
+
+export const useUpdateBranding = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (dto: { name?: string; logoUrl?: string; primaryColor?: string }) => apiClient.put('/tenants/current/branding', dto),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['current-tenant'] }),
+  });
+};
+
+export const useUploadLogo = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => apiClient.upload<{ logoUrl: string }>('/tenants/current/branding/logo', file),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['current-tenant'] }),
+  });
+};
+
 export const useSchoolStats = () =>
   useQuery({ queryKey: ['school-stats'], queryFn: () => apiClient.get('/school/stats'), staleTime: 5 * 60 * 1000 });
 
@@ -446,4 +465,4 @@ export const useSubmitLeaveRequest = () => {
 };
 
 export const useTeacherStats = (slug: string) =>
-  useQuery({ queryKey: ['teacher-stats', slug], queryFn: () => apiClient.get(`/dashboard/stats?tenantSlug=${slug}`), enabled: !!slug, staleTime: 5 * 60 * 1000 });
+  useQuery({ queryKey: ['teacher-stats', slug], queryFn: () => apiClient.get(`/dashboard`), enabled: !!slug, staleTime: 5 * 60 * 1000 });

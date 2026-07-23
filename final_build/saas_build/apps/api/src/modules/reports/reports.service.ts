@@ -12,6 +12,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { PrismaService } from '../../database/prisma.service';
+import { ReplicaService } from '../../database/replica.service';
 import { S3StorageService } from '../../common/storage/s3-storage.service';
 import { GradesService } from '../grades/grades.service';
 import { AttendanceService } from '../attendance/attendance.service';
@@ -32,6 +33,7 @@ export class ReportsService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly replica: ReplicaService,
     private readonly config: ConfigService,
     private readonly storage: S3StorageService,
     private readonly gradesService: GradesService,
@@ -66,7 +68,7 @@ export class ReportsService {
       studentId, tenantId, academicYear, term,
     );
 
-    const student = await this.prisma.student.findFirst({
+    const student = await this.replica.student.findFirst({
       where: { id: studentId, tenantId },
       include: {
         user: { include: { profile: true } },
@@ -79,7 +81,7 @@ export class ReportsService {
 
     if (!student) throw new NotFoundException('Student not found');
 
-    const tenant = await this.prisma.tenant.findUnique({
+    const tenant = await this.replica.tenant.findUnique({
       where: { id: tenantId },
       include: { schools: { take: 1 } },
     });
@@ -119,7 +121,7 @@ export class ReportsService {
     schoolId: string,
     filters: Record<string, unknown>,
   ): Promise<Buffer> {
-    const students = await this.prisma.student.findMany({
+    const students = await this.replica.student.findMany({
       where: { tenantId, schoolId, isActive: true },
       include: {
         user: { include: { profile: true } },
@@ -345,7 +347,7 @@ export class ReportsService {
    * fabricating a number — the frontend should show "Not enough data" in that case.
    */
   async getTeacherPerformance(tenantId: string) {
-    const teachers = await this.prisma.teacher.findMany({
+    const teachers = await this.replica.teacher.findMany({
       where: { tenantId, isActive: true },
       include: {
         user: { include: { profile: true } },
@@ -363,7 +365,7 @@ export class ReportsService {
       ).size;
 
       const exams = subjectIds.length
-        ? await this.prisma.exam.findMany({
+        ? await this.replica.exam.findMany({
             where: { tenantId, subjectId: { in: subjectIds }, isPublished: true },
             include: { results: true },
           })
@@ -383,13 +385,13 @@ export class ReportsService {
       const avgMarksPct = marksMaxSum > 0 ? Math.round((marksSum / marksMaxSum) * 100) : null;
 
       const since = new Date(Date.now() - 90 * 86400000);
-      const attendanceRecords = await this.prisma.teacherAttendance.findMany({
+      const attendanceRecords = await this.replica.teacherAttendance.findMany({
         where: { teacherId: t.id, tenantId, date: { gte: since } },
       });
       const presentCount = attendanceRecords.filter(a => a.status === 'PRESENT' || a.status === 'LATE').length;
       const attendanceRate = attendanceRecords.length > 0 ? Math.round((presentCount / attendanceRecords.length) * 100) : null;
 
-      const lessonPlans = await this.prisma.lessonPlan.findMany({
+      const lessonPlans = await this.replica.lessonPlan.findMany({
         where: { tenantId, teacherId: t.id },
         orderBy: { createdAt: 'desc' },
         take: 20,

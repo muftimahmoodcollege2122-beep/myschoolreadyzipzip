@@ -15,15 +15,25 @@ export default function StudentsPage() {
   const [page, setPage]       = useState(1);
   const [modal, setModal]     = useState(false);
   const [form, setForm]       = useState(EMPTY);
+  const [showInactive, setShowInactive] = useState(false);
+  const [removeError, setRemoveError] = useState('');
   const qc = useQueryClient();
 
-  const { data, isLoading }   = useStudents({ search, page, limit: 20 });
+  const { data, isLoading }   = useStudents({ search, page, limit: 20, ...(showInactive ? {} : { isActive: true }) });
   const { data: school }      = useSchoolInfo();
   const create                = useCreateStudent();
   const remove                = useDeleteStudent();
 
   const students = (data as any)?.data ?? [];
   const meta     = (data as any)?.meta ?? {};
+
+  const handleRemove = (id: string) => {
+    if (!confirm('Remove this student? They will be moved to Inactive.')) return;
+    setRemoveError('');
+    remove.mutate(id, {
+      onError: (err: any) => setRemoveError(err?.response?.data?.message || err?.message || 'Failed to remove student — please try again.'),
+    });
+  };
 
   const handleCreate = async () => {
     await create.mutateAsync({ ...form, gender: form.gender ? form.gender.toUpperCase() : undefined, schoolId: (school as any)?.id });
@@ -35,8 +45,18 @@ export default function StudentsPage() {
       <Topbar title="Students" subtitle={`${meta.total ?? 0} enrolled`}
         action={<button onClick={() => setModal(true)} className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700">+ Add Student</button>} />
       <div className="page-padding">
+        {removeError && (
+          <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 flex justify-between items-center">
+            <span>{removeError}</span>
+            <button onClick={() => setRemoveError('')} className="text-red-400 hover:text-red-600 font-bold">✕</button>
+          </div>
+        )}
         {/* Search */}
         <div className="flex gap-3 mb-4">
+          <label className="flex items-center gap-2 text-xs font-semibold text-gray-500 whitespace-nowrap px-3 border border-gray-200 rounded-xl">
+            <input type="checkbox" checked={showInactive} onChange={e => { setShowInactive(e.target.checked); setPage(1); }} />
+            Show removed
+          </label>
           <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
             placeholder="Search by name, roll no, admission no..." className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400" />
         </div>
@@ -79,7 +99,7 @@ export default function StudentsPage() {
                         <td className="px-4 py-3 text-sm">{s.enrollments?.[0]?.section?.class?.name ?? '—'} {s.enrollments?.[0]?.section?.name ?? ''}</td>
                         <td className="px-4 py-3"><Badge variant={s.isActive ? 'green' : 'red'}>{s.isActive ? 'Active' : 'Inactive'}</Badge></td>
                         <td className="px-4 py-3">
-                          <button onClick={() => { if(confirm('Remove student?')) remove.mutate(s.id); }} className="px-3 py-1 text-xs bg-red-50 text-red-600 rounded-lg hover:bg-red-100 font-semibold">Remove</button>
+                          <button onClick={() => handleRemove(s.id)} className="px-3 py-1 text-xs bg-red-50 text-red-600 rounded-lg hover:bg-red-100 font-semibold">Remove</button>
                         </td>
                       </tr>
                     ))}
@@ -105,7 +125,7 @@ export default function StudentsPage() {
                         <Badge variant={s.isActive ? 'green' : 'red'}>{s.isActive ? 'Active' : 'Inactive'}</Badge>
                       </div>
                     </div>
-                    <button onClick={() => { if(confirm('Remove?')) remove.mutate(s.id); }} className="text-red-400 hover:text-red-600 text-lg">🗑️</button>
+                    <button onClick={() => handleRemove(s.id)} className="text-red-400 hover:text-red-600 text-lg">🗑️</button>
                   </div>
                 </div>
               ))}

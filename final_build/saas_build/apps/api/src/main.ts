@@ -11,12 +11,14 @@ import { ConfigService } from '@nestjs/config';
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import helmet from 'helmet';
 import compression from 'compression';
+import express from 'express';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { CorrelationIdInterceptor } from './common/interceptors/correlation-id.interceptor';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { PiiScrubberInterceptor } from './common/interceptors/pii-scrubber.interceptor';
 import { setupTracing } from './config/tracing';
+import { UPLOADS_DIR } from './config/uploads.config';
 
 async function bootstrap() {
   // Initialize OpenTelemetry tracing BEFORE anything else
@@ -42,6 +44,11 @@ async function bootstrap() {
   // Compression
   app.use(compression());
 
+  // Serve uploaded files (school logos, etc.) publicly — NOT under the
+  // /api/v1 prefix, matched separately by a Next.js rewrite. See UPLOADS_DIR
+  // above for persistence caveats.
+  app.use('/uploads', express.static(UPLOADS_DIR, { maxAge: '7d', fallthrough: true }));
+
   // CORS
   const corsOrigins = configService.get<string>('CORS_ORIGINS', '');
   app.enableCors({
@@ -54,20 +61,37 @@ async function bootstrap() {
   // Global prefix
   app.setGlobalPrefix('api/v1');
 
-  // WebSocket adapter with Redis (for clustering)
-  // Use Redis adapter in production for multi-pod WS sync
+  // WebSocket adapter with Redis (for clustering) — multi-pod WS sync in prod.
+  // NOTE: previously connected pubClient/subClient but never passed them to
+  // the adapter, so every pod ran an isolated in-memory Socket.IO instance —
+  // realtime events (notifications, live attendance, etc.) silently didn't
+  // propagate across pods. Fixed by extending IoAdapter with createIOServer().
   try {
-    const { createAdapter } = await import('@socket.io/redis-adapter').catch(() => ({ createAdapter: null }));
-    if (createAdapter && nodeEnv === 'production') {
+    if (nodeEnv === 'production') {
+      const { createAdapter } = await import('@socket.io/redis-adapter');
       const { createClient } = await import('redis');
-      const pubClient = createClient({ url: `redis://:${configService.get('REDIS_PASSWORD','')}@${configService.get('REDIS_HOST','localhost')}:${parseInt(configService.get('REDIS_PORT') || '6379', 10)}` });
+      const redisUrl = `redis://:${configService.get('REDIS_PASSWORD', '')}@${configService.get('REDIS_HOST', 'localhost')}:${parseInt(configService.get('REDIS_PORT') || '6379', 10)}`;
+      const pubClient = createClient({ url: redisUrl });
       const subClient = pubClient.duplicate();
       await Promise.all([pubClient.connect(), subClient.connect()]);
-      app.useWebSocketAdapter(new IoAdapter(app));
+
+      class RedisIoAdapter extends IoAdapter {
+        private readonly adapterConstructor = createAdapter(pubClient, subClient);
+        createIOServer(port: number, options?: any) {
+          const server = super.createIOServer(port, options);
+          server.adapter(this.adapterConstructor);
+          return server;
+        }
+      }
+      app.useWebSocketAdapter(new RedisIoAdapter(app));
+      logger.log('WebSocket adapter: Redis-backed (multi-pod clustering enabled)');
     } else {
       app.useWebSocketAdapter(new IoAdapter(app));
     }
-  } catch { app.useWebSocketAdapter(new IoAdapter(app)); }
+  } catch (err) {
+    logger.error(`Redis WS adapter setup failed, falling back to in-memory: ${(err as Error).message}`);
+    app.useWebSocketAdapter(new IoAdapter(app));
+  }
 
   // Global pipes
   app.useGlobalPipes(new ValidationPipe({

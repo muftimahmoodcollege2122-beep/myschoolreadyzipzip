@@ -122,7 +122,7 @@ function PrincipalMessage({ theme }: { theme: SchoolTheme }) {
           <div style={{ position: 'relative', paddingLeft: 24 }}>
             <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: 'rgba(255,255,255,0.3)', borderRadius: 2 }} />
             <p style={{ color: 'rgba(255,255,255,0.85)', lineHeight: 1.9, fontSize: '0.95rem', margin: '0 0 16px', fontStyle: 'italic' }}>
-              "Welcome to {theme.schoolName}. Our commitment to excellence goes beyond academics — we nurture curiosity, build character, and prepare every student to lead with confidence in an ever-changing world. Our dedicated faculty, modern facilities, and supportive community create an environment where every child can discover their true potential."
+              &quot;Welcome to {theme.schoolName}. Our commitment to excellence goes beyond academics — we nurture curiosity, build character, and prepare every student to lead with confidence in an ever-changing world. Our dedicated faculty, modern facilities, and supportive community create an environment where every child can discover their true potential.&quot;
             </p>
           </div>
           <p style={{ color: 'rgba(255,255,255,0.85)', lineHeight: 1.9, fontSize: '0.95rem', margin: '0 0 24px' }}>
