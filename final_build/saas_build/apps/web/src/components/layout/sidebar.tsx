@@ -11,7 +11,6 @@ type NavSection = { title: string; items: NavItem[] };
 const sections: NavSection[] = [
   { title: 'Overview', items: [
     { href: '/dashboard',         icon: '📊', label: 'Dashboard',           roles: ['SCHOOL_ADMIN','TEACHER','SUPER_ADMIN','STUDENT','PARENT'] },
-    { href: '/analytics',         icon: '📈', label: 'Analytics',           roles: ['SCHOOL_ADMIN','SUPER_ADMIN'] },
   ]},
   { title: 'Academic', items: [
     { href: '/students',          icon: '👩‍🎓', label: 'Students',           roles: ['SCHOOL_ADMIN','TEACHER'], children: [
