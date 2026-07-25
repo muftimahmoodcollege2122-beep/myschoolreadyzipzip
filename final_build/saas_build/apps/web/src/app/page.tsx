@@ -70,7 +70,7 @@ function MagneticButton({ href, className, children }: { href: string; className
       ref={ref}
       onMouseMove={handleMove}
       onMouseLeave={handleLeave}
-      style={{ transform: `translate(${pos.x}px, ${pos.y}px)`, transitionDuration: fast ? '80ms' : '400ms', transitionTimingFunction: fast ? 'linear' : 'cubic-bezier(0.22,1,0.36,1)' }}
+      style={{ transform: `translate(${pos.x}px, ${pos.y}px)`, transitionDuration: fast ? '20ms' : '400ms', transitionTimingFunction: fast ? 'linear' : 'cubic-bezier(0.22,1,0.36,1)' }}
       className={`relative inline-flex items-center justify-center transition-[transform,box-shadow,filter] hover:scale-[1.04] hover:shadow-xl hover:brightness-110 ${className}`}
     >
       {children}
@@ -90,8 +90,8 @@ function PricingCard({ p, billing }: { p: any; billing: 'monthly' | 'annual' }) 
     const rect = el.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width;
     const y = (e.clientY - rect.top) / rect.height;
-    const rotateX = (0.5 - y) * 12;
-    const rotateY = (x - 0.5) * 12;
+    const rotateX = (0.5 - y) * 16;
+    const rotateY = (x - 0.5) * 16;
     setFast(true);
     setTransform(`perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-10px) scale(1.03)`);
     setSpot({ x: x * 100, y: y * 100, opacity: 1 });
@@ -107,7 +107,7 @@ function PricingCard({ p, billing }: { p: any; billing: 'monthly' | 'annual' }) 
       ref={ref}
       onMouseMove={handleMove}
       onMouseLeave={handleLeave}
-      style={{ transform, transitionDuration: fast ? '60ms' : '500ms', transitionTimingFunction: fast ? 'linear' : 'cubic-bezier(0.22,1,0.36,1)', transitionProperty: 'transform, box-shadow' }}
+      style={{ transform, transitionDuration: fast ? '15ms' : '450ms', transitionTimingFunction: fast ? 'linear' : 'cubic-bezier(0.22,1,0.36,1)', transitionProperty: 'transform, box-shadow' }}
       className={`relative rounded-3xl overflow-hidden flex flex-col will-change-transform cursor-pointer ${p.highlight ? `sm:scale-[1.03] ${p.glow}` : ''}`}
     >
       <div className={`bg-gradient-to-br ${p.color} p-6 sm:p-7 text-white relative overflow-hidden`}>
