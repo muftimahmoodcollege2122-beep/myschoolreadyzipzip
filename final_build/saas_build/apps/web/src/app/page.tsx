@@ -521,14 +521,22 @@ export default function MarketingPage() {
         </div>
       </section>
 
-      {/* ── Stats Band ── */}
-      <section className="py-10" style={{ background: 'linear-gradient(120deg, #4F46E5 0%, #7C3AED 100%)' }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-2 sm:grid-cols-5 gap-6">
-          {STATS.map(s => (
-            <div key={s.label} className="text-center">
-              <div className="text-2xl mb-1.5">{s.icon}</div>
-              <p className="text-xl sm:text-2xl font-black text-white tracking-tight">{s.value}</p>
-              <p className="text-xs text-white/70 mt-0.5 font-medium">{s.label}</p>
+      {/* ── Stats Band (continuous marquee) ── */}
+      <section className="py-10 overflow-hidden" style={{ background: 'linear-gradient(120deg, #4F46E5 0%, #7C3AED 100%)' }}>
+        <style>{`
+          @keyframes msk-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+          .msk-marquee-track { animation: msk-marquee 22s linear infinite; }
+        `}</style>
+        <div className="flex w-max msk-marquee-track">
+          {[0, 1].map(dup => (
+            <div key={dup} className="flex items-center flex-shrink-0">
+              {STATS.map(s => (
+                <div key={`${dup}-${s.label}`} className="text-center px-8 sm:px-12 flex-shrink-0">
+                  <div className="text-2xl mb-1.5">{s.icon}</div>
+                  <p className="text-xl sm:text-2xl font-black text-white tracking-tight whitespace-nowrap">{s.value}</p>
+                  <p className="text-xs text-white/70 mt-0.5 font-medium whitespace-nowrap">{s.label}</p>
+                </div>
+              ))}
             </div>
           ))}
         </div>
