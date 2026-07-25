@@ -220,7 +220,7 @@ export default function MarketingPage() {
           </div>
 
           {/* Dashboard Preview + Phone mockup — animated, matches EduSmart-style reference */}
-          <div className="relative hidden sm:block">
+          <div className="relative mt-4 sm:mt-0 scale-[0.82] sm:scale-100 origin-top">
             <style>{`
               @keyframes msk-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
               @keyframes msk-float-2 { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
