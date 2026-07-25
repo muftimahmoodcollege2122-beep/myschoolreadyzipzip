@@ -291,22 +291,15 @@ export default function MarketingPage() {
       <section className="py-16 sm:py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* Illustration side */}
-          <div className="relative bg-gradient-to-br from-gray-50 to-blue-50 rounded-3xl p-8 sm:p-10 border border-gray-100">
-            <div className="grid grid-cols-2 gap-4">
-              {[
-                { icon: '👨‍👩‍👧', title: 'Parents', desc: 'Stay connected with your child’s activities' },
-                { icon: '👨‍🏫', title: 'Teachers', desc: 'Manage classes, assignments and performance' },
-                { icon: '👩‍🎓', title: 'Students', desc: 'Access lessons, assignments and results' },
-                { icon: '🧑‍💼', title: 'Admins', desc: 'Complete control over school operations' },
-              ].map(r => (
-                <div key={r.title} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
-                  <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-lg mb-2">{r.icon}</div>
-                  <p className="font-bold text-gray-900 text-sm mb-0.5">{r.title}</p>
-                  <p className="text-xs text-gray-500 leading-snug">{r.desc}</p>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center gap-3">
+          <div className="relative bg-gradient-to-br from-gray-50 to-blue-50 rounded-3xl p-6 sm:p-8 border border-gray-100 overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="https://stories.freepiklabs.com/storage/53777/Teacher-student_Artboard-1.svg"
+              alt="Teacher and student using MySchool"
+              className="w-full h-auto max-h-[420px] object-contain"
+              loading="lazy"
+            />
+            <div className="mt-2 bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-xl">🏫</div>
               <div>
                 <p className="font-bold text-gray-900 text-sm">One School, One Platform</p>
@@ -492,7 +485,10 @@ export default function MarketingPage() {
             ))}
           </div>
           <div className="border-t border-gray-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-gray-600 text-sm text-center sm:text-left">© 2026 MySchool Technologies. Built in Pakistan.</p>
+            <p className="text-gray-600 text-sm text-center sm:text-left">
+              © 2026 MySchool Technologies. Built in Pakistan. Illustrations by{' '}
+              <a href="https://storyset.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-white">Storyset</a>.
+            </p>
             <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-gray-600">
               <Link href="/privacy-policy" className="hover:text-white">Privacy</Link>
               <span className="text-gray-700">·</span>
