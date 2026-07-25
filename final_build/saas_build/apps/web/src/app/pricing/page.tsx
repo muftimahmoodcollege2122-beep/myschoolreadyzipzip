@@ -1,6 +1,80 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Link from 'next/link';
+
+function MagneticButton({ href, className, children }: { href: string; className: string; children: React.ReactNode }) {
+  const ref = useRef<HTMLAnchorElement>(null);
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const [fast, setFast] = useState(true);
+
+  const handleMove = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    setFast(true);
+    setPos({ x: (e.clientX - cx) * 0.3, y: (e.clientY - cy) * 0.3 });
+  };
+  const handleLeave = () => {
+    setFast(false);
+    setPos({ x: 0, y: 0 });
+  };
+
+  return (
+    <Link
+      href={href}
+      ref={ref}
+      onMouseMove={handleMove}
+      onMouseLeave={handleLeave}
+      style={{ transform: `translate(${pos.x}px, ${pos.y}px)`, transitionDuration: fast ? '80ms' : '400ms', transitionTimingFunction: fast ? 'linear' : 'cubic-bezier(0.22,1,0.36,1)' }}
+      className={`relative inline-flex items-center justify-center transition-[transform,box-shadow,filter] hover:scale-[1.04] hover:shadow-xl hover:brightness-110 ${className}`}
+    >
+      {children}
+    </Link>
+  );
+}
+
+function TiltShell({ highlight, className, children }: { highlight: boolean; className: string; children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [transform, setTransform] = useState('perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0px) scale(1)');
+  const [spot, setSpot] = useState({ x: 50, y: 50, opacity: 0 });
+  const [fast, setFast] = useState(true);
+
+  const handleMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    const rotateX = (0.5 - y) * 10;
+    const rotateY = (x - 0.5) * 10;
+    setFast(true);
+    setTransform(`perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-10px) scale(1.03)`);
+    setSpot({ x: x * 100, y: y * 100, opacity: 1 });
+  };
+  const handleLeave = () => {
+    setFast(false);
+    setTransform('perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0px) scale(1)');
+    setSpot(s => ({ ...s, opacity: 0 }));
+  };
+
+  return (
+    <div
+      ref={ref}
+      onMouseMove={handleMove}
+      onMouseLeave={handleLeave}
+      style={{ transform, transitionDuration: fast ? '60ms' : '500ms', transitionTimingFunction: fast ? 'linear' : 'cubic-bezier(0.22,1,0.36,1)', transitionProperty: 'transform, box-shadow' }}
+      className={`relative will-change-transform cursor-pointer ${className}`}
+    >
+      <div
+        className="pointer-events-none absolute inset-0 z-10 transition-opacity duration-300 rounded-3xl"
+        style={{ opacity: spot.opacity, background: `radial-gradient(280px circle at ${spot.x}% ${spot.y}%, ${highlight ? 'rgba(255,255,255,0.5)' : 'rgba(59,130,246,0.10)'}, transparent 70%)` }}
+      />
+      {children}
+    </div>
+  );
+}
 
 const PLANS = [
   {
@@ -197,8 +271,11 @@ export default function PricingPage() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 -mt-4 sm:-mt-8 pb-10 sm:pb-16">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-6">
           {PLANS.map(plan => (
-            <div key={plan.name}
-              className={`group bg-white rounded-3xl border-2 shadow-sm overflow-hidden flex flex-col transition-all duration-300 ease-out hover:-translate-y-3 hover:scale-[1.03] hover:z-20 hover:shadow-2xl cursor-pointer ${plan.highlight ? 'shadow-2xl shadow-blue-500/10 -mt-4 hover:ring-4 hover:ring-blue-500' : 'hover:ring-4 hover:ring-gray-400'} ${plan.color}`}>
+            <TiltShell
+              key={plan.name}
+              highlight={plan.highlight}
+              className={`bg-white rounded-3xl border-2 shadow-sm overflow-hidden flex flex-col ${plan.highlight ? 'shadow-2xl shadow-blue-500/10 -mt-4' : ''} ${plan.color}`}
+            >
               {plan.highlight && (
                 <div className="bg-blue-600 text-white text-center py-2 text-xs font-black tracking-wider uppercase">
                   ⭐ Most Popular
@@ -215,7 +292,7 @@ export default function PricingPage() {
                 <div className="mb-6">
                   <div className="flex items-end gap-1">
                     <span className="text-sm font-bold text-gray-500">PKR</span>
-                    <span className="text-4xl sm:text-5xl font-black text-gray-900 transition-transform duration-300 group-hover:scale-110 origin-left">
+                    <span className="text-4xl sm:text-5xl font-black text-gray-900">
                       {(annual ? plan.price.annual : plan.price.monthly).toLocaleString()}
                     </span>
                     <span className="text-gray-400 text-sm mb-1">/month</span>
@@ -242,10 +319,9 @@ export default function PricingPage() {
                 </div>
 
                 {/* CTA */}
-                <Link href="/signup"
-                  className={`block text-center py-3.5 rounded-xl text-sm font-black transition-all mb-8 ${plan.btn}`}>
+                <MagneticButton href="/signup" className={`w-full py-3.5 rounded-xl text-sm font-black mb-8 ${plan.btn}`}>
                   Start 30-Day Free Trial
-                </Link>
+                </MagneticButton>
 
                 {/* Features */}
                 <div className="space-y-2.5">
@@ -259,7 +335,7 @@ export default function PricingPage() {
                   ))}
                 </div>
               </div>
-            </div>
+            </TiltShell>
           ))}
         </div>
 

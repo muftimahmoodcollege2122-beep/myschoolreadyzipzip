@@ -45,6 +45,110 @@ const FEATURE_GRID = [
 ];
 
 
+function MagneticButton({ href, className, children }: { href: string; className: string; children: React.ReactNode }) {
+  const ref = useRef<HTMLAnchorElement>(null);
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const [fast, setFast] = useState(true);
+
+  const handleMove = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    setFast(true);
+    setPos({ x: (e.clientX - cx) * 0.3, y: (e.clientY - cy) * 0.3 });
+  };
+  const handleLeave = () => {
+    setFast(false);
+    setPos({ x: 0, y: 0 });
+  };
+
+  return (
+    <Link
+      href={href}
+      ref={ref}
+      onMouseMove={handleMove}
+      onMouseLeave={handleLeave}
+      style={{ transform: `translate(${pos.x}px, ${pos.y}px)`, transitionDuration: fast ? '80ms' : '400ms', transitionTimingFunction: fast ? 'linear' : 'cubic-bezier(0.22,1,0.36,1)' }}
+      className={`relative inline-flex items-center justify-center transition-[transform,box-shadow,filter] hover:scale-[1.04] hover:shadow-xl hover:brightness-110 ${className}`}
+    >
+      {children}
+    </Link>
+  );
+}
+
+function PricingCard({ p, billing }: { p: any; billing: 'monthly' | 'annual' }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [transform, setTransform] = useState('perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0px) scale(1)');
+  const [spot, setSpot] = useState({ x: 50, y: 50, opacity: 0 });
+  const [fast, setFast] = useState(true);
+
+  const handleMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    const rotateX = (0.5 - y) * 12;
+    const rotateY = (x - 0.5) * 12;
+    setFast(true);
+    setTransform(`perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-10px) scale(1.03)`);
+    setSpot({ x: x * 100, y: y * 100, opacity: 1 });
+  };
+  const handleLeave = () => {
+    setFast(false);
+    setTransform('perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0px) scale(1)');
+    setSpot(s => ({ ...s, opacity: 0 }));
+  };
+
+  return (
+    <div
+      ref={ref}
+      onMouseMove={handleMove}
+      onMouseLeave={handleLeave}
+      style={{ transform, transitionDuration: fast ? '60ms' : '500ms', transitionTimingFunction: fast ? 'linear' : 'cubic-bezier(0.22,1,0.36,1)', transitionProperty: 'transform, box-shadow' }}
+      className={`relative rounded-3xl overflow-hidden flex flex-col will-change-transform cursor-pointer ${p.highlight ? `sm:scale-[1.03] ${p.glow}` : ''}`}
+    >
+      <div className={`bg-gradient-to-br ${p.color} p-6 sm:p-7 text-white relative overflow-hidden`}>
+        {/* Spotlight that follows the cursor */}
+        <div
+          className="pointer-events-none absolute inset-0 transition-opacity duration-300"
+          style={{ opacity: spot.opacity, background: `radial-gradient(280px circle at ${spot.x}% ${spot.y}%, rgba(255,255,255,0.35), transparent 70%)`, mixBlendMode: 'overlay' }}
+        />
+        {p.badge ? (
+          <div className={`inline-flex items-center gap-1.5 text-xs font-black px-3 py-1 rounded-full mb-4 relative ${p.highlight ? 'bg-white/20' : 'bg-white/15 text-white/90'}`}>
+            {p.highlight && <span className="animate-pulse">⭐</span>}{p.badge.toUpperCase()}
+          </div>
+        ) : <div className="h-7 mb-4" />}
+        <h3 className="text-2xl font-black relative">{p.name}</h3>
+        <div className="flex items-end gap-1 mt-4 relative">
+          <span className="text-white/70 text-sm font-medium pb-1">PKR</span>
+          <span className="text-4xl sm:text-5xl font-black tracking-tight">{(billing === 'annual' ? p.annualPrice : p.monthlyPrice).toLocaleString()}</span>
+          <span className="text-white/70 text-sm pb-1">/mo</span>
+        </div>
+        {billing === 'annual' && (
+          <p className="text-white/60 text-xs mt-1 relative">PKR {((p.monthlyPrice - p.annualPrice) * 12).toLocaleString()} saved/year</p>
+        )}
+        <p className="text-white/50 text-xs mt-1 relative">{p.limit}</p>
+      </div>
+      <div className="bg-white flex-1 p-5 sm:p-6 border border-gray-100">
+        <MagneticButton href="/signup" className={`w-full py-3 rounded-xl text-sm font-black mb-5 bg-gradient-to-r ${p.color} text-white`}>
+          Get Started
+        </MagneticButton>
+        <ul className="space-y-2.5">
+          {p.features.map((f: string) => (
+            <li key={f} className="flex items-start gap-2.5 text-sm text-gray-600">
+              <svg className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
+              {f}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
 const PRICING = [
   {
     name: 'Starter', monthlyPrice: 5000, annualPrice: 4000,
@@ -497,41 +601,7 @@ export default function MarketingPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 max-w-5xl mx-auto">
             {PRICING.map((p) => (
-              <div
-                key={p.name}
-                className={`group relative rounded-3xl overflow-hidden flex flex-col transition-all duration-300 ease-out ring-2 ring-transparent hover:ring-4 hover:-translate-y-3 hover:scale-[1.03] hover:z-20 hover:shadow-2xl cursor-pointer ${p.ring} ${p.highlight ? `sm:scale-[1.03] ${p.glow}` : ''}`}
-              >
-                <div className={`bg-gradient-to-br ${p.color} p-6 sm:p-7 text-white transition-all duration-300`}>
-                  {p.badge ? (
-                    <div className={`inline-flex items-center gap-1.5 text-xs font-black px-3 py-1 rounded-full mb-4 ${p.highlight ? 'bg-white/20' : 'bg-white/15 text-white/90'}`}>
-                      {p.highlight && <span className="animate-pulse">⭐</span>}{p.badge.toUpperCase()}
-                    </div>
-                  ) : <div className="h-7 mb-4" />}
-                  <h3 className="text-2xl font-black">{p.name}</h3>
-                  <div className="flex items-end gap-1 mt-4">
-                    <span className="text-white/70 text-sm font-medium pb-1">PKR</span>
-                    <span className="text-4xl sm:text-5xl font-black tracking-tight transition-transform duration-300 group-hover:scale-110 origin-left">{(billing === 'annual' ? p.annualPrice : p.monthlyPrice).toLocaleString()}</span>
-                    <span className="text-white/70 text-sm pb-1">/mo</span>
-                  </div>
-                  {billing === 'annual' && (
-                    <p className="text-white/60 text-xs mt-1">PKR {((p.monthlyPrice - p.annualPrice) * 12).toLocaleString()} saved/year</p>
-                  )}
-                  <p className="text-white/50 text-xs mt-1">{p.limit}</p>
-                </div>
-                <div className="bg-white flex-1 p-5 sm:p-6 border border-gray-100 transition-colors duration-300 group-hover:border-transparent">
-                  <Link href="/signup" className={`block text-center py-3 rounded-xl text-sm font-black transition-all mb-5 bg-gradient-to-r ${p.color} text-white group-hover:opacity-90 group-hover:shadow-lg`}>
-                    Get Started
-                  </Link>
-                  <ul className="space-y-2.5">
-                    {p.features.map(f => (
-                      <li key={f} className="flex items-start gap-2.5 text-sm text-gray-600">
-                        <svg className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
+              <PricingCard key={p.name} p={p} billing={billing} />
             ))}
           </div>
 
