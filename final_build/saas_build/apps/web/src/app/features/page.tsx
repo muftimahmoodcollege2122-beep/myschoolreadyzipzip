@@ -20,7 +20,7 @@ const MODULES = [
     icon: '🏫',
     title: 'School Administration',
     subtitle: 'Run your entire school from a single powerful dashboard',
-    color: 'from-blue-600 to-blue-700',
+    color: 'from-gray-900 to-black',
     accent: 'bg-blue-50 text-blue-700 border-blue-200',
     image: '/images/features/1-school-dashboard.png',
     features: [
@@ -152,7 +152,7 @@ const MODULES = [
     icon: '🤖',
     title: 'Analytics & AI',
     subtitle: 'Data-driven insights to improve academic and operational performance',
-    color: 'from-purple-600 to-purple-700',
+    color: 'from-indigo-800 to-indigo-900',
     accent: 'bg-purple-50 text-purple-700 border-purple-200',
     image: '/images/features/4-analytics-reports.png',
     features: [
@@ -200,14 +200,14 @@ export default function FeaturesPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black text-sm">M</div>
+            <div className="w-8 h-8 bg-gray-950 rounded-lg flex items-center justify-center text-white font-black text-sm">M</div>
             <span className="font-black text-lg text-gray-900">MySchool</span>
           </Link>
           <div className="flex items-center gap-6">
             <Link href="/features" className="text-sm font-semibold text-blue-600">Features</Link>
             <Link href="/pricing" className="text-sm font-medium text-gray-600 hover:text-gray-900">Pricing</Link>
             <Link href="/security-center" className="text-sm font-medium text-gray-600 hover:text-gray-900">Security</Link>
-            <Link href="/signup" className="text-sm font-bold px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Start Free Trial</Link>
+            <Link href="/signup" className="text-sm font-bold px-4 py-2 bg-gray-950 text-white rounded-lg hover:bg-gray-800">Start Free Trial</Link>
           </div>
         </div>
       </nav>
@@ -227,7 +227,7 @@ export default function FeaturesPage() {
             MySchool replaces 12 different software tools with one integrated system.
           </p>
           <div className="flex items-center justify-center gap-4 mt-8">
-            <Link href="/signup" className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all text-sm">
+            <Link href="/signup" className="px-6 py-3 bg-gray-950 hover:bg-gray-800 text-white font-bold rounded-xl transition-all text-sm">
               Start 30-Day Free Trial
             </Link>
             <Link href="/pricing" className="px-6 py-3 bg-white/10 hover:bg-white/15 text-white font-semibold rounded-xl border border-white/20 transition-all text-sm">
@@ -331,7 +331,7 @@ export default function FeaturesPage() {
       </div>
 
       {/* CTA */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 py-16">
+      <div className="bg-gradient-to-r from-gray-900 to-black py-16">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center text-white">
           <h2 className="text-2xl sm:text-3xl font-black mb-3">Ready to modernize your school?</h2>
           <p className="text-blue-200 mb-8">Join hundreds of Pakistani schools already using MySchool. 30-day free trial, no credit card required.</p>
@@ -350,7 +350,7 @@ export default function FeaturesPage() {
       <footer className="bg-gray-900 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black text-xs">M</div>
+            <div className="w-7 h-7 bg-gray-950 rounded-lg flex items-center justify-center text-white font-black text-xs">M</div>
             <span className="text-white font-black">MySchool</span>
           </Link>
           <div className="flex gap-6 text-sm text-gray-500">

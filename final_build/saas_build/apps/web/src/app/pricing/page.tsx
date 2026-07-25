@@ -69,7 +69,7 @@ function TiltShell({ highlight, className, children }: { highlight: boolean; cla
     >
       <div
         className="pointer-events-none absolute inset-0 z-10 transition-opacity duration-300 rounded-3xl"
-        style={{ opacity: spot.opacity, background: `radial-gradient(280px circle at ${spot.x}% ${spot.y}%, ${highlight ? 'rgba(255,255,255,0.5)' : 'rgba(59,130,246,0.10)'}, transparent 70%)` }}
+        style={{ opacity: spot.opacity, background: `radial-gradient(280px circle at ${spot.x}% ${spot.y}%, ${highlight ? 'rgba(255,255,255,0.5)' : 'rgba(180,131,46,0.14)'}, transparent 70%)` }}
       />
       {children}
     </div>
@@ -116,9 +116,9 @@ const PLANS = [
     price: { monthly: 12000, annual: 9600 },
     students: '2,000',
     desc: 'The most popular plan for growing schools that want powerful features and full automation.',
-    color: 'border-blue-500',
-    badge: 'bg-blue-600 text-white',
-    btn: 'bg-blue-600 hover:bg-blue-700 text-white',
+    color: 'border-amber-500',
+    badge: 'bg-gray-950 text-white',
+    btn: 'bg-amber-600 hover:bg-amber-700 text-white',
     highlight: true,
     features: [
       { text: 'Up to 2,000 students', included: true },
@@ -150,9 +150,9 @@ const PLANS = [
     price: { monthly: 20000, annual: 16000 },
     students: 'Unlimited',
     desc: 'For large schools, college systems, and education groups that need unlimited scale and custom solutions.',
-    color: 'border-purple-500',
+    color: 'border-indigo-700',
     badge: 'bg-purple-600 text-white',
-    btn: 'bg-purple-600 hover:bg-purple-700 text-white',
+    btn: 'bg-indigo-800 hover:bg-indigo-900 text-white',
     highlight: false,
     features: [
       { text: 'Unlimited students', included: true },
@@ -226,14 +226,14 @@ export default function PricingPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black text-sm">M</div>
+            <div className="w-8 h-8 bg-gray-950 rounded-lg flex items-center justify-center text-white font-black text-sm">M</div>
             <span className="font-black text-lg text-gray-900">MySchool</span>
           </Link>
           <div className="flex items-center gap-6">
             <Link href="/features" className="text-sm font-medium text-gray-600 hover:text-gray-900">Features</Link>
             <Link href="/pricing" className="text-sm font-semibold text-blue-600">Pricing</Link>
             <Link href="/security-center" className="text-sm font-medium text-gray-600 hover:text-gray-900">Security</Link>
-            <Link href="/signup" className="text-sm font-bold px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Start Free Trial</Link>
+            <Link href="/signup" className="text-sm font-bold px-4 py-2 bg-gray-950 text-white rounded-lg hover:bg-gray-800">Start Free Trial</Link>
           </div>
         </div>
       </nav>
@@ -274,10 +274,10 @@ export default function PricingPage() {
             <TiltShell
               key={plan.name}
               highlight={plan.highlight}
-              className={`bg-white rounded-3xl border-2 shadow-sm overflow-hidden flex flex-col ${plan.highlight ? 'shadow-2xl shadow-blue-500/10 -mt-4' : ''} ${plan.color}`}
+              className={`bg-white rounded-3xl border-2 shadow-sm overflow-hidden flex flex-col ${plan.highlight ? 'shadow-2xl shadow-amber-500/10 -mt-4' : ''} ${plan.color}`}
             >
               {plan.highlight && (
-                <div className="bg-blue-600 text-white text-center py-2 text-xs font-black tracking-wider uppercase">
+                <div className="bg-amber-600 text-white text-center py-2 text-xs font-black tracking-wider uppercase">
                   ⭐ Most Popular
                 </div>
               )}
@@ -477,7 +477,7 @@ export default function PricingPage() {
       </div>
 
       {/* CTA */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 py-16">
+      <div className="bg-gradient-to-r from-gray-900 to-black py-16">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center text-white">
           <h2 className="text-3xl font-black mb-3">Start your free trial today</h2>
           <p className="text-blue-200 mb-3">30 days free · No credit card · Full Professional plan access</p>
@@ -497,7 +497,7 @@ export default function PricingPage() {
       <footer className="bg-gray-900 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black text-xs">M</div>
+            <div className="w-7 h-7 bg-gray-950 rounded-lg flex items-center justify-center text-white font-black text-xs">M</div>
             <span className="text-white font-black">MySchool</span>
           </Link>
           <div className="flex gap-6 text-sm text-gray-500">

@@ -62,7 +62,7 @@ export default function AboutPage() {
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white border-b border-gray-200 shadow-sm' : 'bg-transparent'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black text-sm">M</div>
+            <div className="w-8 h-8 bg-gray-950 rounded-lg flex items-center justify-center text-white font-black text-sm">M</div>
             <span className={`font-black text-lg ${scrolled ? 'text-gray-900' : 'text-white'}`}>MySchool</span>
           </Link>
           <div className="hidden md:flex items-center gap-6">
@@ -75,7 +75,7 @@ export default function AboutPage() {
           </div>
           <div className="flex items-center gap-2">
             <Link href="/login" className={`text-sm font-semibold px-3 py-2 rounded-lg ${scrolled ? 'text-gray-700 hover:bg-gray-100' : 'text-white/80 hover:text-white'}`}>Sign In</Link>
-            <Link href="/signup" className="text-sm font-bold px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Get Started</Link>
+            <Link href="/signup" className="text-sm font-bold px-4 py-2 bg-gray-950 text-white rounded-lg hover:bg-gray-800">Get Started</Link>
           </div>
         </div>
       </nav>
@@ -91,7 +91,7 @@ export default function AboutPage() {
             MySchool was born in 2021 when we watched a school principal in Lahore managing 500 students on paper registers and Excel. That day changed everything.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/signup" className="px-7 py-3.5 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-colors">Start Free Trial</Link>
+            <Link href="/signup" className="px-7 py-3.5 bg-gray-950 text-white font-bold rounded-2xl hover:bg-gray-800 transition-colors">Start Free Trial</Link>
             <Link href="/#features" className="px-7 py-3.5 bg-white/10 border border-white/20 text-white font-bold rounded-2xl hover:bg-white/20 transition-colors">See Features</Link>
           </div>
         </div>
@@ -118,8 +118,8 @@ export default function AboutPage() {
           <p className="text-gray-500 text-center mb-12 max-w-xl mx-auto">Three pillars that guide every decision we make.</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { icon:'🎯', label:'OUR MISSION', color:'from-blue-600 to-blue-700',    title:'Automate the work. Amplify the teaching.',         body:"Eliminate administrative burden so principals can lead, teachers can teach, and students can learn — without paperwork or manual processes slowing them down.", points:['Remove paper-based processes','Automate fee collection and reminders','Connect parents, teachers and students in real time','Give principals instant visibility'] },
-              { icon:'🌟', label:'OUR VISION',  color:'from-indigo-600 to-purple-700', title:'A world-class school in every community.',          body:"Every school — regardless of size, location, or budget — deserves to operate with the same efficiency as the world's best institutions.",                         points:['1 million students on MySchool by 2030','Available in 25+ countries','10 language support','AI-powered personalized learning'] },
+              { icon:'🎯', label:'OUR MISSION', color:'from-gray-900 to-black',    title:'Automate the work. Amplify the teaching.',         body:"Eliminate administrative burden so principals can lead, teachers can teach, and students can learn — without paperwork or manual processes slowing them down.", points:['Remove paper-based processes','Automate fee collection and reminders','Connect parents, teachers and students in real time','Give principals instant visibility'] },
+              { icon:'🌟', label:'OUR VISION',  color:'from-indigo-700 to-indigo-900', title:'A world-class school in every community.',          body:"Every school — regardless of size, location, or budget — deserves to operate with the same efficiency as the world's best institutions.",                         points:['1 million students on MySchool by 2030','Available in 25+ countries','10 language support','AI-powered personalized learning'] },
               { icon:'🚀', label:'OUR GOAL',    color:'from-emerald-600 to-teal-700',  title:'Measurable impact on education outcomes.',         body:"Every feature is measured against one standard: does it improve educational outcomes? We track attendance, fee collection, dropout rates, and performance.",      points:['Reduce dropout rates by 30%','Fee collection above 95%','Cut admin work by 80%','Increase parent engagement 5x'] },
             ].map(c => (
               <div key={c.label} className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100">
@@ -161,7 +161,7 @@ export default function AboutPage() {
                       <p className="text-gray-500 text-sm leading-relaxed">{m.desc}</p>
                     </div>
                   </div>
-                  <div className="absolute left-3 sm:left-1/2 sm:-translate-x-1/2 top-4 w-4 h-4 bg-blue-600 rounded-full border-4 border-white shadow" />
+                  <div className="absolute left-3 sm:left-1/2 sm:-translate-x-1/2 top-4 w-4 h-4 bg-gray-950 rounded-full border-4 border-white shadow" />
                   <div className="hidden sm:block sm:w-1/2" />
                 </div>
               ))}
@@ -231,7 +231,7 @@ export default function AboutPage() {
           <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mb-4">Ready to transform your school?</h2>
           <p className="text-gray-500 text-lg mb-8">Join 500+ schools on MySchool. Setup takes less than 10 minutes.</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/signup" className="px-8 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 text-lg">Start Free Trial</Link>
+            <Link href="/signup" className="px-8 py-4 bg-gray-950 text-white font-bold rounded-2xl hover:bg-gray-800 text-lg">Start Free Trial</Link>
             <Link href="/" className="px-8 py-4 bg-gray-100 text-gray-700 font-bold rounded-2xl hover:bg-gray-200 text-lg">← Back to Home</Link>
           </div>
           <p className="text-gray-400 text-sm mt-5">No credit card required · Free 30-day trial · Cancel anytime</p>
@@ -242,7 +242,7 @@ export default function AboutPage() {
       <footer className="bg-gray-900 text-white py-8 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black text-xs">M</div>
+            <div className="w-7 h-7 bg-gray-950 rounded-lg flex items-center justify-center text-white font-black text-xs">M</div>
             <span className="font-black">MySchool</span>
           </div>
           <p className="text-gray-400 text-sm">© {new Date().getFullYear()} MySchool. Built with ❤️ for educators worldwide.</p>
