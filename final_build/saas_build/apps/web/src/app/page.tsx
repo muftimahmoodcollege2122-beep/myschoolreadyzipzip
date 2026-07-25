@@ -420,8 +420,8 @@ export default function MarketingPage() {
           <div className="relative bg-gradient-to-br from-gray-50 to-blue-50 rounded-3xl p-6 sm:p-8 border border-gray-100 overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="https://stories.freepiklabs.com/storage/53777/Teacher-student_Artboard-1.svg"
-              alt="Teacher and student using MySchool"
+              src="/images/features/12-all-in-one-platform.png"
+              alt="MySchool — all-in-one school management platform"
               className="w-full h-auto max-h-[420px] object-contain"
               loading="lazy"
             />
@@ -619,8 +619,7 @@ export default function MarketingPage() {
           </div>
           <div className="border-t border-gray-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
             <p className="text-gray-600 text-sm text-center sm:text-left">
-              © 2026 MySchool Technologies. Built in Pakistan. Illustrations by{' '}
-              <a href="https://storyset.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-white">Storyset</a>.
+              © 2026 MySchool Technologies. Built in Pakistan.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-gray-600">
               <Link href="/privacy-policy" className="hover:text-white">Privacy</Link>

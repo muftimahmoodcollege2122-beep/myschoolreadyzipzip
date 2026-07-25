@@ -22,6 +22,7 @@ const MODULES = [
     subtitle: 'Run your entire school from a single powerful dashboard',
     color: 'from-blue-600 to-blue-700',
     accent: 'bg-blue-50 text-blue-700 border-blue-200',
+    image: '/images/features/1-school-dashboard.png',
     features: [
       { name: 'Student Management', desc: 'Complete student profiles with admission records, contact info, medical history, and documents. Full CRUD with soft-delete and GDPR-compliant erasure.', icon: '👨‍🎓' },
       { name: 'Class & Section Management', desc: 'Create unlimited classes and sections. Set capacity limits, assign class teachers, and manage student enrollments with one click.', icon: '🏛️' },
@@ -40,6 +41,7 @@ const MODULES = [
     subtitle: 'Complete end-to-end academic lifecycle from enrollment to results',
     color: 'from-violet-600 to-violet-700',
     accent: 'bg-violet-50 text-violet-700 border-violet-200',
+    image: '/images/features/6-lms-online-learning.png',
     features: [
       { name: 'Attendance Tracking', desc: 'Mark attendance period-by-period or daily. Real-time dashboards show present/absent/late counts. Automatic alerts to parents when a child is absent.', icon: '✅' },
       { name: 'Exam Management', desc: 'Schedule exams, assign hall tickets, and manage seating arrangements. Support for internal, board, and mock examinations.', icon: '📝' },
@@ -58,6 +60,7 @@ const MODULES = [
     subtitle: 'Complete fee management with Pakistani payment gateway integration',
     color: 'from-green-600 to-green-700',
     accent: 'bg-green-50 text-green-700 border-green-200',
+    image: '/images/features/5-fee-management.png',
     features: [
       { name: 'Fee Structure Builder', desc: 'Create custom fee structures per class, session, or category. Tuition, transport, hostel, activity — unlimited fee heads.', icon: '🏗️' },
       { name: 'Invoice Generation', desc: 'Auto-generate monthly/quarterly invoices for all students. Bulk generate for entire classes or sections in one click.', icon: '🧾' },
@@ -76,6 +79,7 @@ const MODULES = [
     subtitle: 'Keep parents, teachers, and students informed in real time',
     color: 'from-orange-600 to-orange-700',
     accent: 'bg-orange-50 text-orange-700 border-orange-200',
+    image: '/images/features/11-communication-hub.png',
     features: [
       { name: 'WhatsApp Notifications', desc: 'Automated WhatsApp messages for attendance, fee reminders, exam schedules, and results. Parents receive updates on their existing WhatsApp.', icon: '💬' },
       { name: 'SMS Gateway', desc: 'SMS alerts for critical announcements, emergencies, and exam results. Works on any mobile phone without internet.', icon: '📲' },
@@ -94,6 +98,7 @@ const MODULES = [
     subtitle: 'Full human resource management for teaching and non-teaching staff',
     color: 'from-rose-600 to-rose-700',
     accent: 'bg-rose-50 text-rose-700 border-rose-200',
+    image: '/images/features/3-teacher-management.png',
     features: [
       { name: 'Staff Profiles', desc: 'Complete employee records: CNIC, qualifications, joining date, salary, documents. Separate profiles for teaching and non-teaching staff.', icon: '👤' },
       { name: 'Payroll Management', desc: 'Monthly salary calculation with allowances and deductions. Generate payslips and track salary disbursement. Export for bank transfer.', icon: '💵' },
@@ -112,6 +117,7 @@ const MODULES = [
     subtitle: 'Dedicated role-based portals for every stakeholder',
     color: 'from-teal-600 to-teal-700',
     accent: 'bg-teal-50 text-teal-700 border-teal-200',
+    image: '/images/features/7-parent-portal.png',
     features: [
       { name: 'Student Portal', desc: 'Students see their timetable, attendance, grades, assignments, fee status, and exam schedule. Mobile-friendly for on-the-go access.', icon: '🎓' },
       { name: 'Parent Portal', desc: 'Parents monitor all children from one login. See daily attendance, exam results, fee dues, and school announcements.', icon: '👨‍👩‍👧' },
@@ -148,6 +154,7 @@ const MODULES = [
     subtitle: 'Data-driven insights to improve academic and operational performance',
     color: 'from-purple-600 to-purple-700',
     accent: 'bg-purple-50 text-purple-700 border-purple-200',
+    image: '/images/features/4-analytics-reports.png',
     features: [
       { name: 'Executive Dashboard', desc: 'Real-time overview of students, attendance rates, fee collection, and upcoming exams. Everything a principal needs in one glance.', icon: '📊' },
       { name: 'Attendance Analytics', desc: 'Class-wise, teacher-wise, and month-wise attendance trends. Identify chronic absentees before they fail. Automated reports every Monday.', icon: '📈' },
@@ -264,13 +271,21 @@ export default function FeaturesPage() {
         {MODULES.map((mod, idx) => (
           <section key={mod.id} id={mod.id} className="scroll-mt-32">
             {/* Module header */}
-            <div className={`rounded-2xl sm:rounded-3xl bg-gradient-to-r ${mod.color} p-6 sm:p-10 mb-6 sm:mb-10 text-white`}>
-              <div className="flex items-start gap-6">
-                <span className="text-5xl">{mod.icon}</span>
-                <div>
-                  <h2 className="text-2xl sm:text-3xl font-black mb-2">{mod.title}</h2>
-                  <p className="text-white/75 text-lg">{mod.subtitle}</p>
+            <div className={`rounded-2xl sm:rounded-3xl bg-gradient-to-r ${mod.color} p-6 sm:p-10 mb-6 sm:mb-10 text-white overflow-hidden`}>
+              <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8">
+                <div className="flex items-start gap-6 flex-1">
+                  <span className="text-5xl">{mod.icon}</span>
+                  <div>
+                    <h2 className="text-2xl sm:text-3xl font-black mb-2">{mod.title}</h2>
+                    <p className="text-white/75 text-lg">{mod.subtitle}</p>
+                  </div>
                 </div>
+                {mod.image && (
+                  <div className="w-full sm:w-64 flex-shrink-0 rounded-xl overflow-hidden bg-white/10 border border-white/15">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={mod.image} alt={mod.title} className="w-full h-auto block" loading="lazy" />
+                  </div>
+                )}
               </div>
             </div>
 
@@ -286,6 +301,33 @@ export default function FeaturesPage() {
             </div>
           </section>
         ))}
+      </div>
+
+      {/* More at a glance */}
+      <div className="bg-gray-50 py-14 sm:py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-10">
+            <span className="text-blue-600 font-bold text-xs uppercase tracking-widest">More at a Glance</span>
+            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mt-3">See it before you try it</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {[
+              { img: '/images/features/2-student-management.png', title: 'Student Management', desc: 'Profiles, records, and performance in one place.' },
+              { img: '/images/features/9-examinations-results.png', title: 'Examinations & Results', desc: 'Conduct exams and publish results with ease.' },
+              { img: '/images/features/10-attendance-timetable.png', title: 'Attendance & Timetable', desc: 'Track attendance and manage timetables smartly.' },
+              { img: '/images/features/8-mobile-app-experience.png', title: 'Mobile App Experience', desc: 'Access everything on the go, for every role.' },
+            ].map(item => (
+              <div key={item.title} className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-lg transition-shadow">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={item.img} alt={item.title} className="w-full h-auto block" loading="lazy" />
+                <div className="p-4">
+                  <h3 className="font-black text-gray-900 text-sm mb-1">{item.title}</h3>
+                  <p className="text-gray-500 text-xs leading-relaxed">{item.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* CTA */}
