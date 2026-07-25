@@ -1,6 +1,37 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+
+function useCountUp(target: number, duration = 1400) {
+  const [value, setValue] = useState(0);
+  const started = useRef(false);
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    const start = performance.now();
+    let raf: number;
+    const tick = (now: number) => {
+      const p = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setValue(Math.round(target * eased));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  return value;
+}
+
+function StatCard({ v, prefix = '', suffix = '', l, c, up, delay }: { v: number; prefix?: string; suffix?: string; l: string; c: string; up: string; delay: number }) {
+  const n = useCountUp(v, 1200 + delay * 1000);
+  return (
+    <div className="msk-fade rounded-xl p-2.5 border border-white/5" style={{ background: '#151B30', animationDelay: `${0.2 + delay}s` }}>
+      <p className="font-black text-[13px] leading-none" style={{ color: c }}>{prefix}{n.toLocaleString()}{suffix}</p>
+      <p className="text-[8px] text-white/30 mt-1.5 font-medium leading-snug">{l}</p>
+      <p className="text-[7px] text-emerald-400 mt-0.5">↑ {up}</p>
+    </div>
+  );
+}
 
 const FEATURE_GRID = [
   { icon: '👩‍🎓', title: 'Student Management', desc: 'Manage student records, admissions, attendance, and performance.', color: 'bg-blue-50 text-blue-600' },
@@ -12,6 +43,7 @@ const FEATURE_GRID = [
   { icon: '🚌', title: 'Transport Management', desc: 'Track vehicles, manage routes, and ensure student safety.', color: 'bg-orange-50 text-orange-600' },
   { icon: '📊', title: 'Reports & Analytics', desc: 'Powerful dashboards and reports for better decision making.', color: 'bg-indigo-50 text-indigo-600' },
 ];
+
 
 const PRICING = [
   {
@@ -187,55 +219,134 @@ export default function MarketingPage() {
             </div>
           </div>
 
-          {/* Dashboard Preview + Phone mockup */}
+          {/* Dashboard Preview + Phone mockup — animated, matches EduSmart-style reference */}
           <div className="relative hidden sm:block">
-            <div className="rounded-2xl overflow-hidden border border-white/10 shadow-2xl" style={{ background: '#0F1424' }}>
+            <style>{`
+              @keyframes msk-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+              @keyframes msk-float-2 { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+              @keyframes msk-pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(1.4); } }
+              @keyframes msk-draw { to { stroke-dashoffset: 0; } }
+              @keyframes msk-fadein { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+              .msk-monitor { animation: msk-float 7s ease-in-out infinite; }
+              .msk-phone { animation: msk-float-2 7s ease-in-out infinite; animation-delay: -2.5s; }
+              .msk-dot { animation: msk-pulse 2s ease-in-out infinite; }
+              .msk-chart-line { stroke-dasharray: 340; stroke-dashoffset: 340; animation: msk-draw 1.8s ease forwards 0.4s; }
+              .msk-fade { opacity: 0; animation: msk-fadein .6s ease forwards; }
+            `}</style>
+
+            {/* Monitor */}
+            <div className="msk-monitor rounded-2xl overflow-hidden border border-white/10 shadow-2xl" style={{ background: '#0F1424' }}>
               <div className="flex items-center gap-1.5 px-4 py-3 bg-[#151B30] border-b border-white/5">
                 <div className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
                 <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/50" />
                 <div className="w-2.5 h-2.5 rounded-full bg-green-500/50" />
                 <div className="flex-1 mx-3 bg-[#0F1424] rounded-md px-3 py-1.5 text-[11px] text-purple-300/40 font-mono">app.myschool.pk/dashboard</div>
               </div>
-              <div className="p-5">
-                <div className="grid grid-cols-4 gap-2.5 mb-4">
-                  {[['1,248', 'Total Students', '#3B82F6'], ['86', 'Teachers', '#10B981'], ['42', 'Classes', '#F59E0B'], ['Rs 24,560', 'Revenue', '#8B5CF6']].map(([v, l, c]) => (
-                    <div key={l} className="rounded-xl p-3 border border-white/5" style={{ background: '#151B30' }}>
-                      <p className="font-black text-sm leading-none" style={{ color: c }}>{v}</p>
-                      <p className="text-[9px] text-white/30 mt-1.5 font-medium leading-snug">{l}</p>
-                    </div>
-                  ))}
+              <div className="flex" style={{ minHeight: 340 }}>
+                {/* Sidebar */}
+                <div className="w-28 flex-shrink-0 border-r border-white/5 p-3" style={{ background: '#0D1120' }}>
+                  <div className="flex items-center gap-1.5 mb-5 px-1">
+                    <div className="w-5 h-5 rounded-md bg-blue-600 flex items-center justify-center text-white text-[9px] font-black">M</div>
+                    <span className="text-white text-[10px] font-black">MySchool</span>
+                  </div>
+                  <div className="space-y-1">
+                    {[['📊', 'Dashboard', true], ['👩‍🎓', 'Students', false], ['👨‍🏫', 'Teachers', false], ['🏫', 'Classes', false], ['📅', 'Attendance', false], ['💳', 'Fees', false]].map(([icon, label, active]) => (
+                      <div key={label as string} className={`flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[9px] font-semibold ${active ? 'bg-blue-600 text-white' : 'text-white/35'}`}>
+                        <span className="text-[10px]">{icon}</span>{label}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2.5">
-                  <div className="rounded-xl p-3.5 border border-white/5" style={{ background: '#151B30' }}>
-                    <p className="text-[10px] text-white/30 font-medium mb-2">Attendance Overview</p>
-                    <div className="flex items-end gap-1 h-10">
-                      {[38, 52, 46, 67, 59, 75, 71].map((v, i) => (
-                        <div key={i} className="flex-1 rounded-t-sm" style={{ height: `${v}%`, background: '#3B82F6' }} />
-                      ))}
+
+                {/* Main content */}
+                <div className="flex-1 p-4">
+                  {/* Topbar */}
+                  <div className="flex items-center justify-between mb-3.5">
+                    <div>
+                      <p className="text-white text-[12px] font-black leading-none">Good morning, Admin 👋</p>
+                      <p className="text-white/30 text-[9px] mt-1">Here&apos;s what&apos;s happening today</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="relative w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: '#151B30' }}>
+                        🔔<span className="msk-dot absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-rose-500" />
+                      </div>
+                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600" />
                     </div>
                   </div>
-                  <div className="rounded-xl p-3.5 border border-white/5" style={{ background: '#151B30' }}>
-                    <p className="text-[10px] text-white/30 font-medium mb-2">Students by Grade</p>
-                    <div className="flex items-center justify-center h-10">
-                      <div className="w-10 h-10 rounded-full border-4 border-blue-500" style={{ borderRightColor: '#8B5CF6', borderBottomColor: '#3B82F640' }} />
+
+                  {/* Stat cards */}
+                  <div className="grid grid-cols-4 gap-2 mb-3">
+                    {[
+                      { v: 1245, prefix: '', l: 'Students', c: '#3B82F6', up: '12.5%' },
+                      { v: 78, prefix: '', l: 'Teachers', c: '#10B981', up: '7.8%' },
+                      { v: 93, prefix: '', suffix: '%', l: 'Attendance', c: '#8B5CF6', up: '4.3%' },
+                      { v: 45320, prefix: 'Rs ', l: 'Fees Collected', c: '#F59E0B', up: '8.2%' },
+                    ].map((s, i) => (
+                      <StatCard key={s.l} v={s.v} prefix={s.prefix} suffix={s.suffix} l={s.l} c={s.c} up={s.up} delay={i * 0.1} />
+                    ))}
+                  </div>
+
+                  {/* Attendance chart */}
+                  <div className="msk-fade rounded-xl p-3 border border-white/5 mb-3" style={{ background: '#151B30', animationDelay: '0.6s' }}>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-[9px] text-white/30 font-medium">Attendance Overview</p>
+                      <span className="text-[8px] text-blue-400 font-bold bg-blue-500/10 px-1.5 py-0.5 rounded">92% Live</span>
+                    </div>
+                    <svg viewBox="0 0 280 50" className="w-full h-12">
+                      <polyline
+                        className="msk-chart-line"
+                        points="0,38 40,20 80,30 120,12 160,24 200,8 240,16 280,4"
+                        fill="none"
+                        stroke="#3B82F6"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </div>
+
+                  {/* Recent activities */}
+                  <div className="msk-fade rounded-xl p-3 border border-white/5" style={{ background: '#151B30', animationDelay: '0.8s' }}>
+                    <p className="text-[9px] text-white/30 font-medium mb-2">Recent Activities</p>
+                    <div className="space-y-1.5">
+                      {[['🟢', 'New student admission', '2m ago'], ['🔵', 'Fee payment received', '1h ago'], ['🟣', 'Library book issued', 'Yesterday']].map(([dot, t, time], i) => (
+                        <div key={t as string} className="msk-fade flex items-center justify-between" style={{ animationDelay: `${1 + i * 0.15}s` }}>
+                          <span className="text-[8.5px] text-white/60 flex items-center gap-1.5"><span className="text-[8px]">{dot}</span>{t}</span>
+                          <span className="text-[7.5px] text-white/25">{time}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
               </div>
             </div>
+            {/* Monitor stand */}
+            <div className="msk-monitor mx-auto" style={{ animationDelay: '0s' }}>
+              <div className="w-20 h-3 mx-auto" style={{ background: 'linear-gradient(#1a2038,#0D1120)', clipPath: 'polygon(35% 0, 65% 0, 80% 100%, 20% 100%)' }} />
+              <div className="w-32 h-2 mx-auto rounded-full" style={{ background: '#0D1120' }} />
+            </div>
+
             {/* Phone mockup */}
-            <div className="absolute -bottom-8 -right-6 w-28 rounded-2xl overflow-hidden border-4 border-[#111827] shadow-2xl" style={{ background: '#0F1424' }}>
+            <div className="msk-phone absolute -bottom-6 -right-8 w-28 rounded-2xl overflow-hidden border-4 border-[#111827] shadow-2xl" style={{ background: '#0F1424' }}>
+              <div className="flex items-center justify-between px-2 pt-1.5 text-white text-[6px] font-bold">
+                <span>9:41</span>
+                <span>🔋</span>
+              </div>
               <div className="p-2.5">
-                <p className="text-white text-[9px] font-bold mb-2">Hello, Admin 👋</p>
+                <p className="text-white text-[9px] font-bold mb-2 flex items-center gap-1">Hello, Admin <span>👋</span></p>
                 <div className="grid grid-cols-2 gap-1 mb-1.5">
                   <div className="rounded-md p-1.5" style={{ background: '#1A2038' }}>
-                    <p className="text-[8px] font-black text-blue-400">1,248</p>
+                    <p className="text-[8px] font-black text-blue-400">1,245</p>
                     <p className="text-[6px] text-white/30">Students</p>
                   </div>
                   <div className="rounded-md p-1.5" style={{ background: '#1A2038' }}>
-                    <p className="text-[8px] font-black text-emerald-400">86</p>
+                    <p className="text-[8px] font-black text-emerald-400">78</p>
                     <p className="text-[6px] text-white/30">Teachers</p>
                   </div>
+                </div>
+                <div className="rounded-md p-1.5 flex items-center justify-between" style={{ background: '#1A2038' }}>
+                  <span className="text-[6px] text-white/40">Attendance</span>
+                  <span className="text-[7px] font-black text-purple-400">92.6%</span>
                 </div>
               </div>
             </div>
