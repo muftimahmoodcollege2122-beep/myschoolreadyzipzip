@@ -47,21 +47,21 @@ const FEATURE_GRID = [
 
 const PRICING = [
   {
-    name: 'Starter', urdu: 'ابتدائی', monthlyPrice: 5000, annualPrice: 4000,
+    name: 'Starter', monthlyPrice: 5000, annualPrice: 4000,
     limit: 'Up to 500 students', highlight: false, badge: '',
-    color: 'from-gray-700 to-gray-900', glow: '',
+    color: 'from-gray-700 to-gray-900', glow: '', ring: 'hover:ring-gray-400',
     features: ['500 students & 30 staff', 'School website + custom domain', 'Admin dashboard', 'Attendance & fee management', 'JazzCash & EasyPaisa payments', 'Student & parent portals', 'WhatsApp notifications (500/mo)', 'Basic reports', '5 GB storage', 'Email support'],
   },
   {
-    name: 'Professional', urdu: 'پیشہ ورانہ', monthlyPrice: 12000, annualPrice: 9600,
+    name: 'Professional', monthlyPrice: 12000, annualPrice: 9600,
     limit: 'Up to 2,000 students', highlight: true, badge: 'Most Popular',
-    color: 'from-blue-600 to-blue-700', glow: 'shadow-2xl shadow-blue-500/25',
+    color: 'from-blue-600 to-blue-700', glow: 'shadow-2xl shadow-blue-500/25', ring: 'hover:ring-blue-500',
     features: ['2,000 students & 100 staff', 'Everything in Starter', 'Teacher portal', 'LMS & online courses', 'AI analytics & dropout prediction', 'WhatsApp notifications (5,000/mo)', 'Advanced reports & analytics', 'Priority support', '25 GB storage', 'Question bank & digital exams'],
   },
   {
-    name: 'Enterprise', urdu: 'انٹرپرائز', monthlyPrice: 20000, annualPrice: 16000,
+    name: 'Enterprise', monthlyPrice: 20000, annualPrice: 16000,
     limit: 'Unlimited students', highlight: false, badge: 'Enterprise',
-    color: 'from-purple-600 to-purple-700', glow: '',
+    color: 'from-purple-600 to-purple-700', glow: '', ring: 'hover:ring-purple-500',
     features: ['Unlimited students & staff', 'Everything in Professional', 'Multi-campus management', 'White-label branding', 'API access', 'Unlimited WhatsApp & SMS', 'Unlimited storage', 'Dedicated account manager', 'Custom SLA & uptime guarantee', 'Priority feature requests'],
   },
 ];
@@ -497,18 +497,20 @@ export default function MarketingPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 max-w-5xl mx-auto">
             {PRICING.map((p) => (
-              <div key={p.name} className={`relative rounded-3xl overflow-hidden flex flex-col transition-all duration-500 hover:-translate-y-1 ${p.highlight ? `sm:scale-[1.03] ${p.glow}` : 'hover:shadow-xl'}`}>
-                <div className={`bg-gradient-to-br ${p.color} p-6 sm:p-7 text-white`}>
+              <div
+                key={p.name}
+                className={`group relative rounded-3xl overflow-hidden flex flex-col transition-all duration-300 ease-out ring-2 ring-transparent hover:ring-4 hover:-translate-y-3 hover:scale-[1.03] hover:z-20 hover:shadow-2xl cursor-pointer ${p.ring} ${p.highlight ? `sm:scale-[1.03] ${p.glow}` : ''}`}
+              >
+                <div className={`bg-gradient-to-br ${p.color} p-6 sm:p-7 text-white transition-all duration-300`}>
                   {p.badge ? (
                     <div className={`inline-flex items-center gap-1.5 text-xs font-black px-3 py-1 rounded-full mb-4 ${p.highlight ? 'bg-white/20' : 'bg-white/15 text-white/90'}`}>
                       {p.highlight && <span className="animate-pulse">⭐</span>}{p.badge.toUpperCase()}
                     </div>
                   ) : <div className="h-7 mb-4" />}
                   <h3 className="text-2xl font-black">{p.name}</h3>
-                  <p className="text-white/60 text-xs mt-0.5 mb-4">{p.urdu}</p>
-                  <div className="flex items-end gap-1">
+                  <div className="flex items-end gap-1 mt-4">
                     <span className="text-white/70 text-sm font-medium pb-1">PKR</span>
-                    <span className="text-4xl sm:text-5xl font-black tracking-tight">{(billing === 'annual' ? p.annualPrice : p.monthlyPrice).toLocaleString()}</span>
+                    <span className="text-4xl sm:text-5xl font-black tracking-tight transition-transform duration-300 group-hover:scale-110 origin-left">{(billing === 'annual' ? p.annualPrice : p.monthlyPrice).toLocaleString()}</span>
                     <span className="text-white/70 text-sm pb-1">/mo</span>
                   </div>
                   {billing === 'annual' && (
@@ -516,8 +518,8 @@ export default function MarketingPage() {
                   )}
                   <p className="text-white/50 text-xs mt-1">{p.limit}</p>
                 </div>
-                <div className="bg-white flex-1 p-5 sm:p-6 border border-gray-100">
-                  <Link href="/signup" className={`block text-center py-3 rounded-xl text-sm font-black transition-all mb-5 bg-gradient-to-r ${p.color} text-white hover:opacity-90`}>
+                <div className="bg-white flex-1 p-5 sm:p-6 border border-gray-100 transition-colors duration-300 group-hover:border-transparent">
+                  <Link href="/signup" className={`block text-center py-3 rounded-xl text-sm font-black transition-all mb-5 bg-gradient-to-r ${p.color} text-white group-hover:opacity-90 group-hover:shadow-lg`}>
                     Get Started
                   </Link>
                   <ul className="space-y-2.5">

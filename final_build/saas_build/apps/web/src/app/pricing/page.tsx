@@ -5,7 +5,6 @@ import Link from 'next/link';
 const PLANS = [
   {
     name: 'Starter',
-    urdu: 'ابتدائی',
     price: { monthly: 5000, annual: 4000 },
     students: '500',
     desc: 'Perfect for small schools and academies just getting started with digital management.',
@@ -40,7 +39,6 @@ const PLANS = [
   },
   {
     name: 'Professional',
-    urdu: 'پیشہ ورانہ',
     price: { monthly: 12000, annual: 9600 },
     students: '2,000',
     desc: 'The most popular plan for growing schools that want powerful features and full automation.',
@@ -75,7 +73,6 @@ const PLANS = [
   },
   {
     name: 'Enterprise',
-    urdu: 'انٹرپرائز',
     price: { monthly: 20000, annual: 16000 },
     students: 'Unlimited',
     desc: 'For large schools, college systems, and education groups that need unlimited scale and custom solutions.',
@@ -201,7 +198,7 @@ export default function PricingPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-6">
           {PLANS.map(plan => (
             <div key={plan.name}
-              className={`bg-white rounded-3xl border-2 shadow-sm overflow-hidden flex flex-col ${plan.highlight ? 'shadow-2xl shadow-blue-500/10 -mt-4' : ''} ${plan.color}`}>
+              className={`group bg-white rounded-3xl border-2 shadow-sm overflow-hidden flex flex-col transition-all duration-300 ease-out hover:-translate-y-3 hover:scale-[1.03] hover:z-20 hover:shadow-2xl cursor-pointer ${plan.highlight ? 'shadow-2xl shadow-blue-500/10 -mt-4 hover:ring-4 hover:ring-blue-500' : 'hover:ring-4 hover:ring-gray-400'} ${plan.color}`}>
               {plan.highlight && (
                 <div className="bg-blue-600 text-white text-center py-2 text-xs font-black tracking-wider uppercase">
                   ⭐ Most Popular
@@ -211,7 +208,6 @@ export default function PricingPage() {
                 {/* Plan name */}
                 <div className="flex items-center justify-between mb-1">
                   <h2 className="text-2xl font-black text-gray-900">{plan.name}</h2>
-                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${plan.badge}`}>{plan.urdu}</span>
                 </div>
                 <p className="text-gray-500 text-sm mb-6">{plan.desc}</p>
 
@@ -219,7 +215,7 @@ export default function PricingPage() {
                 <div className="mb-6">
                   <div className="flex items-end gap-1">
                     <span className="text-sm font-bold text-gray-500">PKR</span>
-                    <span className="text-4xl sm:text-5xl font-black text-gray-900">
+                    <span className="text-4xl sm:text-5xl font-black text-gray-900 transition-transform duration-300 group-hover:scale-110 origin-left">
                       {(annual ? plan.price.annual : plan.price.monthly).toLocaleString()}
                     </span>
                     <span className="text-gray-400 text-sm mb-1">/month</span>
