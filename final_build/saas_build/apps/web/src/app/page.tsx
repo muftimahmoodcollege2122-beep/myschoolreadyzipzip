@@ -220,7 +220,7 @@ export default function MarketingPage() {
           </div>
 
           {/* Dashboard Preview + Phone mockup — animated, matches EduSmart-style reference */}
-          <div className="relative mt-4 sm:mt-0 scale-[0.82] sm:scale-100 origin-top">
+          <div className="relative mt-6 sm:mt-0 max-w-[380px] sm:max-w-none mx-auto sm:mx-0">
             <style>{`
               @keyframes msk-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
               @keyframes msk-float-2 { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
@@ -327,7 +327,7 @@ export default function MarketingPage() {
             </div>
 
             {/* Phone mockup */}
-            <div className="msk-phone absolute -bottom-6 -right-8 w-28 rounded-2xl overflow-hidden border-4 border-[#111827] shadow-2xl" style={{ background: '#0F1424' }}>
+            <div className="msk-phone mt-5 mx-auto w-28 sm:mt-0 sm:mx-0 sm:absolute sm:-bottom-6 sm:-right-8 rounded-2xl overflow-hidden border-4 border-[#111827] shadow-2xl" style={{ background: '#0F1424' }}>
               <div className="flex items-center justify-between px-2 pt-1.5 text-white text-[6px] font-bold">
                 <span>9:41</span>
                 <span>🔋</span>
