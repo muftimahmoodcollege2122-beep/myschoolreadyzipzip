@@ -200,7 +200,7 @@ export default function FeaturesPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-gray-950 rounded-lg flex items-center justify-center text-white font-black text-sm">M</div>
+            <img src="/images/brand/logo.png" alt="MySchool" className="w-8 h-8 object-contain" />
             <span className="font-black text-lg text-gray-900">MySchool</span>
           </Link>
           <div className="flex items-center gap-6">
@@ -350,7 +350,7 @@ export default function FeaturesPage() {
       <footer className="bg-gray-900 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-gray-950 rounded-lg flex items-center justify-center text-white font-black text-xs">M</div>
+            <img src="/images/brand/logo.png" alt="MySchool" className="w-7 h-7 object-contain" />
             <span className="text-white font-black">MySchool</span>
           </Link>
           <div className="flex gap-6 text-sm text-gray-500">

@@ -69,7 +69,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
     <aside className={`h-full bg-[#14161C] flex flex-col transition-all duration-200 ${collapsed ? 'w-[64px]' : 'w-[240px]'}`}>
       {/* Logo */}
       <div className="p-4 border-b border-white/10 flex items-center gap-3 flex-shrink-0">
-        <div className="w-9 h-9 bg-amber-600 rounded-xl flex items-center justify-center text-white font-black text-lg flex-shrink-0">M</div>
+        <img src="/images/brand/logo.png" alt="MySchool" className="w-9 h-9 flex-shrink-0 object-contain" />
         {!collapsed && (
           <div className="flex-1 min-w-0">
             <p className="text-white font-bold text-sm">MySchool</p>
@@ -225,7 +225,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
             <aside className="h-full w-[280px] bg-[#14161C] flex flex-col overflow-hidden shadow-2xl">
               {/* Logo + close */}
               <div className="p-4 border-b border-white/10 flex items-center gap-3">
-                <div className="w-9 h-9 bg-amber-600 rounded-xl flex items-center justify-center text-white font-black text-lg">M</div>
+                <img src="/images/brand/logo.png" alt="MySchool" className="w-9 h-9 object-contain" />
                 <div className="flex-1 min-w-0">
                   <p className="text-white font-bold text-sm">MySchool</p>
                   <p className="text-white/30 text-[10px] uppercase tracking-wide">School Portal</p>

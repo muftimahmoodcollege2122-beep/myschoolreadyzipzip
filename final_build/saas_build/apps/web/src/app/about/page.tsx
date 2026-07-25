@@ -62,7 +62,7 @@ export default function AboutPage() {
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white border-b border-gray-200 shadow-sm' : 'bg-transparent'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gray-950 rounded-lg flex items-center justify-center text-white font-black text-sm">M</div>
+            <img src="/images/brand/logo.png" alt="MySchool" className="w-8 h-8 object-contain" />
             <span className={`font-black text-lg ${scrolled ? 'text-gray-900' : 'text-white'}`}>MySchool</span>
           </Link>
           <div className="hidden md:flex items-center gap-6">
@@ -242,7 +242,7 @@ export default function AboutPage() {
       <footer className="bg-gray-900 text-white py-8 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-gray-950 rounded-lg flex items-center justify-center text-white font-black text-xs">M</div>
+            <img src="/images/brand/logo.png" alt="MySchool" className="w-7 h-7 object-contain" />
             <span className="font-black">MySchool</span>
           </div>
           <p className="text-gray-400 text-sm">© {new Date().getFullYear()} MySchool. Built with ❤️ for educators worldwide.</p>

@@ -95,7 +95,7 @@ function LoginForm() {
         style={{ background: 'linear-gradient(150deg, #14161C, #22252E)' }}
       >
         <Link href="/" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-amber-600 rounded-lg flex items-center justify-center text-white font-black text-sm">M</div>
+          <img src="/images/brand/logo.png" alt="MySchool" className="w-8 h-8 object-contain" />
           <span className="text-white font-black text-lg">MySchool</span>
         </Link>
 
@@ -147,7 +147,7 @@ function LoginForm() {
 
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center gap-2 mb-8 justify-center">
-            <div className="w-8 h-8 bg-gray-950 rounded-lg flex items-center justify-center text-white font-black text-sm">M</div>
+            <img src="/images/brand/logo.png" alt="MySchool" className="w-8 h-8 object-contain" />
             <span className="text-gray-900 font-black text-lg">MySchool</span>
           </div>
 

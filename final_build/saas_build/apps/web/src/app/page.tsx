@@ -225,7 +225,7 @@ export default function MarketingPage() {
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white border-b border-gray-200 shadow-sm' : 'bg-transparent'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 flex-shrink-0">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black text-sm">M</div>
+            <img src="/images/brand/logo.png" alt="MySchool" className="w-8 h-8 object-contain" />
             <div className="leading-none">
               <span className={`block font-black text-lg tracking-tight ${isScrolled ? 'text-gray-900' : 'text-white'}`}>MySchool</span>
               <span className={`block text-[10px] font-medium ${isScrolled ? 'text-gray-400' : 'text-white/40'}`}>School Management SaaS</span>
@@ -350,7 +350,7 @@ export default function MarketingPage() {
                 {/* Sidebar */}
                 <div className="w-28 flex-shrink-0 border-r border-white/5 p-3" style={{ background: '#0D1120' }}>
                   <div className="flex items-center gap-1.5 mb-5 px-1">
-                    <div className="w-5 h-5 rounded-md bg-blue-600 flex items-center justify-center text-white text-[9px] font-black">M</div>
+                    <img src="/images/brand/logo.png" alt="MySchool" className="w-5 h-5 object-contain" />
                     <span className="text-white text-[10px] font-black">MySchool</span>
                   </div>
                   <div className="space-y-1">
@@ -688,7 +688,7 @@ export default function MarketingPage() {
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-5 gap-8 mb-10">
             <div className="col-span-2 md:col-span-2">
               <div className="flex items-center gap-2.5 mb-4">
-                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black text-sm">M</div>
+                <img src="/images/brand/logo.png" alt="MySchool" className="w-8 h-8 object-contain" />
                 <span className="font-black text-lg text-white">MySchool</span>
               </div>
               <p className="text-gray-500 text-sm leading-relaxed mb-5 max-w-xs">The all-in-one operating system for modern schools, colleges, and universities.</p>
