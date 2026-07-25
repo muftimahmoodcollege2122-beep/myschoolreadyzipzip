@@ -70,6 +70,8 @@ export default function MarketingPage() {
   const [scrollY, setScrollY] = useState(0);
   const [mobileMenu, setMobileMenu] = useState(false);
   const [testimonialStart, setTestimonialStart] = useState(0);
+  const [videoOpen, setVideoOpen] = useState(false);
+  const [heroVideoOk, setHeroVideoOk] = useState(true);
 
   useEffect(() => {
     const h = () => setScrollY(window.scrollY);
@@ -133,7 +135,20 @@ export default function MarketingPage() {
       </nav>
 
       {/* ── Hero ── */}
-      <section className="relative pt-28 pb-24 sm:pt-32 sm:pb-32" style={{ background: 'linear-gradient(150deg, #0B0E1A 0%, #10142A 55%, #0F1A3D 100%)' }}>
+      <section className="relative pt-28 pb-24 sm:pt-32 sm:pb-32 overflow-hidden" style={{ background: 'linear-gradient(150deg, #0B0E1A 0%, #10142A 55%, #0F1A3D 100%)' }}>
+        {/* Background video (Veo 3 generated clip) — drop your file at /public/videos/hero-bg.mp4 */}
+        {heroVideoOk && (
+          <video
+            className="absolute inset-0 w-full h-full object-cover opacity-25"
+            src="/videos/hero-bg.mp4"
+            autoPlay
+            muted
+            loop
+            playsInline
+            onError={() => setHeroVideoOk(false)}
+          />
+        )}
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(150deg, rgba(11,14,26,0.75) 0%, rgba(16,20,42,0.8) 55%, rgba(15,26,61,0.85) 100%)' }} />
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-0 right-0 w-[600px] h-[600px] opacity-[0.08]" style={{ background: 'radial-gradient(circle at 70% 30%, #7C3AED, transparent 60%)' }} />
           <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.5) 1px, transparent 1px)', backgroundSize: '64px 64px' }} />
@@ -158,10 +173,10 @@ export default function MarketingPage() {
                 Request Demo
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
               </Link>
-              <Link href="/features" className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-white/8 hover:bg-white/12 text-white font-semibold rounded-xl border border-white/15 transition-all text-sm">
+              <button onClick={() => setVideoOpen(true)} className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-white/8 hover:bg-white/12 text-white font-semibold rounded-xl border border-white/15 transition-all text-sm">
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                 Watch Video
-              </Link>
+              </button>
             </div>
             <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-white/40 font-medium">
               {[['☁️', 'Cloud Based'], ['🛡️', 'Secure & Reliable'], ['⚡', 'Easy to Use'], ['🎧', '24/7 Support']].map(([icon, t]) => (
@@ -306,6 +321,13 @@ export default function MarketingPage() {
                 <p className="text-xs text-gray-500">Everyone connected in real time</p>
               </div>
             </div>
+            <button
+              onClick={() => setVideoOpen(true)}
+              className="mt-3 w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-gray-200 bg-white text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              See MySchool in Action
+            </button>
           </div>
 
           {/* Checklist side */}
@@ -499,6 +521,31 @@ export default function MarketingPage() {
           </div>
         </div>
       </footer>
+
+      {/* ── Demo Video Modal — drop your Veo 3 export at /public/videos/demo.mp4 ── */}
+      {videoOpen && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4 sm:p-8"
+          onClick={() => setVideoOpen(false)}
+        >
+          <div className="relative w-full max-w-4xl aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+            <button
+              onClick={() => setVideoOpen(false)}
+              className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center transition-colors"
+              aria-label="Close video"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+            <video
+              className="w-full h-full"
+              src="/videos/demo.mp4"
+              poster="/videos/demo-poster.jpg"
+              controls
+              autoPlay
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
