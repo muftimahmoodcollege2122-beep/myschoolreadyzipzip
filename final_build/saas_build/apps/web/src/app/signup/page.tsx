@@ -145,7 +145,7 @@ export default function SignupPage() {
   if (result) {
     const loginUrl = `/login?slug=${result.slug}&email=${encodeURIComponent(result.adminEmail)}&firstLogin=true`;
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-6"
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-amber-50 flex items-center justify-center p-6"
         style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
         <div className="bg-white rounded-2xl shadow-2xl p-10 max-w-lg w-full">
           <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
@@ -162,7 +162,7 @@ export default function SignupPage() {
           {/* 5 Portal URLs */}
           <div className="mb-5 space-y-2">
             {[
-              { icon: '🌐', label: 'School Website',    url: result.websiteUrl,                                    color: 'bg-blue-50 border-blue-200 text-blue-700'   },
+              { icon: '🌐', label: 'School Website',    url: result.websiteUrl,                                    color: 'bg-amber-50 border-amber-200 text-amber-700'   },
               { icon: '🏫', label: 'Admin Dashboard',   url: `${result.slug}.myschool.pk/dashboard`,               color: 'bg-indigo-50 border-indigo-200 text-indigo-700'},
               { icon: '👨‍🏫', label: 'Teacher Portal',   url: `${result.slug}.myschool.pk/t/${result.slug}`,        color: 'bg-teal-50 border-teal-200 text-teal-700'   },
               { icon: '👩‍🎓', label: 'Student Portal',   url: `${result.slug}.myschool.pk/learn/${result.slug}`,    color: 'bg-violet-50 border-violet-200 text-violet-700'},
@@ -195,13 +195,13 @@ export default function SignupPage() {
             <p className="text-amber-700">Teachers, students and parents each get their own dedicated portal. Change your password after first login.</p>
           </div>
 
-          <Link href={loginUrl} className="block w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-xl text-center text-sm transition-colors mb-3">
+          <Link href={loginUrl} className="block w-full py-3.5 bg-gray-950 hover:bg-gray-800 text-white font-black rounded-xl text-center text-sm transition-colors mb-3">
             Go to Admin Dashboard →
           </Link>
 
           <p className="text-center text-xs text-gray-400">
             Redirecting automatically in <span className="font-bold text-gray-600">{countdown}s</span>...
-            <button onClick={() => setCountdown(0)} className="ml-2 text-blue-600 hover:underline">Go now</button>
+            <button onClick={() => setCountdown(0)} className="ml-2 text-amber-700 hover:underline">Go now</button>
           </p>
         </div>
       </div>
@@ -214,7 +214,7 @@ export default function SignupPage() {
       <div className="min-h-screen flex items-center justify-center p-6" style={{ background: '#0C1E35' }}>
         <div className="rounded-2xl border border-white/10 p-10 max-w-md w-full" style={{ background: '#0F2D50' }}>
           <div className="text-center mb-8">
-            <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <div className="w-14 h-14 bg-gray-950 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <svg className="w-7 h-7 text-white animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
@@ -225,7 +225,7 @@ export default function SignupPage() {
           </div>
           <div className="space-y-2.5 mb-6">
             {PROV_STEPS.map((s, i) => (
-              <div key={i} className={`flex items-center gap-3 text-sm transition-all ${i < provStep ? 'text-emerald-400' : i === provStep ? 'text-blue-300' : 'text-white/15'}`}>
+              <div key={i} className={`flex items-center gap-3 text-sm transition-all ${i < provStep ? 'text-emerald-400' : i === provStep ? 'text-amber-300' : 'text-white/15'}`}>
                 <span className="w-4 h-4 flex-shrink-0 flex items-center justify-center">
                   {i < provStep ? (
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -246,7 +246,7 @@ export default function SignupPage() {
           </div>
           <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
             <div
-              className="h-full bg-blue-500 rounded-full transition-all duration-500"
+              className="h-full bg-amber-600 rounded-full transition-all duration-500"
               style={{ width: `${(provStep / PROV_STEPS.length) * 100}%` }}
             />
           </div>
@@ -262,9 +262,9 @@ export default function SignupPage() {
 
       {/* Left panel */}
       <div className="hidden lg:flex w-[42%] flex-col justify-between p-12"
-        style={{ background: 'linear-gradient(150deg, #0C1E35, #0F3D6E)' }}>
+        style={{ background: 'linear-gradient(150deg, #14161C, #22252E)' }}>
         <Link href="/" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white font-black text-sm">M</div>
+          <div className="w-8 h-8 bg-amber-600 rounded-lg flex items-center justify-center text-white font-black text-sm">M</div>
           <span className="text-white font-black text-lg">MySchool</span>
         </Link>
         <div>
@@ -284,7 +284,7 @@ export default function SignupPage() {
         <div className="flex items-center gap-3">
           <div className="flex -space-x-2">
             {['F', 'A', 'S', 'B'].map((l, i) => (
-              <div key={i} className="w-8 h-8 rounded-full bg-blue-500/60 border-2 border-white/20 flex items-center justify-center text-white text-xs font-bold">{l}</div>
+              <div key={i} className="w-8 h-8 rounded-full bg-amber-600/50 border-2 border-white/20 flex items-center justify-center text-white text-xs font-bold">{l}</div>
             ))}
           </div>
           <div>
@@ -302,8 +302,8 @@ export default function SignupPage() {
           <div className="flex items-center gap-2 mb-8">
             {STEPS.map((s, i) => (
               <React.Fragment key={s}>
-                <div className={`flex items-center gap-2 ${i < step - 1 ? 'text-blue-600' : i === step - 1 ? 'text-gray-900' : 'text-gray-300'}`}>
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0 transition-all ${i < step - 1 ? 'bg-blue-600 text-white' : i === step - 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-400'}`}>
+                <div className={`flex items-center gap-2 ${i < step - 1 ? 'text-amber-700' : i === step - 1 ? 'text-gray-900' : 'text-gray-300'}`}>
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0 transition-all ${i < step - 1 ? 'bg-gray-950 text-white' : i === step - 1 ? 'bg-gray-950 text-white' : 'bg-gray-200 text-gray-400'}`}>
                     {i < step - 1 ? (
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
@@ -313,7 +313,7 @@ export default function SignupPage() {
                   <span className="text-xs font-semibold hidden sm:block">{s}</span>
                 </div>
                 {i < STEPS.length - 1 && (
-                  <div className={`flex-1 h-0.5 rounded-full transition-all ${i < step - 1 ? 'bg-blue-500' : 'bg-gray-200'}`} />
+                  <div className={`flex-1 h-0.5 rounded-full transition-all ${i < step - 1 ? 'bg-amber-600' : 'bg-gray-200'}`} />
                 )}
               </React.Fragment>
             ))}
@@ -330,24 +330,24 @@ export default function SignupPage() {
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">School / Institution Name <span className="text-red-500">*</span></label>
                     <input value={form.schoolName} onChange={e => set('schoolName', e.target.value)} placeholder="e.g. Beacon House School System"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-50 transition-all"/>
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-50 transition-all"/>
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Principal / Owner Full Name <span className="text-red-500">*</span></label>
                     <input value={form.principalName} onChange={e => set('principalName', e.target.value)} placeholder="Dr. Ahmed Khan"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-50 transition-all"/>
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-50 transition-all"/>
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Country</label>
                     <select value={form.country} onChange={e => set('country', e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm bg-white outline-none focus:border-blue-400 transition-all">
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm bg-white outline-none focus:border-amber-400 transition-all">
                       {COUNTRIES.map(c => <option key={c}>{c}</option>)}
                     </select>
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Approximate Student Count</label>
                     <select value={form.studentCount} onChange={e => set('studentCount', e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm bg-white outline-none focus:border-blue-400 transition-all">
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm bg-white outline-none focus:border-amber-400 transition-all">
                       <option value="">Select a range</option>
                       {['1–100', '101–500', '501–1,000', '1,001–2,000', '2,001–5,000', '5,000+'].map(r => <option key={r} value={r}>{r}</option>)}
                     </select>
@@ -365,18 +365,18 @@ export default function SignupPage() {
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Work Email Address <span className="text-red-500">*</span></label>
                     <input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="principal@yourschool.com"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-50 transition-all"/>
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-50 transition-all"/>
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">WhatsApp / Phone Number <span className="text-red-500">*</span></label>
                     <input value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="+92-300-1234567"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-50 transition-all"/>
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-50 transition-all"/>
                   </div>
-                  <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm">
-                    <p className="font-bold text-blue-800 mb-2 text-xs">After provisioning, we automatically send:</p>
-                    <ul className="space-y-1 text-xs text-blue-700">
+                  <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 text-sm">
+                    <p className="font-bold text-amber-800 mb-2 text-xs">After provisioning, we automatically send:</p>
+                    <ul className="space-y-1 text-xs text-amber-700">
                       {['Admin portal login URL', 'Username & temporary password', 'School website link', 'Onboarding checklist & guide'].map(i => (
-                        <li key={i} className="flex items-center gap-2"><span className="text-blue-400">•</span>{i}</li>
+                        <li key={i} className="flex items-center gap-2"><span className="text-amber-500">•</span>{i}</li>
                       ))}
                     </ul>
                   </div>
@@ -392,7 +392,7 @@ export default function SignupPage() {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Subdomain Preference</label>
-                    <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-50 transition-all">
+                    <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden focus-within:border-amber-400 focus-within:ring-2 focus-within:ring-amber-50 transition-all">
                       <input
                         value={form.domain || suggestedDomain}
                         onChange={e => set('domain', e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').slice(0, 30))}
@@ -408,12 +408,12 @@ export default function SignupPage() {
                       Available: {form.domain || suggestedDomain}.myschool.pk
                     </p>
                   </div>
-                  <div className="bg-blue-50 rounded-xl p-4 border border-blue-100 text-xs">
-                    <p className="font-bold text-blue-800 mb-2">Your school website will include:</p>
-                    <div className="grid grid-cols-2 gap-1 text-blue-700">
+                  <div className="bg-amber-50 rounded-xl p-4 border border-amber-100 text-xs">
+                    <p className="font-bold text-amber-800 mb-2">Your school website will include:</p>
+                    <div className="grid grid-cols-2 gap-1 text-amber-700">
                       {['Homepage', 'About Us', 'Admissions', 'Staff Directory', 'News & Events', 'Gallery', 'Contact Form', 'SEO Optimized'].map(p => (
                         <span key={p} className="flex items-center gap-1">
-                          <svg className="w-3 h-3 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <svg className="w-3 h-3 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
                           </svg>
                           {p}
@@ -432,15 +432,15 @@ export default function SignupPage() {
                 <p className="text-gray-400 text-sm mb-6">Start free for 30 days. No credit card required.</p>
                 <div className="space-y-3 mb-4">
                   {PLANS.map(p => (
-                    <label key={p.name} className={`flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${form.plan === p.name ? 'border-blue-500 bg-blue-50' : 'border-gray-100 hover:border-gray-200'}`}>
+                    <label key={p.name} className={`flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${form.plan === p.name ? 'border-amber-500 bg-amber-50' : 'border-gray-100 hover:border-gray-200'}`}>
                       <input type="radio" name="plan" value={p.name} checked={form.plan === p.name} onChange={e => set('plan', e.target.value)} className="sr-only"/>
-                      <div className={`mt-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${form.plan === p.name ? 'border-blue-500 bg-blue-500' : 'border-gray-300'}`}>
+                      <div className={`mt-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${form.plan === p.name ? 'border-amber-500 bg-amber-500' : 'border-gray-300'}`}>
                         {form.plan === p.name && <div className="w-1.5 h-1.5 rounded-full bg-white"/>}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
                           <p className="font-black text-gray-900 text-sm">{p.name}</p>
-                          {p.recommended && <span className="text-[10px] bg-blue-600 text-white font-black px-2 py-0.5 rounded-full">POPULAR</span>}
+                          {p.recommended && <span className="text-[10px] bg-amber-600 text-white font-black px-2 py-0.5 rounded-full">POPULAR</span>}
                         </div>
                         <p className="text-xs text-gray-400 mb-1.5">{p.students}</p>
                         <div className="flex flex-wrap gap-x-3 gap-y-0.5">
@@ -471,7 +471,7 @@ export default function SignupPage() {
                 </button>
               )}
               <button onClick={next} disabled={!canAdvance() || loading}
-                className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-all text-sm flex items-center justify-center gap-2">
+                className="flex-1 py-3 bg-gray-950 hover:bg-gray-800 text-white font-black rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-all text-sm flex items-center justify-center gap-2">
                 {loading ? (
                   <>
                     <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -487,7 +487,7 @@ export default function SignupPage() {
 
           <p className="text-center text-gray-400 text-xs mt-4">
             Already have an account?{' '}
-            <Link href="/login" className="text-blue-600 font-semibold hover:underline">Sign in →</Link>
+            <Link href="/login" className="text-amber-700 font-semibold hover:underline">Sign in →</Link>
           </p>
         </div>
       </div>

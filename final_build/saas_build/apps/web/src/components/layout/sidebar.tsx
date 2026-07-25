@@ -66,10 +66,10 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
   const toggleExpanded = (href: string) => setExpanded(prev => ({ ...prev, [href]: !(prev[href] ?? false) }));
 
   const SidebarContent = (
-    <aside className={`h-full bg-[#0F2137] flex flex-col transition-all duration-200 ${collapsed ? 'w-[64px]' : 'w-[240px]'}`}>
+    <aside className={`h-full bg-[#14161C] flex flex-col transition-all duration-200 ${collapsed ? 'w-[64px]' : 'w-[240px]'}`}>
       {/* Logo */}
       <div className="p-4 border-b border-white/10 flex items-center gap-3 flex-shrink-0">
-        <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black text-lg flex-shrink-0">M</div>
+        <div className="w-9 h-9 bg-amber-600 rounded-xl flex items-center justify-center text-white font-black text-lg flex-shrink-0">M</div>
         {!collapsed && (
           <div className="flex-1 min-w-0">
             <p className="text-white font-bold text-sm">MySchool</p>
@@ -117,7 +117,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
                         type="button"
                         onClick={() => toggleExpanded(item.href)}
                         className={`w-full flex items-center gap-3 mx-2 px-3 py-2.5 rounded-lg mb-0.5 text-sm font-medium transition-all ${
-                          active ? 'bg-blue-600/30 text-white' : 'text-white/50 hover:text-white/90 hover:bg-white/5'
+                          active ? 'bg-amber-500/20 text-white' : 'text-white/50 hover:text-white/90 hover:bg-white/5'
                         }`}
                         style={{ width: 'calc(100% - 16px)' }}
                       >
@@ -136,12 +136,12 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
                                 key={child.href}
                                 href={child.href}
                                 className={`flex items-center gap-2.5 mx-2 px-3 py-2 rounded-lg mb-0.5 text-[13px] font-medium transition-all ${
-                                  childActive ? 'bg-blue-600/25 text-white' : 'text-white/45 hover:text-white/85 hover:bg-white/5'
+                                  childActive ? 'bg-amber-500/15 text-white' : 'text-white/45 hover:text-white/85 hover:bg-white/5'
                                 }`}
                               >
                                 <span className="text-sm flex-shrink-0 leading-none">{child.icon}</span>
                                 <span className="truncate">{child.label}</span>
-                                {childActive && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0" />}
+                                {childActive && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0" />}
                               </Link>
                             );
                           })}
@@ -158,14 +158,14 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
                     title={collapsed ? item.label : undefined}
                     className={`flex items-center gap-3 mx-2 px-3 py-2.5 rounded-lg mb-0.5 text-sm font-medium transition-all group relative ${
                       active
-                        ? 'bg-blue-600/30 text-white'
+                        ? 'bg-amber-500/20 text-white'
                         : 'text-white/50 hover:text-white/90 hover:bg-white/5'
                     }`}
                   >
                     <span className="text-base flex-shrink-0 leading-none">{item.icon}</span>
                     {!collapsed && <span className="truncate">{item.label}</span>}
-                    {active && !collapsed && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0" />}
-                    {active && collapsed && <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-blue-500 rounded-r-full" />}
+                    {active && !collapsed && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0" />}
+                    {active && collapsed && <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-amber-500 rounded-r-full" />}
                     {collapsed && (
                       <div className="absolute left-full ml-3 px-2 py-1 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-opacity z-50">
                         {item.label}
@@ -191,7 +191,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
       <div className="p-2 border-t border-white/10 flex-shrink-0">
         <div className={`flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 cursor-pointer ${collapsed ? 'justify-center' : ''}`}
           onClick={logout}>
-          <div className="w-8 h-8 rounded-lg bg-blue-600/40 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-amber-600/40 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
             {user?.profile?.firstName?.[0] ?? user?.email?.[0]?.toUpperCase() ?? 'U'}
           </div>
           {!collapsed && (
@@ -222,10 +222,10 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
           {/* Drawer — force expanded on mobile */}
           <div className="relative z-10 h-full flex">
-            <aside className="h-full w-[280px] bg-[#0F2137] flex flex-col overflow-hidden shadow-2xl">
+            <aside className="h-full w-[280px] bg-[#14161C] flex flex-col overflow-hidden shadow-2xl">
               {/* Logo + close */}
               <div className="p-4 border-b border-white/10 flex items-center gap-3">
-                <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black text-lg">M</div>
+                <div className="w-9 h-9 bg-amber-600 rounded-xl flex items-center justify-center text-white font-black text-lg">M</div>
                 <div className="flex-1 min-w-0">
                   <p className="text-white font-bold text-sm">MySchool</p>
                   <p className="text-white/30 text-[10px] uppercase tracking-wide">School Portal</p>
@@ -254,7 +254,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
                               <button
                                 type="button"
                                 onClick={() => toggleExpanded(item.href)}
-                                className={`w-full flex items-center gap-3 mx-2 px-3 py-3 rounded-lg mb-0.5 text-sm font-medium transition-all ${active ? 'bg-blue-600/30 text-white' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
+                                className={`w-full flex items-center gap-3 mx-2 px-3 py-3 rounded-lg mb-0.5 text-sm font-medium transition-all ${active ? 'bg-amber-500/20 text-white' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
                                 style={{ width: 'calc(100% - 16px)' }}
                               >
                                 <span className="text-lg flex-shrink-0">{item.icon}</span>
@@ -269,10 +269,10 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
                                     const childActive = isActive(child.href);
                                     return (
                                       <Link key={child.href} href={child.href}
-                                        className={`flex items-center gap-2.5 mx-2 px-3 py-2.5 rounded-lg mb-0.5 text-[13px] font-medium transition-all ${childActive ? 'bg-blue-600/25 text-white' : 'text-white/50 hover:text-white hover:bg-white/5'}`}>
+                                        className={`flex items-center gap-2.5 mx-2 px-3 py-2.5 rounded-lg mb-0.5 text-[13px] font-medium transition-all ${childActive ? 'bg-amber-500/15 text-white' : 'text-white/50 hover:text-white hover:bg-white/5'}`}>
                                         <span className="text-sm flex-shrink-0">{child.icon}</span>
                                         <span>{child.label}</span>
-                                        {childActive && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-400" />}
+                                        {childActive && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-amber-500" />}
                                       </Link>
                                     );
                                   })}
@@ -284,10 +284,10 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
 
                         return (
                           <Link key={item.href} href={item.href}
-                            className={`flex items-center gap-3 mx-2 px-3 py-3 rounded-lg mb-0.5 text-sm font-medium transition-all ${active ? 'bg-blue-600/30 text-white' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>
+                            className={`flex items-center gap-3 mx-2 px-3 py-3 rounded-lg mb-0.5 text-sm font-medium transition-all ${active ? 'bg-amber-500/20 text-white' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>
                             <span className="text-lg flex-shrink-0">{item.icon}</span>
                             <span>{item.label}</span>
-                            {active && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-400" />}
+                            {active && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-amber-500" />}
                           </Link>
                         );
                       })}
@@ -305,7 +305,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
               </nav>
               <div className="p-3 border-t border-white/10">
                 <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer hover:bg-white/5" onClick={logout}>
-                  <div className="w-9 h-9 rounded-xl bg-blue-600/40 flex items-center justify-center text-white font-bold">
+                  <div className="w-9 h-9 rounded-xl bg-amber-600/40 flex items-center justify-center text-white font-bold">
                     {user?.profile?.firstName?.[0] ?? user?.email?.[0]?.toUpperCase() ?? 'U'}
                   </div>
                   <div className="flex-1 min-w-0">

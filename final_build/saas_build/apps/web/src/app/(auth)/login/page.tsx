@@ -92,10 +92,10 @@ function LoginForm() {
       {/* ── Left brand panel ── */}
       <div
         className="hidden lg:flex w-[42%] flex-col justify-between p-12"
-        style={{ background: 'linear-gradient(150deg, #0C1E35, #0F3D6E)' }}
+        style={{ background: 'linear-gradient(150deg, #14161C, #22252E)' }}
       >
         <Link href="/" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white font-black text-sm">M</div>
+          <div className="w-8 h-8 bg-amber-600 rounded-lg flex items-center justify-center text-white font-black text-sm">M</div>
           <span className="text-white font-black text-lg">MySchool</span>
         </Link>
 
@@ -147,7 +147,7 @@ function LoginForm() {
 
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center gap-2 mb-8 justify-center">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black text-sm">M</div>
+            <div className="w-8 h-8 bg-gray-950 rounded-lg flex items-center justify-center text-white font-black text-sm">M</div>
             <span className="text-gray-900 font-black text-lg">MySchool</span>
           </div>
 
@@ -186,7 +186,7 @@ function LoginForm() {
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">
                 School Domain <span className="text-red-500">*</span>
               </label>
-              <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-50 transition-all bg-white">
+              <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden focus-within:border-amber-400 focus-within:ring-2 focus-within:ring-amber-50 transition-all bg-white">
                 <input
                   value={slug}
                   onChange={e => setSlug(e.target.value.toLowerCase().replace(/\s/g, '-'))}
@@ -212,7 +212,7 @@ function LoginForm() {
                 placeholder="you@yourschool.edu.pk"
                 required
                 autoComplete="email"
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-50 transition-all bg-white"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-50 transition-all bg-white"
               />
             </div>
 
@@ -222,7 +222,7 @@ function LoginForm() {
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide">
                   Password <span className="text-red-500">*</span>
                 </label>
-                <button type="button" tabIndex={-1} className="text-xs text-blue-600 hover:underline font-medium">
+                <button type="button" tabIndex={-1} className="text-xs text-amber-700 hover:underline font-medium">
                   Forgot password?
                 </button>
               </div>
@@ -234,7 +234,7 @@ function LoginForm() {
                   placeholder="••••••••"
                   required
                   autoComplete="current-password"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-50 transition-all bg-white pr-11"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-50 transition-all bg-white pr-11"
                 />
                 <button
                   type="button"
@@ -259,7 +259,7 @@ function LoginForm() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-lg shadow-blue-600/20 mt-2 flex items-center justify-center gap-2"
+              className="w-full py-3.5 bg-gray-950 hover:bg-gray-800 text-white font-black rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-lg shadow-gray-900/20 mt-2 flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
@@ -275,7 +275,7 @@ function LoginForm() {
             </button>
           </form>
 
-          <div className="mt-4 p-3.5 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-700">
+          <div className="mt-4 p-3.5 bg-amber-50 border border-amber-100 rounded-xl text-xs text-amber-700">
             <p className="font-bold mb-1">Demo credentials</p>
             <p>Domain: <span className="font-mono font-semibold">demo</span></p>
             <p>Email: <span className="font-mono font-semibold">admin@demo.edu</span></p>
@@ -284,7 +284,7 @@ function LoginForm() {
 
           <p className="text-center text-gray-400 text-xs mt-5">
             Don&apos;t have an account?{' '}
-            <Link href="/signup" className="text-blue-600 font-semibold hover:underline">Register your school →</Link>
+            <Link href="/signup" className="text-amber-700 font-semibold hover:underline">Register your school →</Link>
           </p>
 
           <p className="text-center text-gray-300 text-xs mt-3">
@@ -302,7 +302,7 @@ export default function LoginPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-amber-600 border-t-transparent rounded-full animate-spin" />
       </div>
     }>
       <LoginForm />

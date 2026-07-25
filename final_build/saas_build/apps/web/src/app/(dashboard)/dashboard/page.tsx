@@ -69,7 +69,7 @@ export default function DashboardPage() {
 
         {/* AI Insights */}
         {ai.kpis && (
-          <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-5 text-white">
+          <div className="bg-gradient-to-br from-gray-900 to-indigo-950 rounded-2xl p-5 text-white">
             <h2 className="font-black text-lg mb-4">🤖 AI School Insights</h2>
             <div className="grid-responsive-3" style={{gap:'0.75rem'}}>
               {[
