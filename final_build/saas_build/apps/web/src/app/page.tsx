@@ -34,14 +34,14 @@ function StatCard({ v, prefix = '', suffix = '', l, c, up, delay }: { v: number;
 }
 
 const FEATURE_GRID = [
-  { icon: '👩‍🎓', title: 'Student Management', desc: 'Manage student records, admissions, attendance, and performance.', color: 'bg-blue-50 text-blue-600' },
-  { icon: '📅', title: 'Attendance Tracking', desc: 'Real-time attendance tracking with reports and analytics.', color: 'bg-purple-50 text-purple-600' },
-  { icon: '💳', title: 'Fee Management', desc: 'Automate fee collection, generate invoices, and send reminders.', color: 'bg-emerald-50 text-emerald-600' },
-  { icon: '📝', title: 'Exams & Grading', desc: 'Create exams, grade assignments, and generate report cards.', color: 'bg-amber-50 text-amber-600' },
-  { icon: '💬', title: 'Communication', desc: 'Connect with parents, students, and teachers instantly.', color: 'bg-rose-50 text-rose-600' },
-  { icon: '📚', title: 'Library Management', desc: 'Manage books, issue/return, track inventory and fines.', color: 'bg-teal-50 text-teal-600' },
-  { icon: '🚌', title: 'Transport Management', desc: 'Track vehicles, manage routes, and ensure student safety.', color: 'bg-orange-50 text-orange-600' },
-  { icon: '📊', title: 'Reports & Analytics', desc: 'Powerful dashboards and reports for better decision making.', color: 'bg-indigo-50 text-indigo-600' },
+  { icon: '👩‍🎓', title: 'Student Management', desc: 'Manage student records, admissions, attendance, and performance.', color: 'bg-gray-100 text-gray-800' },
+  { icon: '📅', title: 'Attendance Tracking', desc: 'Real-time attendance tracking with reports and analytics.', color: 'bg-gray-100 text-gray-800' },
+  { icon: '💳', title: 'Fee Management', desc: 'Automate fee collection, generate invoices, and send reminders.', color: 'bg-amber-50 text-amber-700' },
+  { icon: '📝', title: 'Exams & Grading', desc: 'Create exams, grade assignments, and generate report cards.', color: 'bg-gray-100 text-gray-800' },
+  { icon: '💬', title: 'Communication', desc: 'Connect with parents, students, and teachers instantly.', color: 'bg-indigo-50 text-indigo-700' },
+  { icon: '📚', title: 'Library Management', desc: 'Manage books, issue/return, track inventory and fines.', color: 'bg-gray-100 text-gray-800' },
+  { icon: '🚌', title: 'Transport Management', desc: 'Track vehicles, manage routes, and ensure student safety.', color: 'bg-gray-100 text-gray-800' },
+  { icon: '📊', title: 'Reports & Analytics', desc: 'Powerful dashboards and reports for better decision making.', color: 'bg-amber-50 text-amber-700' },
 ];
 
 
@@ -159,13 +159,13 @@ const PRICING = [
   {
     name: 'Professional', monthlyPrice: 12000, annualPrice: 9600,
     limit: 'Up to 2,000 students', highlight: true, badge: 'Most Popular',
-    color: 'from-blue-600 to-blue-700', glow: 'shadow-2xl shadow-blue-500/25', ring: 'hover:ring-blue-500',
+    color: 'from-amber-600 to-amber-700', glow: 'shadow-2xl shadow-amber-500/25', ring: 'hover:ring-amber-500',
     features: ['2,000 students & 100 staff', 'Everything in Starter', 'Teacher portal', 'LMS & online courses', 'AI analytics & dropout prediction', 'WhatsApp notifications (5,000/mo)', 'Advanced reports & analytics', 'Priority support', '25 GB storage', 'Question bank & digital exams'],
   },
   {
     name: 'Enterprise', monthlyPrice: 20000, annualPrice: 16000,
     limit: 'Unlimited students', highlight: false, badge: 'Enterprise',
-    color: 'from-purple-600 to-purple-700', glow: '', ring: 'hover:ring-purple-500',
+    color: 'from-indigo-800 to-indigo-900', glow: '', ring: 'hover:ring-indigo-600',
     features: ['Unlimited students & staff', 'Everything in Professional', 'Multi-campus management', 'White-label branding', 'API access', 'Unlimited WhatsApp & SMS', 'Unlimited storage', 'Dedicated account manager', 'Custom SLA & uptime guarantee', 'Priority feature requests'],
   },
 ];
@@ -240,7 +240,7 @@ export default function MarketingPage() {
           </div>
           <div className="hidden md:flex items-center gap-3">
             <Link href="/login" className={`text-sm font-semibold px-4 py-2 rounded-lg border transition-colors ${isScrolled ? 'text-gray-700 border-gray-200 hover:bg-gray-50' : 'text-white/90 border-white/25 hover:bg-white/10'}`}>Login</Link>
-            <Link href="/signup" className="text-sm font-bold px-4 py-2 rounded-lg text-white transition-all bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90 flex items-center gap-1.5">
+            <Link href="/signup" className="text-sm font-bold px-4 py-2 rounded-lg text-white transition-all bg-gray-950 hover:bg-gray-800 flex items-center gap-1.5">
               Request Demo
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
             </Link>
@@ -264,14 +264,14 @@ export default function MarketingPage() {
             ))}
             <div className="pt-3 border-t border-gray-100 flex flex-col gap-2">
               <Link href="/login" onClick={() => setMobileMenu(false)} className="block text-center py-2.5 text-sm font-semibold text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50">Login</Link>
-              <Link href="/signup" onClick={() => setMobileMenu(false)} className="block text-center py-2.5 text-sm font-bold text-white rounded-lg bg-gradient-to-r from-blue-600 to-purple-600">Request Demo</Link>
+              <Link href="/signup" onClick={() => setMobileMenu(false)} className="block text-center py-2.5 text-sm font-bold text-white rounded-lg bg-gray-950">Request Demo</Link>
             </div>
           </div>
         )}
       </nav>
 
       {/* ── Hero ── */}
-      <section className="relative pt-28 pb-24 sm:pt-32 sm:pb-32 overflow-hidden" style={{ background: 'linear-gradient(150deg, #0B0E1A 0%, #10142A 55%, #0F1A3D 100%)' }}>
+      <section className="relative pt-28 pb-24 sm:pt-32 sm:pb-32 overflow-hidden" style={{ background: 'linear-gradient(150deg, #14161C 0%, #1B1D24 55%, #101114 100%)' }}>
         {/* Background video (Veo 3 generated clip) — drop your file at /public/videos/hero-bg.mp4 */}
         {heroVideoOk && (
           <video
@@ -284,9 +284,9 @@ export default function MarketingPage() {
             onError={() => setHeroVideoOk(false)}
           />
         )}
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(150deg, rgba(11,14,26,0.75) 0%, rgba(16,20,42,0.8) 55%, rgba(15,26,61,0.85) 100%)' }} />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(150deg, rgba(20,22,28,0.75) 0%, rgba(27,29,36,0.8) 55%, rgba(16,17,20,0.85) 100%)' }} />
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-0 right-0 w-[600px] h-[600px] opacity-[0.08]" style={{ background: 'radial-gradient(circle at 70% 30%, #7C3AED, transparent 60%)' }} />
+          <div className="absolute top-0 right-0 w-[600px] h-[600px] opacity-[0.08]" style={{ background: 'radial-gradient(circle at 70% 30%, #C08A2E, transparent 60%)' }} />
           <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.5) 1px, transparent 1px)', backgroundSize: '64px 64px' }} />
         </div>
 
@@ -297,7 +297,7 @@ export default function MarketingPage() {
             </div>
             <h1 className="text-4xl sm:text-5xl font-black text-white leading-[1.12] mb-5 tracking-tight">
               Manage Schools<br />
-              Like <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Never Before.</span><br />
+              Like <span className="bg-gradient-to-r from-amber-400 to-amber-600 bg-clip-text text-transparent">Never Before.</span><br />
               Focus on Education,<br />
               We Handle the Rest.
             </h1>
@@ -305,7 +305,7 @@ export default function MarketingPage() {
               MySchool is a powerful, secure, and easy-to-use platform that simplifies school operations, improves communication, and enhances learning outcomes.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 mb-7">
-              <Link href="/signup" className="inline-flex items-center justify-center gap-2 px-6 py-3.5 text-white font-bold rounded-xl transition-all text-sm bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90">
+              <Link href="/signup" className="inline-flex items-center justify-center gap-2 px-6 py-3.5 text-white font-bold rounded-xl transition-all text-sm bg-gray-950 hover:bg-gray-800">
                 Request Demo
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
               </Link>
@@ -501,9 +501,9 @@ export default function MarketingPage() {
       <section id="features" className="py-16 sm:py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-10 sm:mb-14">
-            <span className="text-purple-600 font-bold text-xs uppercase tracking-widest">Everything You Need</span>
+            <span className="text-amber-700 font-bold text-xs uppercase tracking-widest">Everything You Need</span>
             <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mt-3 mb-4 tracking-tight">
-              All-in-One Solution for <span className="text-purple-600">Modern Schools</span>
+              All-in-One Solution for <span className="text-indigo-700">Modern Schools</span>
             </h2>
             <p className="text-base sm:text-lg text-gray-500 max-w-2xl mx-auto">Powerful modules to automate tasks, save time, and improve productivity.</p>
           </div>
@@ -522,7 +522,7 @@ export default function MarketingPage() {
       </section>
 
       {/* ── Stats Band (continuous marquee) ── */}
-      <section className="py-10 overflow-hidden" style={{ background: 'linear-gradient(120deg, #4F46E5 0%, #7C3AED 100%)' }}>
+      <section className="py-10 overflow-hidden" style={{ background: 'linear-gradient(120deg, #14161C 0%, #22252E 100%)' }}>
         <style>{`
           @keyframes msk-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
           .msk-marquee-track { animation: msk-marquee 22s linear infinite; }
@@ -555,7 +555,7 @@ export default function MarketingPage() {
               loading="lazy"
             />
             <div className="mt-2 bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-xl">🏫</div>
+              <div className="w-10 h-10 rounded-xl bg-gray-950 flex items-center justify-center text-xl">🏫</div>
               <div>
                 <p className="font-bold text-gray-900 text-sm">One School, One Platform</p>
                 <p className="text-xs text-gray-500">Everyone connected in real time</p>
@@ -572,9 +572,9 @@ export default function MarketingPage() {
 
           {/* Checklist side */}
           <div>
-            <span className="text-purple-600 font-bold text-xs uppercase tracking-widest">Why Choose Us</span>
+            <span className="text-amber-700 font-bold text-xs uppercase tracking-widest">Why Choose Us</span>
             <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mt-3 mb-6 tracking-tight leading-tight">
-              Smart Platform. Better Experience.<br /><span className="text-purple-600">Brighter Future.</span>
+              Smart Platform. Better Experience.<br /><span className="text-indigo-700">Brighter Future.</span>
             </h2>
             <div className="space-y-4">
               {WHY_US.map(item => (
@@ -595,7 +595,7 @@ export default function MarketingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-10">
             <div>
-              <span className="text-purple-600 font-bold text-xs uppercase tracking-widest">Flexible Pricing Plans</span>
+              <span className="text-amber-700 font-bold text-xs uppercase tracking-widest">Flexible Pricing Plans</span>
               <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mt-3 tracking-tight">Choose the Perfect Plan for Your School</h2>
             </div>
             <div className="inline-flex items-center bg-gray-100 rounded-xl p-1 gap-1 relative flex-shrink-0">
@@ -627,7 +627,7 @@ export default function MarketingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-end justify-between mb-10 sm:mb-14">
             <div>
-              <span className="text-purple-600 font-bold text-xs uppercase tracking-widest">Loved by Educators</span>
+              <span className="text-amber-700 font-bold text-xs uppercase tracking-widest">Loved by Educators</span>
               <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mt-3 tracking-tight">What Schools Say About MySchool</h2>
             </div>
             <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
@@ -663,7 +663,7 @@ export default function MarketingPage() {
       </section>
 
       {/* ── Final CTA ── */}
-      <section className="py-14 sm:py-16 relative overflow-hidden" style={{ background: 'linear-gradient(120deg, #2563EB 0%, #7C3AED 100%)' }}>
+      <section className="py-14 sm:py-16 relative overflow-hidden" style={{ background: 'linear-gradient(120deg, #14161C 0%, #22252E 100%)' }}>
         <div className="max-w-5xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-8 text-center sm:text-left">
           <span className="hidden sm:block text-5xl flex-shrink-0">🏫</span>
           <div className="flex-1">
