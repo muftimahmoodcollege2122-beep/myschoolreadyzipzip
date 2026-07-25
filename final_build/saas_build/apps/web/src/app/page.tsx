@@ -2,13 +2,15 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 
-const FEATURES = [
-  { title: 'School Website', desc: 'Professional web presence with zero developer cost.', color: 'bg-blue-600', items: ['Custom domain & SSL', 'Admissions page', 'News & events', 'Staff directory', 'Photo gallery', 'SEO optimized'] },
-  { title: 'Administration', desc: 'Complete institutional control from one dashboard.', color: 'bg-indigo-600', items: ['Student management', 'Staff management', 'Admissions CRM', 'Timetable builder', 'Multi-campus', 'Audit logs'] },
-  { title: 'Academics', desc: 'End-to-end academic lifecycle management.', color: 'bg-violet-600', items: ['Attendance tracking', 'Exam management', 'Results & grades', 'LMS & courses', 'Assignments', 'Digital certificates'] },
-  { title: 'Finance', desc: 'Automated fee collection and financial reporting.', color: 'bg-emerald-600', items: ['Fee collection', 'Online invoicing', 'JazzCash / EasyPaisa', 'Scholarships', 'Financial reports', 'Budget tracking'] },
-  { title: 'Communication', desc: 'Keep every stakeholder informed in real time.', color: 'bg-amber-600', items: ['SMS alerts', 'Email notifications', 'Parent portal', 'WhatsApp integration', 'Announcements', 'Emergency alerts'] },
-  { title: 'AI Automation', desc: 'Reduce manual work by 10× with embedded AI.', color: 'bg-rose-600', items: ['Notice generation', 'AI timetable builder', 'Report card AI', 'Dropout prediction', 'AI chatbot', 'Exam paper generation'] },
+const FEATURE_GRID = [
+  { icon: '👩‍🎓', title: 'Student Management', desc: 'Manage student records, admissions, attendance, and performance.', color: 'bg-blue-50 text-blue-600' },
+  { icon: '📅', title: 'Attendance Tracking', desc: 'Real-time attendance tracking with reports and analytics.', color: 'bg-purple-50 text-purple-600' },
+  { icon: '💳', title: 'Fee Management', desc: 'Automate fee collection, generate invoices, and send reminders.', color: 'bg-emerald-50 text-emerald-600' },
+  { icon: '📝', title: 'Exams & Grading', desc: 'Create exams, grade assignments, and generate report cards.', color: 'bg-amber-50 text-amber-600' },
+  { icon: '💬', title: 'Communication', desc: 'Connect with parents, students, and teachers instantly.', color: 'bg-rose-50 text-rose-600' },
+  { icon: '📚', title: 'Library Management', desc: 'Manage books, issue/return, track inventory and fines.', color: 'bg-teal-50 text-teal-600' },
+  { icon: '🚌', title: 'Transport Management', desc: 'Track vehicles, manage routes, and ensure student safety.', color: 'bg-orange-50 text-orange-600' },
+  { icon: '📊', title: 'Reports & Analytics', desc: 'Powerful dashboards and reports for better decision making.', color: 'bg-indigo-50 text-indigo-600' },
 ];
 
 const PRICING = [
@@ -33,36 +35,41 @@ const PRICING = [
 ];
 
 const TESTIMONIALS = [
-  { name: 'Dr. Fatima Malik', role: 'Principal', org: 'Beacon House School System', initials: 'FM', text: 'MySchool transformed how we manage 3,200 students across 4 campuses. Fee collection efficiency improved by 42% in the first month.', metric: '+42% fee collection' },
-  { name: 'Ahmed Hassan', role: 'Director', org: 'City Grammar School', initials: 'AH', text: 'The AI timetable generator saved our admin team two full working days every semester. Setup took under 30 minutes. The ROI was clear within the first week.', metric: '2 days saved/semester' },
-  { name: 'Sarah Khan', role: 'CFO', org: 'Roots International Schools', initials: 'SK', text: 'Real-time fee analytics and automated SMS reminders cut our outstanding dues by 60%. The financial reporting module alone justifies the entire subscription cost.', metric: '-60% outstanding dues' },
-  { name: 'Bilal Akhtar', role: 'IT Director', org: 'The Educators Network', initials: 'BA', text: 'We replaced 6 different systems with MySchool. API integration was seamless. Our IT overhead dropped significantly and teachers are actually enjoying the platform.', metric: '6 systems consolidated' },
+  { name: 'Dr. Fatima Malik', role: 'Principal', org: 'Beacon House School System', initials: 'FM', text: 'MySchool transformed how we manage 3,200 students across 4 campuses. Fee collection efficiency improved by 42% in the first month.', rating: 5 },
+  { name: 'Ahmed Hassan', role: 'Director', org: 'City Grammar School', initials: 'AH', text: 'The AI timetable generator saved our admin team two full working days every semester. Setup took under 30 minutes.', rating: 5 },
+  { name: 'Sarah Khan', role: 'CFO', org: 'Roots International Schools', initials: 'SK', text: 'Real-time fee analytics and automated SMS reminders cut our outstanding dues by 60%. The reporting module alone justifies the cost.', rating: 5 },
+  { name: 'Bilal Akhtar', role: 'IT Director', org: 'The Educators Network', initials: 'BA', text: 'We replaced 6 different systems with MySchool. API integration was seamless and teachers are actually enjoying the platform.', rating: 5 },
 ];
 
-const FAQS = [
-  { q: 'How long does the setup take?', a: 'Your school website and management system go live in under 10 minutes. Our automated provisioning creates everything instantly after signup. No technical knowledge required.' },
-  { q: 'Do we need to hire a developer?', a: 'No. Everything is managed through intuitive dashboards. The website builder requires zero coding. Our onboarding wizard guides you step-by-step.' },
-  { q: 'Can we use our own domain?', a: 'Yes. You get a free subdomain immediately. Connect your custom domain in Settings → Domain with a guided DNS setup wizard.' },
-  { q: 'Which payment methods are supported?', a: 'JazzCash, EasyPaisa, bank transfer, and Stripe (international). Parents can pay from the mobile app or parent portal.' },
-  { q: 'What happens to our data if we leave?', a: 'Your data is always yours. Export everything — students, fees, academic records — at any time. We use AES-256 encryption and daily automated backups.' },
-  { q: 'Is there a free trial?', a: '30 days free with full access to every feature. No credit card required to start. Cancel anytime with no penalties.' },
-  { q: 'Can we migrate from our existing system?', a: 'Yes. We provide free data migration for student records, fee history, and academic data. Our onboarding team handles the migration.' },
-  { q: 'Do you offer multi-campus support?', a: 'Yes. The Enterprise plan includes unlimited campuses under a single admin console with consolidated group-level analytics.' },
+const SCHOOLS = [
+  { name: 'Beacon House', count: '4,200+ Students' },
+  { name: 'The Educators', count: '3,160+ Students' },
+  { name: 'City Grammar', count: '2,800+ Students' },
+  { name: 'Roots International', count: '2,450+ Students' },
+  { name: 'Headstart School', count: '3,600+ Students' },
 ];
 
-const MODULES = [
-  'Student Information System', 'Learning Management System', 'Finance & Billing',
-  'HR & Payroll', 'Attendance Tracking', 'Exam Management', 'Library System',
-  'Hostel Management', 'Transport Tracking', 'Website Builder', 'AI Automation',
-  'Parent Portal', 'Teacher Portal', 'Student Portal', 'Communication Center',
-  'Analytics & Reports', 'Multi-Tenant SaaS', 'Custom Domains', 'White-Label',
+const STATS = [
+  { icon: '🏫', value: '500+', label: 'Schools' },
+  { icon: '👥', value: '50,000+', label: 'Active Users' },
+  { icon: '🎓', value: '120,000+', label: 'Students Managed' },
+  { icon: '🛡️', value: '99.9%', label: 'Uptime' },
+  { icon: '🎧', value: '24/7', label: 'Customer Support' },
+];
+
+const WHY_US = [
+  'User-friendly interface for all users',
+  'Secure data with enterprise-grade security',
+  'Accessible anytime, anywhere',
+  'Scalable solution for any size of institution',
+  'Regular updates & new features',
 ];
 
 export default function MarketingPage() {
-  const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [billing, setBilling] = useState<'monthly' | 'annual'>('monthly');
   const [scrollY, setScrollY] = useState(0);
   const [mobileMenu, setMobileMenu] = useState(false);
+  const [testimonialStart, setTestimonialStart] = useState(0);
 
   useEffect(() => {
     const h = () => setScrollY(window.scrollY);
@@ -71,6 +78,7 @@ export default function MarketingPage() {
   }, []);
 
   const isScrolled = scrollY > 60;
+  const visibleTestimonials = [0, 1, 2].map(i => TESTIMONIALS[(testimonialStart + i) % TESTIMONIALS.length]);
 
   return (
     <div className="min-h-screen bg-white overflow-x-hidden" style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}>
@@ -80,18 +88,24 @@ export default function MarketingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 flex-shrink-0">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black text-sm">M</div>
-            <span className={`font-black text-lg tracking-tight ${isScrolled ? 'text-gray-900' : 'text-white'}`}>MySchool</span>
+            <div className="leading-none">
+              <span className={`block font-black text-lg tracking-tight ${isScrolled ? 'text-gray-900' : 'text-white'}`}>MySchool</span>
+              <span className={`block text-[10px] font-medium ${isScrolled ? 'text-gray-400' : 'text-white/40'}`}>School Management SaaS</span>
+            </div>
           </Link>
 
           {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-6">
-            {[['Features', '/features'], ['Pricing', '/pricing'], ['Security', '/security-center']].map(([label, href]) => (
+            {[['Home', '/'], ['Features', '/features'], ['Pricing', '/pricing'], ['Security', '/security-center'], ['About Us', '/about']].map(([label, href]) => (
               <Link key={label} href={href} className={`text-sm font-medium transition-colors ${isScrolled ? 'text-gray-600 hover:text-gray-900' : 'text-white/75 hover:text-white'}`}>{label}</Link>
             ))}
           </div>
           <div className="hidden md:flex items-center gap-3">
-            <Link href="/login" className={`text-sm font-semibold px-3 py-2 rounded-lg transition-colors ${isScrolled ? 'text-gray-700 hover:bg-gray-100' : 'text-white/80 hover:text-white'}`}>Sign In</Link>
-            <Link href="/signup" className="text-sm font-bold px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Start Free Trial</Link>
+            <Link href="/login" className={`text-sm font-semibold px-4 py-2 rounded-lg border transition-colors ${isScrolled ? 'text-gray-700 border-gray-200 hover:bg-gray-50' : 'text-white/90 border-white/25 hover:bg-white/10'}`}>Login</Link>
+            <Link href="/signup" className="text-sm font-bold px-4 py-2 rounded-lg text-white transition-all bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90 flex items-center gap-1.5">
+              Request Demo
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+            </Link>
           </div>
 
           {/* Mobile hamburger */}
@@ -107,296 +121,239 @@ export default function MarketingPage() {
         {/* Mobile menu */}
         {mobileMenu && (
           <div className="md:hidden bg-white border-b border-gray-200 shadow-lg px-4 py-4 space-y-1">
-            {[['Features', '/features'], ['Pricing', '/pricing'], ['Security', '/security-center']].map(([label, href]) => (
+            {[['Home', '/'], ['Features', '/features'], ['Pricing', '/pricing'], ['Security', '/security-center'], ['About Us', '/about']].map(([label, href]) => (
               <Link key={label} href={href} onClick={() => setMobileMenu(false)} className="block px-3 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 rounded-lg">{label}</Link>
             ))}
             <div className="pt-3 border-t border-gray-100 flex flex-col gap-2">
-              <Link href="/login" onClick={() => setMobileMenu(false)} className="block text-center py-2.5 text-sm font-semibold text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50">Sign In</Link>
-              <Link href="/signup" onClick={() => setMobileMenu(false)} className="block text-center py-2.5 text-sm font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700">Start Free Trial</Link>
+              <Link href="/login" onClick={() => setMobileMenu(false)} className="block text-center py-2.5 text-sm font-semibold text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50">Login</Link>
+              <Link href="/signup" onClick={() => setMobileMenu(false)} className="block text-center py-2.5 text-sm font-bold text-white rounded-lg bg-gradient-to-r from-blue-600 to-purple-600">Request Demo</Link>
             </div>
           </div>
         )}
       </nav>
 
       {/* ── Hero ── */}
-      <section className="relative min-h-screen flex items-center" style={{ background: 'linear-gradient(150deg, #0C1E35 0%, #0F2D50 55%, #0F3D6E 100%)' }}>
+      <section className="relative pt-28 pb-24 sm:pt-32 sm:pb-32" style={{ background: 'linear-gradient(150deg, #0B0E1A 0%, #10142A 55%, #0F1A3D 100%)' }}>
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-0 right-0 w-[600px] h-[600px] opacity-[0.04]" style={{ background: 'radial-gradient(circle at 70% 30%, #3B82F6, transparent 60%)' }} />
-          <div className="absolute inset-0 opacity-[0.015]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.5) 1px, transparent 1px)', backgroundSize: '64px 64px' }} />
+          <div className="absolute top-0 right-0 w-[600px] h-[600px] opacity-[0.08]" style={{ background: 'radial-gradient(circle at 70% 30%, #7C3AED, transparent 60%)' }} />
+          <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.5) 1px, transparent 1px)', backgroundSize: '64px 64px' }} />
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-24 pb-20 grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center w-full">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-2 gap-14 lg:gap-10 items-center w-full">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-500/15 border border-blue-400/25 rounded-full mb-5">
-              <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-              <span className="text-blue-300 text-xs font-semibold">All-in-One School Management Platform</span>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-500/15 border border-purple-400/25 rounded-full mb-6">
+              <span className="text-purple-300 text-xs font-semibold">⚡ All-in-One School Management Platform</span>
             </div>
-            <h1 className="text-4xl sm:text-5xl font-black text-white leading-[1.1] mb-5 tracking-tight">
-              Launch Your School<br />
-              Website & Management<br />
-              <span className="text-blue-400">System in Minutes</span>
+            <h1 className="text-4xl sm:text-5xl font-black text-white leading-[1.12] mb-5 tracking-tight">
+              Manage Schools<br />
+              Like <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Never Before.</span><br />
+              Focus on Education,<br />
+              We Handle the Rest.
             </h1>
-            <p className="text-base sm:text-lg text-white/60 mb-7 leading-relaxed max-w-lg">
-              Admissions, attendance, fees, exams, HR, parent portal, AI automation — all provisioned automatically. No developers. No setup complexity.
+            <p className="text-base sm:text-lg text-white/55 mb-7 leading-relaxed max-w-lg">
+              MySchool is a powerful, secure, and easy-to-use platform that simplifies school operations, improves communication, and enhances learning outcomes.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 mb-8">
-              <Link href="/signup" className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all text-sm">
-                Start Free Trial — 30 Days
+            <div className="flex flex-col sm:flex-row gap-3 mb-7">
+              <Link href="/signup" className="inline-flex items-center justify-center gap-2 px-6 py-3.5 text-white font-bold rounded-xl transition-all text-sm bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90">
+                Request Demo
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
               </Link>
               <Link href="/features" className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-white/8 hover:bg-white/12 text-white font-semibold rounded-xl border border-white/15 transition-all text-sm">
-                See All Features
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                Watch Video
               </Link>
             </div>
-            <div className="flex flex-wrap gap-x-5 gap-y-2 text-xs text-white/40 font-medium">
-              {['No credit card required', 'Live in under 10 minutes', 'Cancel anytime'].map(t => (
+            <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-white/40 font-medium">
+              {[['☁️', 'Cloud Based'], ['🛡️', 'Secure & Reliable'], ['⚡', 'Easy to Use'], ['🎧', '24/7 Support']].map(([icon, t]) => (
                 <span key={t} className="flex items-center gap-1.5">
-                  <svg className="w-3.5 h-3.5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
-                  {t}
+                  <span>{icon}</span>{t}
                 </span>
               ))}
             </div>
           </div>
 
-          {/* Dashboard Preview */}
+          {/* Dashboard Preview + Phone mockup */}
           <div className="relative hidden sm:block">
-            <div className="rounded-2xl overflow-hidden border border-white/10 shadow-2xl" style={{ background: '#0A1929' }}>
-              <div className="flex items-center gap-1.5 px-4 py-3 bg-[#111F30] border-b border-white/5">
+            <div className="rounded-2xl overflow-hidden border border-white/10 shadow-2xl" style={{ background: '#0F1424' }}>
+              <div className="flex items-center gap-1.5 px-4 py-3 bg-[#151B30] border-b border-white/5">
                 <div className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
                 <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/50" />
                 <div className="w-2.5 h-2.5 rounded-full bg-green-500/50" />
-                <div className="flex-1 mx-3 bg-[#0A1929] rounded-md px-3 py-1.5 text-[11px] text-blue-300/40 font-mono">demo.myschool.pk/dashboard</div>
-                <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                <div className="flex-1 mx-3 bg-[#0F1424] rounded-md px-3 py-1.5 text-[11px] text-purple-300/40 font-mono">app.myschool.pk/dashboard</div>
               </div>
               <div className="p-5">
-                <div className="grid grid-cols-2 gap-2.5 mb-4">
-                  {[['2,847', 'Total Students', '#3B82F6'], ['94.2%', 'Attendance Rate', '#10B981'], ['Rs 8.4M', 'Monthly Revenue', '#8B5CF6'], ['142', 'Teaching Staff', '#F59E0B']].map(([v, l, c]) => (
-                    <div key={l} className="rounded-xl p-3.5 border border-white/5" style={{ background: '#111F30' }}>
-                      <p className="font-black text-xl leading-none" style={{ color: c }}>{v}</p>
-                      <p className="text-[11px] text-white/30 mt-1 font-medium">{l}</p>
+                <div className="grid grid-cols-4 gap-2.5 mb-4">
+                  {[['1,248', 'Total Students', '#3B82F6'], ['86', 'Teachers', '#10B981'], ['42', 'Classes', '#F59E0B'], ['Rs 24,560', 'Revenue', '#8B5CF6']].map(([v, l, c]) => (
+                    <div key={l} className="rounded-xl p-3 border border-white/5" style={{ background: '#151B30' }}>
+                      <p className="font-black text-sm leading-none" style={{ color: c }}>{v}</p>
+                      <p className="text-[9px] text-white/30 mt-1.5 font-medium leading-snug">{l}</p>
                     </div>
                   ))}
                 </div>
-                <div className="rounded-xl p-3.5 border border-white/5 mb-3" style={{ background: '#111F30' }}>
-                  <div className="flex items-center justify-between mb-2.5">
-                    <p className="text-[11px] text-white/30 font-medium">Revenue Trend</p>
-                    <span className="text-[10px] text-green-400 font-bold">+18.4%</span>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div className="rounded-xl p-3.5 border border-white/5" style={{ background: '#151B30' }}>
+                    <p className="text-[10px] text-white/30 font-medium mb-2">Attendance Overview</p>
+                    <div className="flex items-end gap-1 h-10">
+                      {[38, 52, 46, 67, 59, 75, 71].map((v, i) => (
+                        <div key={i} className="flex-1 rounded-t-sm" style={{ height: `${v}%`, background: '#3B82F6' }} />
+                      ))}
+                    </div>
                   </div>
-                  <div className="flex items-end gap-1 h-12">
-                    {[38, 52, 46, 67, 59, 75, 71, 83, 90, 82, 95, 100].map((v, i) => (
-                      <div key={i} className="flex-1 rounded-t-sm" style={{ height: `${v}%`, background: i === 11 ? '#3B82F6' : `rgba(59,130,246,${0.15 + i * 0.015})` }} />
-                    ))}
+                  <div className="rounded-xl p-3.5 border border-white/5" style={{ background: '#151B30' }}>
+                    <p className="text-[10px] text-white/30 font-medium mb-2">Students by Grade</p>
+                    <div className="flex items-center justify-center h-10">
+                      <div className="w-10 h-10 rounded-full border-4 border-blue-500" style={{ borderRightColor: '#8B5CF6', borderBottomColor: '#3B82F640' }} />
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-            <div className="absolute -top-3 -right-3 bg-emerald-500 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg shadow-lg">Live in 10 min</div>
-          </div>
-        </div>
-
-        {/* Stats bar */}
-        <div className="absolute bottom-0 left-0 right-0 border-t border-white/8">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {[['500+', 'Schools Onboarded'], ['120,000+', 'Students Managed'], ['Rs 2B+', 'Fees Processed'], ['99.9%', 'Platform Uptime']].map(([v, l]) => (
-              <div key={l} className="text-center">
-                <p className="text-xl sm:text-2xl font-black text-white tracking-tight">{v}</p>
-                <p className="text-xs text-white/35 mt-0.5 font-medium">{l}</p>
+            {/* Phone mockup */}
+            <div className="absolute -bottom-8 -right-6 w-28 rounded-2xl overflow-hidden border-4 border-[#111827] shadow-2xl" style={{ background: '#0F1424' }}>
+              <div className="p-2.5">
+                <p className="text-white text-[9px] font-bold mb-2">Hello, Admin 👋</p>
+                <div className="grid grid-cols-2 gap-1 mb-1.5">
+                  <div className="rounded-md p-1.5" style={{ background: '#1A2038' }}>
+                    <p className="text-[8px] font-black text-blue-400">1,248</p>
+                    <p className="text-[6px] text-white/30">Students</p>
+                  </div>
+                  <div className="rounded-md p-1.5" style={{ background: '#1A2038' }}>
+                    <p className="text-[8px] font-black text-emerald-400">86</p>
+                    <p className="text-[6px] text-white/30">Teachers</p>
+                  </div>
+                </div>
               </div>
-            ))}
+            </div>
           </div>
         </div>
       </section>
 
       {/* ── Trusted By ── */}
-      <section className="py-8 bg-gray-50 border-b border-gray-100">
+      <section className="py-8 bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <p className="text-center text-xs font-bold text-gray-400 uppercase tracking-widest mb-5">Trusted by leading institutions across Pakistan</p>
-          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
-            {['Beacon House', 'The Educators', 'Roots International', 'City Grammar', 'Headstart', 'LGS Network', 'Allied Schools', 'Happy Minds'].map(name => (
-              <span key={name} className="text-sm font-bold text-gray-300">{name}</span>
+          <p className="text-center text-sm mb-6">
+            <span className="text-gray-400">Trusted by </span>
+            <span className="font-bold text-blue-600">500+</span>
+            <span className="text-gray-400"> schools & institutions worldwide</span>
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-5">
+            {SCHOOLS.map(s => (
+              <div key={s.name} className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 text-sm">🛡️</div>
+                <div>
+                  <p className="text-sm font-bold text-gray-700 leading-tight">{s.name}</p>
+                  <p className="text-xs text-gray-400 leading-tight">{s.count}</p>
+                </div>
+              </div>
             ))}
           </div>
         </div>
       </section>
-
-      {/* ── Problem → Solution ── */}
-      <section className="py-16 sm:py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-10 sm:mb-14">
-            <span className="text-blue-600 font-bold text-xs uppercase tracking-widest">The Problem</span>
-            <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mt-3 mb-4 tracking-tight">Most Schools Operate With Fragmented Systems</h2>
-            <p className="text-base sm:text-lg text-gray-500 max-w-2xl mx-auto">School administrators spend 20+ hours per week on tasks that should be automated.</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-5xl mx-auto">
-            <div className="bg-gray-50 rounded-2xl border border-gray-200 p-6 sm:p-8">
-              <div className="flex items-center gap-3 mb-5">
-                <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
-                  <svg className="w-4 h-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                </div>
-                <h3 className="font-black text-lg text-gray-900">Without MySchool</h3>
-              </div>
-              <div className="space-y-2">
-                {[['Manual attendance registers', '3 hrs/day wasted'], ['Excel fee records & parent chasing', 'Rs 500K+ in defaults'], ['Paper report cards every term', '2 weeks printing'], ['Expensive website developers', 'Rs 200K+ one-time'], ['No parent communication system', 'Constant complaints']].map(([p, c]) => (
-                  <div key={p} className="flex items-center justify-between p-3 rounded-xl bg-white border border-gray-100 gap-2">
-                    <span className="text-sm text-gray-700 font-medium">{p}</span>
-                    <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full flex-shrink-0">{c}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="rounded-2xl p-6 sm:p-8 text-white" style={{ background: 'linear-gradient(135deg, #1E3A5F, #1A4D8A)' }}>
-              <div className="flex items-center gap-3 mb-5">
-                <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0">
-                  <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
-                </div>
-                <h3 className="font-black text-lg text-white">With MySchool</h3>
-              </div>
-              <div className="space-y-2">
-                {[['Automated attendance tracking', 'Zero manual work'], ['Online fee collection + SMS reminders', '95% collection rate'], ['Digital report cards in one click', 'Instant generation'], ['Professional school website', 'Included in every plan'], ['Parent portal + mobile access', 'Real-time updates']].map(([p, b]) => (
-                  <div key={p} className="flex items-center justify-between p-3 rounded-xl bg-white/8 border border-white/10 gap-2">
-                    <span className="text-sm text-white/90 font-medium">{p}</span>
-                    <span className="text-xs font-bold text-emerald-300 bg-white/10 px-2 py-0.5 rounded-full flex-shrink-0">{b}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Module Ticker ── */}
-      <div className="py-3.5 bg-blue-600 overflow-hidden border-y border-blue-500">
-        <div className="flex gap-8 whitespace-nowrap" style={{ animation: 'marquee 35s linear infinite' }}>
-          {[...MODULES, ...MODULES].map((m, i) => (
-            <span key={i} className="inline-flex items-center gap-2 text-white/80 text-xs font-semibold flex-shrink-0">
-              <span className="w-1 h-1 rounded-full bg-blue-300" />{m}
-            </span>
-          ))}
-        </div>
-        <style>{`@keyframes marquee { from { transform: translateX(0) } to { transform: translateX(-50%) } }`}</style>
-      </div>
 
       {/* ── Features ── */}
       <section id="features" className="py-16 sm:py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-10 sm:mb-16">
-            <span className="text-blue-600 font-bold text-xs uppercase tracking-widest">Platform Capabilities</span>
-            <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mt-3 mb-4 tracking-tight">Every Tool Your Institution Needs</h2>
-            <p className="text-base sm:text-lg text-gray-500 max-w-2xl mx-auto">No add-ons, no per-feature fees. Every module included in every plan.</p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-            {FEATURES.map(f => (
-              <div key={f.title} className="rounded-2xl border border-gray-100 p-6 sm:p-7 hover:shadow-xl hover:border-transparent hover:-translate-y-0.5 transition-all duration-300">
-                <div className={`w-10 h-10 rounded-xl ${f.color} flex items-center justify-center mb-4`}>
-                  <div className="w-4 h-4 bg-white/80 rounded-sm" />
-                </div>
-                <h3 className="font-black text-lg text-gray-900 mb-1.5">{f.title}</h3>
-                <p className="text-sm text-gray-500 mb-4 leading-relaxed">{f.desc}</p>
-                <ul className="space-y-2">
-                  {f.items.map(item => (
-                    <li key={item} className="flex items-center gap-2.5 text-sm text-gray-600">
-                      <svg className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-          <div className="text-center mt-8">
-            <Link href="/features" className="inline-flex items-center gap-2 px-6 py-3 border border-blue-200 text-blue-600 font-bold rounded-xl hover:bg-blue-50 transition-all text-sm">
-              View All 70+ Features →
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Portal Preview ── */}
-      <section className="py-16 sm:py-24 bg-gray-950">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-10 sm:mb-14">
-            <span className="text-blue-400 font-bold text-xs uppercase tracking-widest">Platform Preview</span>
-            <h2 className="text-3xl sm:text-4xl font-black text-white mt-3 mb-4 tracking-tight">Purpose-Built Portals for Every Stakeholder</h2>
+            <span className="text-purple-600 font-bold text-xs uppercase tracking-widest">Everything You Need</span>
+            <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mt-3 mb-4 tracking-tight">
+              All-in-One Solution for <span className="text-purple-600">Modern Schools</span>
+            </h2>
+            <p className="text-base sm:text-lg text-gray-500 max-w-2xl mx-auto">Powerful modules to automate tasks, save time, and improve productivity.</p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              { title: 'Admin Dashboard', color: '#3B82F6', items: ['Student & staff overview', 'Fee collection analytics', 'Attendance heat maps', 'AI-driven insights'] },
-              { title: 'Teacher Portal', color: '#8B5CF6', items: ['Class schedule & roster', 'Digital grade book', 'Quick attendance', 'AI lesson planner'] },
-              { title: 'Student Portal', color: '#10B981', items: ['Personal timetable', 'Subject results', 'Homework tracker', 'LMS course access'] },
-              { title: 'Parent Portal', color: '#F59E0B', items: ["Child's attendance", 'Fee payment online', 'Message teachers', 'View exam results'] },
-            ].map(p => (
-              <div key={p.title} className="rounded-2xl border border-white/8 overflow-hidden hover:border-blue-500/30 transition-all" style={{ background: '#111F30' }}>
-                <div className="h-1 w-full" style={{ background: p.color }} />
-                <div className="p-5">
-                  <h3 className="font-black text-white text-base mb-3">{p.title}</h3>
-                  <ul className="space-y-2">
-                    {p.items.map(item => (
-                      <li key={item} className="flex items-center gap-2 text-xs text-white/50 font-medium">
-                        <div className="w-1 h-1 rounded-full flex-shrink-0" style={{ background: p.color }} />{item}
-                      </li>
-                    ))}
-                  </ul>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+            {FEATURE_GRID.map(f => (
+              <div key={f.title} className="rounded-2xl border border-gray-100 p-5 sm:p-6 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
+                <div className={`w-11 h-11 rounded-xl ${f.color} flex items-center justify-center mb-4 text-xl`}>
+                  {f.icon}
                 </div>
+                <h3 className="font-black text-base text-gray-900 mb-1.5">{f.title}</h3>
+                <p className="text-sm text-gray-500 leading-relaxed">{f.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── Security ── */}
-      <section className="py-16 sm:py-20 bg-gray-50 border-y border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-10">
-            <span className="text-blue-600 font-bold text-xs uppercase tracking-widest">Security & Compliance</span>
-            <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mt-3 mb-3 tracking-tight">Enterprise-Grade Security</h2>
-            <p className="text-gray-500 max-w-xl mx-auto text-sm">Your data protected by the same standards used by global financial institutions.</p>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 max-w-4xl mx-auto mb-6">
-            {[['◎', '99.9% Uptime SLA', 'Guaranteed availability'], ['◆', 'AES-256 Encryption', 'Data at rest & in transit'], ['◈', 'Daily Backups', '30-day retention'], ['◉', 'PDPA Compliant', 'Pakistan data law']].map(([icon, label, sub]) => (
-              <div key={label} className="bg-white rounded-xl p-4 sm:p-5 text-center border border-gray-100 shadow-sm">
-                <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center mx-auto mb-2 text-blue-600 text-base font-black">{icon}</div>
-                <p className="font-bold text-gray-900 text-xs sm:text-sm mb-1">{label}</p>
-                <p className="text-xs text-gray-400">{sub}</p>
+      {/* ── Stats Band ── */}
+      <section className="py-10" style={{ background: 'linear-gradient(120deg, #4F46E5 0%, #7C3AED 100%)' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-2 sm:grid-cols-5 gap-6">
+          {STATS.map(s => (
+            <div key={s.label} className="text-center">
+              <div className="text-2xl mb-1.5">{s.icon}</div>
+              <p className="text-xl sm:text-2xl font-black text-white tracking-tight">{s.value}</p>
+              <p className="text-xs text-white/70 mt-0.5 font-medium">{s.label}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Why Choose Us ── */}
+      <section className="py-16 sm:py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          {/* Illustration side */}
+          <div className="relative bg-gradient-to-br from-gray-50 to-blue-50 rounded-3xl p-8 sm:p-10 border border-gray-100">
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { icon: '👨‍👩‍👧', title: 'Parents', desc: 'Stay connected with your child’s activities' },
+                { icon: '👨‍🏫', title: 'Teachers', desc: 'Manage classes, assignments and performance' },
+                { icon: '👩‍🎓', title: 'Students', desc: 'Access lessons, assignments and results' },
+                { icon: '🧑‍💼', title: 'Admins', desc: 'Complete control over school operations' },
+              ].map(r => (
+                <div key={r.title} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+                  <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-lg mb-2">{r.icon}</div>
+                  <p className="font-bold text-gray-900 text-sm mb-0.5">{r.title}</p>
+                  <p className="text-xs text-gray-500 leading-snug">{r.desc}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-xl">🏫</div>
+              <div>
+                <p className="font-bold text-gray-900 text-sm">One School, One Platform</p>
+                <p className="text-xs text-gray-500">Everyone connected in real time</p>
               </div>
-            ))}
+            </div>
           </div>
-          <div className="text-center">
-            <Link href="/security-center" className="inline-flex items-center gap-2 px-5 py-2.5 border border-gray-200 text-gray-600 font-semibold rounded-xl hover:bg-white transition-all text-sm">
-              View Full Security Details →
-            </Link>
+
+          {/* Checklist side */}
+          <div>
+            <span className="text-purple-600 font-bold text-xs uppercase tracking-widest">Why Choose Us</span>
+            <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mt-3 mb-6 tracking-tight leading-tight">
+              Smart Platform. Better Experience.<br /><span className="text-purple-600">Brighter Future.</span>
+            </h2>
+            <div className="space-y-4">
+              {WHY_US.map(item => (
+                <div key={item} className="flex items-center gap-3">
+                  <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
+                  </div>
+                  <span className="text-gray-700 font-medium">{item}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
       {/* ── Pricing ── */}
       <section id="pricing" className="py-16 sm:py-24 relative overflow-hidden" style={{ background: 'linear-gradient(180deg, #f8faff 0%, #ffffff 100%)' }}>
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute -top-32 -left-32 w-96 h-96 bg-blue-100 rounded-full opacity-40 animate-[pulse_6s_ease-in-out_infinite]" />
-          <div className="absolute -bottom-32 -right-32 w-80 h-80 bg-purple-100 rounded-full opacity-30 animate-[pulse_8s_ease-in-out_infinite_1s]" />
-        </div>
-
         <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
-          <div className="text-center mb-8 sm:mb-10">
-            <span className="inline-flex items-center gap-1.5 text-blue-600 font-bold text-xs uppercase tracking-widest mb-3">
-              <span className="w-4 h-px bg-blue-400" />Transparent Pricing<span className="w-4 h-px bg-blue-400" />
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mb-3 tracking-tight">Honest pricing for Pakistani schools</h2>
-            <p className="text-gray-500 max-w-lg mx-auto mb-6 text-sm sm:text-base">
-              One flat price for your entire school. No per-student charges, no hidden fees.
-              <span className="font-semibold text-gray-700"> 30-day free trial on all plans.</span>
-            </p>
-            <div className="inline-flex items-center bg-gray-100 rounded-xl p-1 gap-1 relative">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-10">
+            <div>
+              <span className="text-purple-600 font-bold text-xs uppercase tracking-widest">Flexible Pricing Plans</span>
+              <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mt-3 tracking-tight">Choose the Perfect Plan for Your School</h2>
+            </div>
+            <div className="inline-flex items-center bg-gray-100 rounded-xl p-1 gap-1 relative flex-shrink-0">
               <div className={`absolute inset-y-1 rounded-lg bg-white shadow-sm transition-all duration-300 ease-in-out ${billing === 'annual' ? 'left-[calc(50%+2px)] right-1' : 'left-1 right-[calc(50%+2px)]'}`} />
               <button onClick={() => setBilling('monthly')} className={`relative px-5 py-2 rounded-lg text-sm font-bold transition-colors z-10 ${billing === 'monthly' ? 'text-gray-900' : 'text-gray-500'}`}>Monthly</button>
               <button onClick={() => setBilling('annual')} className={`relative px-5 py-2 rounded-lg text-sm font-bold transition-colors z-10 flex items-center gap-2 ${billing === 'annual' ? 'text-gray-900' : 'text-gray-500'}`}>
-                Annual<span className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full">Save 20%</span>
+                Yearly<span className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full">Save 20%</span>
               </button>
             </div>
           </div>
 
-          {/* Pricing cards — stack on mobile, 3-col on desktop */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 max-w-5xl mx-auto">
-            {PRICING.map((p, idx) => (
+            {PRICING.map((p) => (
               <div key={p.name} className={`relative rounded-3xl overflow-hidden flex flex-col transition-all duration-500 hover:-translate-y-1 ${p.highlight ? `sm:scale-[1.03] ${p.glow}` : 'hover:shadow-xl'}`}>
                 <div className={`bg-gradient-to-br ${p.color} p-6 sm:p-7 text-white`}>
                   {p.badge ? (
@@ -418,7 +375,7 @@ export default function MarketingPage() {
                 </div>
                 <div className="bg-white flex-1 p-5 sm:p-6 border border-gray-100">
                   <Link href="/signup" className={`block text-center py-3 rounded-xl text-sm font-black transition-all mb-5 bg-gradient-to-r ${p.color} text-white hover:opacity-90`}>
-                    Start 30-Day Free Trial →
+                    Get Started
                   </Link>
                   <ul className="space-y-2.5">
                     {p.features.map(f => (
@@ -433,13 +390,8 @@ export default function MarketingPage() {
             ))}
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mt-8">
-            {['✓ 30-day free trial', '✓ No credit card required', '✓ Cancel anytime', '✓ Data always yours'].map(t => (
-              <span key={t} className="text-xs sm:text-sm text-gray-500 font-medium">{t}</span>
-            ))}
-          </div>
-          <p className="text-center text-gray-400 text-xs mt-4">
-            All prices in Pakistani Rupees (PKR) · Annual billing saves 20% ·{' '}
+          <p className="text-center text-gray-400 text-xs mt-8">
+            All prices in Pakistani Rupees (PKR) · Yearly billing saves 20% ·{' '}
             <Link href="/pricing" className="text-blue-600 hover:underline">Full pricing details</Link>
             {' '}·{' '}
             <a href="mailto:sales@myschool.pk" className="text-blue-600 hover:underline">Contact sales</a>
@@ -450,54 +402,37 @@ export default function MarketingPage() {
       {/* ── Testimonials ── */}
       <section className="py-16 sm:py-24 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-10 sm:mb-14">
-            <span className="text-blue-600 font-bold text-xs uppercase tracking-widest">Customer Evidence</span>
-            <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mt-3 mb-4 tracking-tight">Results from Real School Leaders</h2>
+          <div className="flex items-end justify-between mb-10 sm:mb-14">
+            <div>
+              <span className="text-purple-600 font-bold text-xs uppercase tracking-widest">Loved by Educators</span>
+              <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mt-3 tracking-tight">What Schools Say About MySchool</h2>
+            </div>
+            <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
+              <button onClick={() => setTestimonialStart(t => (t - 1 + TESTIMONIALS.length) % TESTIMONIALS.length)} className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-white transition-colors">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
+              </button>
+              <button onClick={() => setTestimonialStart(t => (t + 1) % TESTIMONIALS.length)} className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-white transition-colors">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+              </button>
+            </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
-            {TESTIMONIALS.map(t => (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
+            {visibleTestimonials.map(t => (
               <div key={t.name} className="bg-white rounded-2xl p-6 sm:p-7 border border-gray-100 hover:shadow-lg transition-shadow">
-                <div className="flex items-start justify-between mb-4 gap-3">
-                  <div className="flex items-center gap-1">
-                    {[...Array(5)].map((_, i) => (
-                      <svg key={i} className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                    ))}
-                  </div>
-                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-full flex-shrink-0">{t.metric}</span>
-                </div>
-                <p className="text-gray-700 text-sm sm:text-base leading-relaxed mb-5">&ldquo;{t.text}&rdquo;</p>
+                <p className="text-3xl text-purple-200 font-serif mb-1 leading-none">&ldquo;</p>
+                <p className="text-gray-700 text-sm leading-relaxed mb-5">{t.text}</p>
                 <div className="flex items-center gap-3 pt-4 border-t border-gray-50">
                   <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-sm flex-shrink-0">{t.initials}</div>
-                  <div>
+                  <div className="flex-1">
                     <p className="font-bold text-gray-900 text-sm">{t.name}</p>
                     <p className="text-xs text-gray-400">{t.role}, {t.org}</p>
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── FAQ ── */}
-      <section className="py-16 sm:py-24 bg-white">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-10 sm:mb-14">
-            <span className="text-blue-600 font-bold text-xs uppercase tracking-widest">FAQ</span>
-            <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mt-3 mb-4 tracking-tight">Common Questions</h2>
-          </div>
-          <div className="space-y-2">
-            {FAQS.map((faq, i) => (
-              <div key={i} className={`rounded-xl border overflow-hidden transition-all ${activeFaq === i ? 'border-blue-200 shadow-sm' : 'border-gray-100'}`}>
-                <button onClick={() => setActiveFaq(activeFaq === i ? null : i)} className="w-full flex items-center justify-between px-5 py-4 text-left gap-4">
-                  <span className="font-bold text-gray-900 text-sm sm:text-base">{faq.q}</span>
-                  <svg className={`w-5 h-5 text-gray-400 flex-shrink-0 transition-transform ${activeFaq === i ? 'rotate-45' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>
-                </button>
-                {activeFaq === i && (
-                  <div className="px-5 pb-4">
-                    <p className="text-gray-600 leading-relaxed text-sm">{faq.a}</p>
+                  <div className="flex items-center gap-0.5 flex-shrink-0">
+                    {[...Array(t.rating)].map((_, i) => (
+                      <svg key={i} className="w-3.5 h-3.5 text-yellow-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    ))}
                   </div>
-                )}
+                </div>
               </div>
             ))}
           </div>
@@ -505,28 +440,22 @@ export default function MarketingPage() {
       </section>
 
       {/* ── Final CTA ── */}
-      <section className="py-16 sm:py-24" style={{ background: 'linear-gradient(150deg, #0C1E35 0%, #0F3D6E 100%)' }}>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-500/15 border border-blue-400/25 rounded-full mb-6">
-            <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-            <span className="text-blue-300 text-xs font-semibold">Join 500+ schools already on MySchool</span>
+      <section className="py-14 sm:py-16 relative overflow-hidden" style={{ background: 'linear-gradient(120deg, #2563EB 0%, #7C3AED 100%)' }}>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-8 text-center sm:text-left">
+          <span className="hidden sm:block text-5xl flex-shrink-0">🏫</span>
+          <div className="flex-1">
+            <h2 className="text-2xl sm:text-3xl font-black text-white mb-2 tracking-tight">Ready to Transform Your School?</h2>
+            <p className="text-white/70 text-sm sm:text-base mb-6 sm:mb-0">Join hundreds of schools already using MySchool.</p>
           </div>
-          <h2 className="text-3xl sm:text-5xl font-black text-white mb-5 leading-tight tracking-tight">
-            Start Your School&apos;s<br />
-            <span className="text-blue-400">Digital Transformation</span> Today
-          </h2>
-          <p className="text-base sm:text-lg text-white/50 mb-8 max-w-2xl mx-auto leading-relaxed">
-            One subscription. Every module. Your complete school operating system — live in minutes.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
-            <Link href="/signup" className="w-full sm:w-auto px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl transition-all text-sm text-center">
-              Start Free 30-Day Trial
+          <div className="flex flex-col sm:flex-row gap-3 flex-shrink-0">
+            <Link href="/signup" className="px-6 py-3 bg-white text-blue-700 font-bold rounded-xl transition-all text-sm text-center hover:bg-white/90">
+              Request Demo →
             </Link>
-            <Link href="/pricing" className="w-full sm:w-auto px-8 py-4 bg-white/8 hover:bg-white/12 text-white font-semibold rounded-xl border border-white/15 transition-all text-sm text-center">
-              View Pricing Plans
+            <Link href="mailto:sales@myschool.pk" className="px-6 py-3 bg-white/10 hover:bg-white/15 text-white font-semibold rounded-xl border border-white/25 transition-all text-sm text-center">
+              Contact Us
             </Link>
           </div>
-          <p className="text-white/25 text-xs mt-6">No credit card · Full access · Cancel anytime · Setup in under 10 minutes</p>
+          <span className="hidden sm:block text-5xl flex-shrink-0">🎒</span>
         </div>
       </section>
 
@@ -549,7 +478,7 @@ export default function MarketingPage() {
             {[
               { title: 'Product', links: ['Features|/features', 'Pricing|/pricing', 'Security|/security-center', 'API Docs'] },
               { title: 'Solutions', links: ['Schools', 'Colleges', 'Universities', 'Madrassas'] },
-              { title: 'Company', links: ['About', 'Blog', 'Privacy Policy|/privacy-policy', 'Terms|/terms'] },
+              { title: 'Company', links: ['About|/about', 'Blog', 'Privacy Policy|/privacy-policy', 'Terms|/terms'] },
             ].map(col => (
               <div key={col.title}>
                 <p className="font-bold text-white mb-4 text-sm">{col.title}</p>
