@@ -327,26 +327,43 @@ export default function MarketingPage() {
             </div>
 
             {/* Phone mockup */}
-            <div className="msk-phone mt-5 mx-auto w-28 sm:mt-0 sm:mx-0 sm:absolute sm:-bottom-6 sm:-right-8 rounded-2xl overflow-hidden border-4 border-[#111827] shadow-2xl" style={{ background: '#0F1424' }}>
-              <div className="flex items-center justify-between px-2 pt-1.5 text-white text-[6px] font-bold">
-                <span>9:41</span>
-                <span>🔋</span>
+            <div className="msk-phone mt-5 mx-auto sm:mt-0 sm:mx-0 sm:absolute sm:-bottom-6 sm:-right-8 w-32 aspect-[9/19] rounded-[1.6rem] overflow-hidden border-4 border-[#111827] shadow-2xl flex flex-col" style={{ background: '#0F1424' }}>
+              {/* Notch */}
+              <div className="flex justify-center pt-1">
+                <div className="w-10 h-2.5 rounded-full bg-black" />
               </div>
-              <div className="p-2.5">
-                <p className="text-white text-[9px] font-bold mb-2 flex items-center gap-1">Hello, Admin <span>👋</span></p>
-                <div className="grid grid-cols-2 gap-1 mb-1.5">
-                  <div className="rounded-md p-1.5" style={{ background: '#1A2038' }}>
-                    <p className="text-[8px] font-black text-blue-400">1,245</p>
-                    <p className="text-[6px] text-white/30">Students</p>
+              <div className="flex items-center justify-between px-3 pt-1 text-white text-[7px] font-bold">
+                <span>9:41</span>
+                <span>🔋 📶</span>
+              </div>
+              <div className="p-2.5 flex-1 flex flex-col">
+                <p className="text-white text-[10px] font-bold mb-3 flex items-center gap-1">Hello, Admin <span>👋</span></p>
+                <div className="grid grid-cols-2 gap-1.5 mb-2">
+                  <div className="msk-fade rounded-lg p-2" style={{ background: '#1A2038', animationDelay: '1.1s' }}>
+                    <p className="text-[10px] font-black text-blue-400">1,245</p>
+                    <p className="text-[6.5px] text-white/30 mt-0.5">Students</p>
                   </div>
-                  <div className="rounded-md p-1.5" style={{ background: '#1A2038' }}>
-                    <p className="text-[8px] font-black text-emerald-400">78</p>
-                    <p className="text-[6px] text-white/30">Teachers</p>
+                  <div className="msk-fade rounded-lg p-2" style={{ background: '#1A2038', animationDelay: '1.2s' }}>
+                    <p className="text-[10px] font-black text-emerald-400">78</p>
+                    <p className="text-[6.5px] text-white/30 mt-0.5">Teachers</p>
                   </div>
                 </div>
-                <div className="rounded-md p-1.5 flex items-center justify-between" style={{ background: '#1A2038' }}>
-                  <span className="text-[6px] text-white/40">Attendance</span>
-                  <span className="text-[7px] font-black text-purple-400">92.6%</span>
+                <div className="msk-fade rounded-lg p-2 mb-2" style={{ background: '#1A2038', animationDelay: '1.3s' }}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[6.5px] text-white/40">Attendance</span>
+                    <span className="text-[8px] font-black text-purple-400">92.6%</span>
+                  </div>
+                  <svg viewBox="0 0 100 20" className="w-full h-4">
+                    <polyline className="msk-chart-line" points="0,16 20,10 40,13 60,5 80,9 100,3" fill="none" stroke="#8B5CF6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+                <div className="msk-fade rounded-lg p-2 flex-1" style={{ background: '#1A2038', animationDelay: '1.4s' }}>
+                  <p className="text-[6.5px] text-white/40 mb-1">Fees Collected</p>
+                  <p className="text-[10px] font-black text-amber-400">Rs 45,320</p>
+                </div>
+                <div className="flex items-center justify-center gap-1 mt-2 pb-1">
+                  <span className="msk-dot w-1 h-1 rounded-full bg-rose-500" />
+                  <span className="text-[6px] text-white/30">Live sync active</span>
                 </div>
               </div>
             </div>
