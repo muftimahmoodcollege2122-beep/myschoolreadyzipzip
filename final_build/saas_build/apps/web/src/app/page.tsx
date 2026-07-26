@@ -549,8 +549,8 @@ export default function MarketingPage() {
           <div className="relative bg-gradient-to-br from-gray-50 to-blue-50 rounded-3xl p-6 sm:p-8 border border-gray-100 overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/images/features/12-all-in-one-platform.png"
-              alt="MySchool — all-in-one school management platform"
+              src="/images/hero/monitor-only.png"
+              alt="MySchool admin dashboard"
               className="w-full h-auto max-h-[420px] object-contain"
               loading="lazy"
             />
