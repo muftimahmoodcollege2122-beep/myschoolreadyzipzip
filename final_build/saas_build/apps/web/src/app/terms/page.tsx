@@ -138,6 +138,11 @@ const SECTIONS = [
   },
 ];
 
+const SECTION_ICONS = [
+  '📖', '📄', '👤', '💳', '🔄', '✅', '🗄️', '🏛️',
+  '🔒', '⏱️', '🛡️', '📋', '⛔', '⚖️', '🔔', '✉️',
+];
+
 function RenderContent({ text }: { text: string }) {
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
   return (
@@ -151,34 +156,42 @@ function RenderContent({ text }: { text: string }) {
   );
 }
 
-function AccordionSection({ section, isOpen, onToggle, id }: { section: typeof SECTIONS[number]; isOpen: boolean; onToggle: () => void; id: string }) {
+function firstLine(section: typeof SECTIONS[number]) {
+  const raw = section.content[0].replace(/\*\*/g, '');
+  return raw.length > 140 ? raw.slice(0, 140) + '…' : raw;
+}
+
+function SectionCard({ section, index, isOpen, onToggle, id }: { section: typeof SECTIONS[number]; index: number; isOpen: boolean; onToggle: () => void; id: string }) {
   return (
-    <div id={id} className="border border-gray-100 rounded-2xl overflow-hidden bg-white scroll-mt-32">
-      <button
-        onClick={onToggle}
-        className="w-full flex items-center justify-between gap-4 px-5 sm:px-6 py-4 sm:py-5 text-left hover:bg-gray-50/80 transition-colors"
-      >
-        <h2 className="text-base sm:text-lg font-bold text-gray-900">{section.title}</h2>
-        <svg
-          className={`w-5 h-5 text-gray-400 flex-shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180 text-amber-600' : ''}`}
-          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-      <div
-        className="grid transition-all duration-300 ease-out"
-        style={{ gridTemplateRows: isOpen ? '1fr' : '0fr' }}
-      >
-        <div className="overflow-hidden">
-          <div className="px-5 sm:px-6 pb-5 sm:pb-6 pt-0 space-y-3 border-t border-gray-50">
-            {section.content.map((para, i) => (
-              <p key={i} className="text-gray-600 text-sm leading-relaxed whitespace-pre-line pt-3 first:pt-4">
-                <RenderContent text={para} />
-              </p>
-            ))}
+    <div id={id} className="scroll-mt-32">
+      <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+        <button onClick={onToggle} className="w-full flex items-start gap-4 px-5 sm:px-7 py-5 sm:py-6 text-left hover:bg-gray-50/60 transition-colors">
+          <div className="w-11 h-11 rounded-xl bg-amber-50 flex items-center justify-center text-xl flex-shrink-0">
+            {SECTION_ICONS[index]}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900" style={{ fontFamily: 'var(--font-playfair), serif' }}>{section.title}</h2>
+            {!isOpen && <p className="text-gray-500 text-sm mt-1.5 leading-relaxed">{firstLine(section)}</p>}
+          </div>
+          <svg className={`w-5 h-5 text-gray-400 flex-shrink-0 mt-1 transition-transform duration-300 ${isOpen ? 'rotate-180 text-amber-600' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        <div className="grid transition-all duration-300 ease-out" style={{ gridTemplateRows: isOpen ? '1fr' : '0fr' }}>
+          <div className="overflow-hidden">
+            <div className="px-5 sm:px-7 pb-6 pl-[4.75rem] sm:pl-[5.25rem] space-y-3 -mt-1">
+              {section.content.map((para, i) => (
+                <p key={i} className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">
+                  <RenderContent text={para} />
+                </p>
+              ))}
+            </div>
           </div>
         </div>
+      </div>
+      {/* decorative connector */}
+      <div className="flex justify-center py-2">
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-300" />
       </div>
     </div>
   );
@@ -186,7 +199,7 @@ function AccordionSection({ section, isOpen, onToggle, id }: { section: typeof S
 
 export default function TermsPage() {
   const [openSections, setOpenSections] = useState<Set<number>>(new Set([0]));
-  const [navOpen, setNavOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState(0);
 
   const toggle = (i: number) => {
     setOpenSections(prev => {
@@ -196,21 +209,18 @@ export default function TermsPage() {
     });
   };
 
-  const expandAll = () => setOpenSections(new Set(SECTIONS.map((_, i) => i)));
-  const collapseAll = () => setOpenSections(new Set());
-
   const jumpTo = (i: number) => {
+    setActiveSection(i);
     setOpenSections(prev => new Set(prev).add(i));
-    setNavOpen(false);
     requestAnimationFrame(() => {
       document.getElementById(`section-${i}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen" style={{ background: '#FAF7F1' }}>
       {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200">
+      <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
             <img src="/images/brand/logo.png" alt="MySchool" className="w-8 h-8 object-contain" />
@@ -220,94 +230,182 @@ export default function TermsPage() {
         </div>
       </nav>
 
-      {/* Header */}
-      <div className="pt-16" style={{ background: 'linear-gradient(150deg, #14161C 0%, #22252E 100%)' }}>
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10 sm:py-16 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-500/15 border border-amber-400/25 rounded-full mb-5">
-            <span className="text-amber-300 text-xs font-semibold">Legal</span>
-          </div>
-          <h1 className="text-2xl sm:text-4xl font-black text-white mb-4 tracking-tight">Terms of Service</h1>
-          <p className="text-white/50 text-sm">Last updated: June 1, 2026 &nbsp;·&nbsp; Effective: June 1, 2026</p>
+      {/* Breadcrumb */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-5">
+        <div className="flex items-center gap-2 text-xs text-gray-400 font-medium">
+          <Link href="/" className="hover:text-gray-700 transition-colors">Home</Link>
+          <span>›</span>
+          <span>Legal</span>
+          <span>›</span>
+          <span className="text-gray-600">Terms of Service</span>
         </div>
       </div>
 
-      {/* Dropdown: Table of Contents */}
-      <div className="bg-gray-50 border-b border-gray-100 sticky top-16 z-40">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6">
-          <button
-            onClick={() => setNavOpen(o => !o)}
-            className="w-full flex items-center justify-between gap-3 py-4"
-          >
-            <span className="text-xs text-gray-500 font-bold uppercase tracking-widest">Jump to Section</span>
-            <svg
-              className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${navOpen ? 'rotate-180' : ''}`}
-              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          <div className="grid transition-all duration-300 ease-out" style={{ gridTemplateRows: navOpen ? '1fr' : '0fr' }}>
-            <div className="overflow-hidden">
-              <div className="pb-4 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                {SECTIONS.map((s, i) => (
-                  <button
-                    key={s.title}
-                    onClick={() => jumpTo(i)}
-                    className="text-left text-sm px-3 py-2 rounded-lg text-gray-600 hover:bg-white hover:text-gray-900 hover:shadow-sm transition-all font-medium"
-                  >
-                    {s.title}
-                  </button>
-                ))}
+      {/* Header */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-10 sm:pb-14">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-10 items-center">
+          <div className="lg:col-span-3">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-amber-700 text-xs font-bold uppercase tracking-widest">Legal</span>
+              <span className="w-8 h-px bg-amber-400" />
+            </div>
+            <h1 className="text-4xl sm:text-6xl font-extrabold text-gray-900 mb-5 tracking-tight leading-[1.05]" style={{ fontFamily: 'var(--font-playfair), serif' }}>
+              Terms of Service
+            </h1>
+            <p className="text-gray-500 text-base sm:text-lg leading-relaxed max-w-lg mb-7">
+              These Terms of Service govern your access to and use of the MySchool platform and all related services.
+            </p>
+            <div className="flex flex-wrap gap-x-8 gap-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">📅</span>
+                <div>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wide">Last Updated</p>
+                  <p className="text-sm text-gray-700 font-semibold">June 1, 2026</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-lg">📄</span>
+                <div>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wide">Version</p>
+                  <p className="text-sm text-gray-700 font-semibold">2.4</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-lg">⏱️</span>
+                <div>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wide">Reading Time</p>
+                  <p className="text-sm text-gray-700 font-semibold">12 min</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="lg:col-span-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="https://images.unsplash.com/photo-1741636371995-875bf17ca657?fm=jpg&q=70&w=900&auto=format&fit=crop"
+              alt="MySchool — institutional building"
+              className="w-full h-56 sm:h-72 object-cover rounded-3xl shadow-lg"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Two-column body */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-16 sm:pb-24">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 lg:gap-10">
+          {/* Sidebar */}
+          <div className="lg:col-span-1">
+            <div className="lg:sticky lg:top-24 space-y-6">
+              <div>
+                <p className="text-amber-700 text-xs font-bold uppercase tracking-widest mb-3">On This Page</p>
+                <div className="space-y-1 max-h-[50vh] lg:max-h-none overflow-y-auto pr-1">
+                  {SECTIONS.map((s, i) => (
+                    <button
+                      key={s.title}
+                      onClick={() => jumpTo(i)}
+                      className={`w-full flex items-center gap-2.5 text-left text-sm px-3 py-2 rounded-lg transition-colors ${
+                        activeSection === i ? 'bg-gray-950 text-white font-semibold' : 'text-gray-600 hover:bg-white hover:text-gray-900'
+                      }`}
+                    >
+                      <span className="text-xs opacity-70 flex-shrink-0">{SECTION_ICONS[i]}</span>
+                      <span className="truncate">{s.title}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-white border border-gray-100 rounded-2xl p-5 text-center">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-lg mx-auto mb-3">🎧</div>
+                <p className="font-bold text-gray-900 text-sm mb-1">Need legal assistance?</p>
+                <p className="text-gray-500 text-xs leading-relaxed mb-4">Our legal team is here to help with any questions about these Terms.</p>
+                <a href="mailto:legal@myschool.pk" className="inline-flex items-center gap-1.5 w-full justify-center px-4 py-2.5 bg-gray-950 hover:bg-gray-800 text-white text-xs font-bold rounded-xl transition-colors">
+                  Contact Legal Team →
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Content cards */}
+          <div className="lg:col-span-3">
+            <div className="bg-amber-50 border border-amber-100 rounded-2xl p-6 mb-8">
+              <p className="text-amber-900 text-sm leading-relaxed">
+                <strong>Please read these Terms carefully.</strong> These Terms of Service constitute a legally binding agreement between your educational institution and MySchool Technologies governing your use of the MySchool school management platform. By using our Service, you agree to these Terms.
+              </p>
+            </div>
+
+            {SECTIONS.map((section, i) => (
+              <SectionCard
+                key={section.title}
+                id={`section-${i}`}
+                section={section}
+                index={i}
+                isOpen={openSections.has(i)}
+                onToggle={() => toggle(i)}
+              />
+            ))}
+
+            {/* Trust bar */}
+            <div className="bg-white border border-gray-100 rounded-2xl p-6 sm:p-8 mt-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-gray-950 flex items-center justify-center text-2xl flex-shrink-0">🛡️</div>
+                  <div>
+                    <p className="font-bold text-gray-900" style={{ fontFamily: 'var(--font-playfair), serif' }}>Your trust and data security</p>
+                    <p className="font-bold text-gray-900" style={{ fontFamily: 'var(--font-playfair), serif' }}>are our top priorities.</p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-x-6 gap-y-3">
+                  {[['🔐', 'Industry-standard', 'Security'], ['🔒', 'Encrypted', 'Data'], ['☁️', 'Regular', 'Backups'], ['⏱️', '99.9%', 'Uptime']].map(([icon, l1, l2]) => (
+                    <div key={l1 + l2} className="text-center">
+                      <div className="text-lg mb-1">{icon}</div>
+                      <p className="text-xs font-bold text-gray-700 leading-tight">{l1}</p>
+                      <p className="text-xs text-gray-400 leading-tight">{l2}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="text-sm">
+                  <p className="text-gray-400 text-xs mb-1">Learn more about our security practices.</p>
+                  <Link href="/security-center" className="text-amber-700 font-bold hover:underline">View Security Overview →</Link>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-        <div className="bg-amber-50 border border-amber-100 rounded-2xl p-6 mb-8">
-          <p className="text-amber-900 text-sm leading-relaxed">
-            <strong>Please read these Terms carefully.</strong> These Terms of Service constitute a legally binding agreement between your educational institution and MySchool Technologies governing your use of the MySchool school management platform. By using our Service, you agree to these Terms.
-          </p>
-        </div>
-
-        <div className="flex items-center justify-between mb-4">
-          <p className="text-xs text-gray-400 font-medium">{openSections.size} of {SECTIONS.length} sections expanded</p>
-          <div className="flex items-center gap-3">
-            <button onClick={expandAll} className="text-xs font-bold text-gray-600 hover:text-gray-900 transition-colors">Expand all</button>
-            <span className="text-gray-200">|</span>
-            <button onClick={collapseAll} className="text-xs font-bold text-gray-600 hover:text-gray-900 transition-colors">Collapse all</button>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          {SECTIONS.map((section, i) => (
-            <AccordionSection
-              key={section.title}
-              id={`section-${i}`}
-              section={section}
-              isOpen={openSections.has(i)}
-              onToggle={() => toggle(i)}
-            />
-          ))}
-        </div>
-      </div>
-
       {/* Footer */}
-      <div className="bg-gray-50 border-t border-gray-100 py-10">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
-          <p className="text-gray-500 text-sm mb-4">Have questions about our Terms of Service?</p>
-          <a href="mailto:legal@myschool.pk" className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-950 text-white text-sm font-bold rounded-xl hover:bg-gray-800 transition-colors">
-            Contact Legal Team
-          </a>
-          <div className="mt-6 flex items-center justify-center gap-6 text-xs text-gray-400">
-            <Link href="/" className="hover:text-gray-700 transition-colors">Home</Link>
-            <Link href="/privacy-policy" className="hover:text-gray-700 transition-colors">Privacy Policy</Link>
-            <a href="mailto:support@myschool.pk" className="hover:text-gray-700 transition-colors">Support</a>
+      <footer className="bg-gray-950 pt-14 pb-8 px-4 sm:px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-5 gap-8 mb-10">
+            <div className="col-span-2 md:col-span-1">
+              <div className="flex items-center gap-2.5 mb-4">
+                <img src="/images/brand/logo.png" alt="MySchool" className="w-8 h-8 object-contain" />
+                <span className="font-black text-lg text-white">MySchool</span>
+              </div>
+              <p className="text-gray-500 text-sm leading-relaxed max-w-xs">Empowering schools and educational institutions with intelligent technology.</p>
+            </div>
+            {[
+              { title: 'Product', links: ['Features|/features', 'Pricing|/pricing', 'Security|/security-center'] },
+              { title: 'Company', links: ['About|/about', 'Contact|mailto:hello@myschool.pk'] },
+              { title: 'Legal', links: ['Privacy Policy|/privacy-policy', 'Terms of Service|/terms', 'Security|/security-center'] },
+            ].map(col => (
+              <div key={col.title}>
+                <p className="font-bold text-white mb-4 text-sm">{col.title}</p>
+                <ul className="space-y-2.5">
+                  {col.links.map(l => {
+                    const [label, href] = l.split('|');
+                    return <li key={label}><Link href={href} className="text-gray-500 hover:text-white text-sm transition-colors">{label}</Link></li>;
+                  })}
+                </ul>
+              </div>
+            ))}
+          </div>
+          <div className="border-t border-gray-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p className="text-gray-600 text-sm text-center sm:text-left">© 2026 MySchool Technologies. All rights reserved.</p>
+            <p className="text-gray-600 text-sm">Made with ❤️ for education</p>
           </div>
         </div>
-      </div>
+      </footer>
     </div>
   );
 }

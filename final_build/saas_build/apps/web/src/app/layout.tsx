@@ -11,7 +11,7 @@
  */
 
 import type { Metadata } from 'next';
-import { Plus_Jakarta_Sans } from 'next/font/google';
+import { Plus_Jakarta_Sans, Playfair_Display } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
 
@@ -22,10 +22,17 @@ const jakarta = Plus_Jakarta_Sans({
   display: 'swap',
 });
 
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  weight: ['600', '700', '800', '900'],
+  variable: '--font-playfair',
+  display: 'swap',
+});
+
 export const metadata: Metadata = { title: 'MySchool App', description: "Pakistan's School Management SaaS" };
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={jakarta.variable}>
+    <html lang="en" className={`${jakarta.variable} ${playfair.variable}`}>
       <body>
         <Providers>{children}</Providers>
       </body>
