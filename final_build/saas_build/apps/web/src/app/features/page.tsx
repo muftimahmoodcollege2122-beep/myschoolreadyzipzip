@@ -235,48 +235,29 @@ export default function FeaturesPage() {
 
       {/* Hero */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-12 sm:pt-16 pb-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-12 items-center">
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-amber-700 text-xs font-bold uppercase tracking-widest">Features</span>
-              <span className="w-8 h-px bg-amber-400" />
-            </div>
-            <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 mb-5 tracking-tight leading-[1.08]" style={{ fontFamily: 'var(--font-playfair), serif' }}>
-              Everything You Need,<br />All in One Platform
-            </h1>
-            <p className="text-gray-500 text-base sm:text-lg leading-relaxed max-w-md mb-9">
-              MySchool brings together all the tools your institution needs to manage, teach, learn and grow — smarter, faster and simpler.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              {[
-                { icon: '🛡️', title: 'Secure & Reliable', desc: 'Enterprise-grade security to protect your data.' },
-                { icon: '⏱️', title: 'Save Time', desc: 'Automate daily tasks and focus on what matters.' },
-                { icon: '📈', title: 'Drive Growth', desc: 'Powerful insights to help your institution grow.' },
-              ].map(f => (
-                <div key={f.title}>
-                  <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center text-base mb-2.5">{f.icon}</div>
-                  <p className="font-bold text-gray-900 text-sm mb-1">{f.title}</p>
-                  <p className="text-gray-500 text-xs leading-relaxed">{f.desc}</p>
-                </div>
-              ))}
-            </div>
+        <div className="max-w-2xl">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-amber-700 text-xs font-bold uppercase tracking-widest">Features</span>
+            <span className="w-8 h-px bg-amber-400" />
           </div>
-
-          <div className="relative">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="https://images.unsplash.com/photo-1741636371995-875bf17ca657?fm=jpg&q=70&w=900&auto=format&fit=crop"
-              alt="MySchool institution"
-              className="w-full h-64 sm:h-80 object-cover rounded-3xl shadow-lg"
-            />
-            <div className="absolute -bottom-8 -left-4 sm:-left-8 w-[85%] sm:w-[75%]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/images/hero/monitor-only.png"
-                alt="MySchool dashboard preview"
-                className="w-full h-auto rounded-2xl shadow-2xl border-4 border-white"
-              />
-            </div>
+          <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 mb-5 tracking-tight leading-[1.08]" style={{ fontFamily: 'var(--font-playfair), serif' }}>
+            Everything You Need,<br />All in One Platform
+          </h1>
+          <p className="text-gray-500 text-base sm:text-lg leading-relaxed max-w-md mb-9">
+            MySchool brings together all the tools your institution needs to manage, teach, learn and grow — smarter, faster and simpler.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            {[
+              { icon: '🛡️', title: 'Secure & Reliable', desc: 'Enterprise-grade security to protect your data.' },
+              { icon: '⏱️', title: 'Save Time', desc: 'Automate daily tasks and focus on what matters.' },
+              { icon: '📈', title: 'Drive Growth', desc: 'Powerful insights to help your institution grow.' },
+            ].map(f => (
+              <div key={f.title}>
+                <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center text-base mb-2.5">{f.icon}</div>
+                <p className="font-bold text-gray-900 text-sm mb-1">{f.title}</p>
+                <p className="text-gray-500 text-xs leading-relaxed">{f.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
