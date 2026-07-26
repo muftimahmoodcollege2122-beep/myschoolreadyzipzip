@@ -87,7 +87,6 @@ function LoginForm() {
   return (
     <div
       className="min-h-screen flex"
-      style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}
     >
       {/* ── Left brand panel ── */}
       <div

@@ -106,7 +106,7 @@ function RenderContent({ text }: { text: string }) {
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="min-h-screen bg-white" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div className="min-h-screen bg-white">
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
@@ -119,10 +119,10 @@ export default function PrivacyPolicyPage() {
       </nav>
 
       {/* Header */}
-      <div className="pt-16" style={{ background: 'linear-gradient(150deg, #0C1E35 0%, #0F2D50 100%)' }}>
+      <div className="pt-16" style={{ background: 'linear-gradient(150deg, #14161C 0%, #22252E 100%)' }}>
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10 sm:py-16 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-500/15 border border-blue-400/25 rounded-full mb-5">
-            <span className="text-blue-300 text-xs font-semibold">Legal</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-500/15 border border-amber-400/25 rounded-full mb-5">
+            <span className="text-amber-300 text-xs font-semibold">Legal</span>
           </div>
           <h1 className="text-2xl sm:text-4xl font-black text-white mb-4">Privacy Policy</h1>
           <p className="text-white/50 text-sm">Last updated: June 1, 2026 &nbsp;·&nbsp; Effective: June 1, 2026</p>
@@ -157,7 +157,7 @@ export default function PrivacyPolicyPage() {
       <div className="bg-gray-50 border-t border-gray-100 py-10">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
           <p className="text-gray-500 text-sm mb-4">Have questions about our privacy practices?</p>
-          <a href="mailto:privacy@myschool.pk" className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 transition-colors">
+          <a href="mailto:privacy@myschool.pk" className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-950 text-white text-sm font-bold rounded-xl hover:bg-gray-800 transition-colors">
             Contact Privacy Team
           </a>
           <div className="mt-6 flex items-center justify-center gap-6 text-xs text-gray-400">

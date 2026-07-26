@@ -145,8 +145,7 @@ export default function SignupPage() {
   if (result) {
     const loginUrl = `/login?slug=${result.slug}&email=${encodeURIComponent(result.adminEmail)}&firstLogin=true`;
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-amber-50 flex items-center justify-center p-6"
-        style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-amber-50 flex items-center justify-center p-6">
         <div className="bg-white rounded-2xl shadow-2xl p-10 max-w-lg w-full">
           <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <svg className="w-8 h-8 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -258,7 +257,7 @@ export default function SignupPage() {
 
   /* ── Registration Form ── */
   return (
-    <div className="min-h-screen bg-gray-50 flex" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div className="min-h-screen bg-gray-50 flex">
 
       {/* Left panel */}
       <div className="hidden lg:flex w-[42%] flex-col justify-between p-12"

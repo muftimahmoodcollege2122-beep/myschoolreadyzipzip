@@ -540,7 +540,7 @@ export default function SetupGuidePage() {
   const [expandedStep, setExpandedStep] = useState<number | null>(1);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">

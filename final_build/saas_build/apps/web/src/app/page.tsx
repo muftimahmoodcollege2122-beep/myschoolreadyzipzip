@@ -219,7 +219,7 @@ export default function MarketingPage() {
   const visibleTestimonials = [0, 1, 2].map(i => TESTIMONIALS[(testimonialStart + i) % TESTIMONIALS.length]);
 
   return (
-    <div className="min-h-screen bg-white overflow-x-hidden" style={{ fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}>
+    <div className="min-h-screen bg-white overflow-x-hidden">
 
       {/* ── Navigation ── */}
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white border-b border-gray-200 shadow-sm' : 'bg-transparent'}`}>
