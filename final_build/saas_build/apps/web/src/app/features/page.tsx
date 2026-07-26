@@ -2,18 +2,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 
-const NAV = [
-  { label: 'Administration', id: 'administration' },
-  { label: 'Academics', id: 'academics' },
-  { label: 'Finance', id: 'finance' },
-  { label: 'Communication', id: 'communication' },
-  { label: 'HR & Staff', id: 'hr' },
-  { label: 'Portals', id: 'portals' },
-  { label: 'Website', id: 'website' },
-  { label: 'Analytics & AI', id: 'analytics' },
-  { label: 'Security', id: 'security' },
-];
-
+// MODULES below retains the full detailed feature catalogue (9 modules × 8 features each)
+// for potential future deep-dive pages; the current page renders a condensed 12-card summary further down.
 const MODULES = [
   {
     id: 'administration',
@@ -186,160 +176,195 @@ const MODULES = [
   },
 ];
 
-export default function FeaturesPage() {
-  const [active, setActive] = useState('administration');
+const FEATURE_CARDS = [
+  { title: 'Student Information Management', desc: 'Maintain complete student records, profiles, admission details and history in one secure place.', icon: '👥', color: 'bg-violet-50 text-violet-600', category: 'Administration' },
+  { title: 'Attendance Management', desc: 'Track attendance in real-time with biometric, RFID or manual entry and get insightful reports.', icon: '📅', color: 'bg-emerald-50 text-emerald-600', category: 'Academic Management' },
+  { title: 'Examination Management', desc: 'Create exams, schedule, grade efficiently and generate detailed performance analytics.', icon: '📝', color: 'bg-orange-50 text-orange-600', category: 'Academic Management' },
+  { title: 'Timetable Management', desc: 'Create conflict-free timetables with an intelligent scheduler for classes, teachers and resources.', icon: '🗓️', color: 'bg-blue-50 text-blue-600', category: 'Academic Management' },
+  { title: 'Fee & Finance Management', desc: 'Automate fee collection, expenses, invoices and financial reporting seamlessly.', icon: '💵', color: 'bg-green-50 text-green-600', category: 'Finance' },
+  { title: 'Learning Management System (LMS)', desc: 'Share materials, manage assignments, conduct online classes and track progress.', icon: '💻', color: 'bg-indigo-50 text-indigo-600', category: 'Learning' },
+  { title: 'Communication Management', desc: 'Send instant notifications, announcements and messages to students, parents & staff.', icon: '💬', color: 'bg-teal-50 text-teal-600', category: 'Communication' },
+  { title: 'Human Resource Management', desc: 'Manage staff records, leaves, payroll, appraisals and HR workflows effortlessly.', icon: '👔', color: 'bg-amber-50 text-amber-600', category: 'Administration' },
+  { title: 'Transport Management', desc: 'Manage routes, vehicles, drivers and ensure student safety with live tracking.', icon: '🚌', color: 'bg-rose-50 text-rose-600', category: 'Administration' },
+  { title: 'Library Management', desc: 'Catalog books, issue/return, manage inventory and digital library resources.', icon: '📚', color: 'bg-sky-50 text-sky-600', category: 'Learning' },
+  { title: 'Inventory Management', desc: 'Track and manage stock, supplies and assets across your institution.', icon: '📦', color: 'bg-slate-100 text-slate-600', category: 'Administration' },
+  { title: 'Reports & Analytics', desc: 'Get real-time insights with custom reports and data visualizations.', icon: '📊', color: 'bg-purple-50 text-purple-600', category: 'Security & Access' },
+];
 
-  const scrollTo = (id: string) => {
-    setActive(id);
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
+const CATEGORIES = ['All Features', 'Academic Management', 'Administration', 'Finance', 'Communication', 'Learning', 'Security & Access'];
+const CATEGORY_ICONS: Record<string, string> = {
+  'All Features': '⊞', 'Academic Management': '🎓', 'Administration': '🏛️', 'Finance': '💰',
+  'Communication': '💬', 'Learning': '💻', 'Security & Access': '🛡️',
+};
+
+export default function FeaturesPage() {
+  const [category, setCategory] = useState('All Features');
+  const visibleCards = category === 'All Features' ? FEATURE_CARDS : FEATURE_CARDS.filter(c => c.category === category);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen" style={{ background: '#FAF7F1' }}>
       {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur border-b border-gray-200">
+      <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
             <img src="/images/brand/logo.png" alt="MySchool" className="w-8 h-8 object-contain" />
-            <span className="font-black text-lg text-gray-900">MySchool</span>
+            <div className="leading-none">
+              <span className="block font-black text-lg text-gray-900">MySchool</span>
+              <span className="block text-[10px] font-medium text-gray-400">Smart School Management</span>
+            </div>
           </Link>
-          <div className="flex items-center gap-6">
-            <Link href="/features" className="text-sm font-semibold text-blue-600">Features</Link>
+          <div className="hidden md:flex items-center gap-7">
+            <Link href="/" className="text-sm font-medium text-gray-600 hover:text-gray-900">Home</Link>
+            <Link href="/features" className="text-sm font-semibold text-amber-700 relative">
+              Features
+              <span className="absolute -bottom-2 left-0 right-0 h-0.5 bg-amber-500 rounded-full" />
+            </Link>
             <Link href="/pricing" className="text-sm font-medium text-gray-600 hover:text-gray-900">Pricing</Link>
             <Link href="/security-center" className="text-sm font-medium text-gray-600 hover:text-gray-900">Security</Link>
-            <Link href="/signup" className="text-sm font-bold px-4 py-2 bg-gray-950 text-white rounded-lg hover:bg-gray-800">Start Free Trial</Link>
+            <Link href="/about" className="text-sm font-medium text-gray-600 hover:text-gray-900">Company</Link>
+          </div>
+          <div className="flex items-center gap-3">
+            <Link href="/login" className="text-sm font-semibold px-4 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors">Login</Link>
+            <Link href="/signup" className="text-sm font-bold px-4 py-2 rounded-lg bg-gray-950 hover:bg-gray-800 text-white transition-colors flex items-center gap-1.5">
+              Book a Demo
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+            </Link>
           </div>
         </div>
       </nav>
 
       {/* Hero */}
-      <div className="pt-16" style={{ background: 'linear-gradient(150deg, #0C1E35 0%, #0F2D50 60%, #1a3a6b 100%)' }}>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-14 sm:py-20 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-500/15 border border-blue-400/25 rounded-full mb-6">
-            <span className="text-blue-300 text-xs font-semibold">Complete Feature Set</span>
-          </div>
-          <h1 className="text-3xl sm:text-4xl sm:text-5xl font-black text-white mb-4 sm:mb-5 leading-tight">
-            Everything your school needs,<br />
-            <span className="text-blue-400">built into one platform</span>
-          </h1>
-          <p className="text-white/60 text-lg max-w-2xl mx-auto leading-relaxed">
-            From student enrollment to alumni tracking, from fee collection to AI-powered dropout prediction —
-            MySchool replaces 12 different software tools with one integrated system.
-          </p>
-          <div className="flex items-center justify-center gap-4 mt-8">
-            <Link href="/signup" className="px-6 py-3 bg-gray-950 hover:bg-gray-800 text-white font-bold rounded-xl transition-all text-sm">
-              Start 30-Day Free Trial
-            </Link>
-            <Link href="/pricing" className="px-6 py-3 bg-white/10 hover:bg-white/15 text-white font-semibold rounded-xl border border-white/20 transition-all text-sm">
-              View Pricing
-            </Link>
-          </div>
-          {/* Stats */}
-          <div className="grid grid-cols-4 gap-6 mt-14 border-t border-white/10 pt-10">
-            {[
-              { value: '9', label: 'Core Modules' },
-              { value: '70+', label: 'Features' },
-              { value: '5', label: 'Portals' },
-              { value: '3', label: 'Payment Gateways' },
-            ].map(s => (
-              <div key={s.label}>
-                <p className="text-3xl font-black text-white">{s.value}</p>
-                <p className="text-white/50 text-sm mt-1">{s.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Sticky module nav */}
-      <div className="sticky top-16 z-40 bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex gap-0 overflow-x-auto scrollbar-hide">
-            {NAV.map(n => (
-              <button key={n.id} onClick={() => scrollTo(n.id)}
-                className={`px-4 py-4 text-sm font-semibold whitespace-nowrap border-b-2 transition-all flex-shrink-0
-                  ${active === n.id ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-800'}`}>
-                {n.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Modules */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-16 space-y-14 sm:space-y-24">
-        {MODULES.map((mod, idx) => (
-          <section key={mod.id} id={mod.id} className="scroll-mt-32">
-            {/* Module header */}
-            <div className={`rounded-2xl sm:rounded-3xl bg-gradient-to-r ${mod.color} p-6 sm:p-10 mb-6 sm:mb-10 text-white overflow-hidden`}>
-              <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8">
-                <div className="flex items-start gap-6 flex-1">
-                  <span className="text-5xl">{mod.icon}</span>
-                  <div>
-                    <h2 className="text-2xl sm:text-3xl font-black mb-2">{mod.title}</h2>
-                    <p className="text-white/75 text-lg">{mod.subtitle}</p>
-                  </div>
-                </div>
-                {mod.image && (
-                  <div className="w-full sm:w-64 flex-shrink-0 rounded-xl overflow-hidden bg-white/10 border border-white/15">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={mod.image} alt={mod.title} className="w-full h-auto block" loading="lazy" />
-                  </div>
-                )}
-              </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-12 sm:pt-16 pb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-12 items-center">
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-amber-700 text-xs font-bold uppercase tracking-widest">Features</span>
+              <span className="w-8 h-px bg-amber-400" />
             </div>
-
-            {/* Feature grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {mod.features.map(feat => (
-                <div key={feat.name} className={`border rounded-2xl p-5 hover:shadow-md transition-shadow ${mod.accent}`}>
-                  <span className="text-2xl mb-3 block">{feat.icon}</span>
-                  <h3 className="font-black text-gray-900 mb-2 text-sm">{feat.name}</h3>
-                  <p className="text-gray-600 text-xs leading-relaxed">{feat.desc}</p>
+            <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 mb-5 tracking-tight leading-[1.08]" style={{ fontFamily: 'var(--font-playfair), serif' }}>
+              Everything You Need,<br />All in One Platform
+            </h1>
+            <p className="text-gray-500 text-base sm:text-lg leading-relaxed max-w-md mb-9">
+              MySchool brings together all the tools your institution needs to manage, teach, learn and grow — smarter, faster and simpler.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              {[
+                { icon: '🛡️', title: 'Secure & Reliable', desc: 'Enterprise-grade security to protect your data.' },
+                { icon: '⏱️', title: 'Save Time', desc: 'Automate daily tasks and focus on what matters.' },
+                { icon: '📈', title: 'Drive Growth', desc: 'Powerful insights to help your institution grow.' },
+              ].map(f => (
+                <div key={f.title}>
+                  <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center text-base mb-2.5">{f.icon}</div>
+                  <p className="font-bold text-gray-900 text-sm mb-1">{f.title}</p>
+                  <p className="text-gray-500 text-xs leading-relaxed">{f.desc}</p>
                 </div>
               ))}
             </div>
-          </section>
-        ))}
-      </div>
-
-      {/* More at a glance */}
-      <div className="bg-gray-50 py-14 sm:py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-10">
-            <span className="text-blue-600 font-bold text-xs uppercase tracking-widest">More at a Glance</span>
-            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mt-3">See it before you try it</h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {[
-              { img: '/images/features/2-student-management.png', title: 'Student Management', desc: 'Profiles, records, and performance in one place.' },
-              { img: '/images/features/9-examinations-results.png', title: 'Examinations & Results', desc: 'Conduct exams and publish results with ease.' },
-              { img: '/images/features/10-attendance-timetable.png', title: 'Attendance & Timetable', desc: 'Track attendance and manage timetables smartly.' },
-              { img: '/images/features/8-mobile-app-experience.png', title: 'Mobile App Experience', desc: 'Access everything on the go, for every role.' },
-            ].map(item => (
-              <div key={item.title} className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-lg transition-shadow">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={item.img} alt={item.title} className="w-full h-auto block" loading="lazy" />
-                <div className="p-4">
-                  <h3 className="font-black text-gray-900 text-sm mb-1">{item.title}</h3>
-                  <p className="text-gray-500 text-xs leading-relaxed">{item.desc}</p>
-                </div>
-              </div>
-            ))}
+
+          <div className="relative">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="https://images.unsplash.com/photo-1741636371995-875bf17ca657?fm=jpg&q=70&w=900&auto=format&fit=crop"
+              alt="MySchool institution"
+              className="w-full h-64 sm:h-80 object-cover rounded-3xl shadow-lg"
+            />
+            <div className="absolute -bottom-8 -left-4 sm:-left-8 w-[85%] sm:w-[75%]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/images/hero/monitor-only.png"
+                alt="MySchool dashboard preview"
+                className="w-full h-auto rounded-2xl shadow-2xl border-4 border-white"
+              />
+            </div>
           </div>
         </div>
       </div>
 
-      {/* CTA */}
-      <div className="bg-gradient-to-r from-gray-900 to-black py-16">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center text-white">
-          <h2 className="text-2xl sm:text-3xl font-black mb-3">Ready to modernize your school?</h2>
-          <p className="text-blue-200 mb-8">Join hundreds of Pakistani schools already using MySchool. 30-day free trial, no credit card required.</p>
-          <div className="flex gap-4 justify-center">
-            <Link href="/signup" className="px-8 py-3.5 bg-white text-blue-700 font-black rounded-xl hover:bg-blue-50 transition-all">
-              Start Free Trial
+      {/* Category filters */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-14 sm:pt-16 pb-8">
+        <div className="flex flex-wrap gap-2.5">
+          {CATEGORIES.map(cat => (
+            <button
+              key={cat}
+              onClick={() => setCategory(cat)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold transition-colors border ${
+                category === cat ? 'bg-gray-950 text-white border-gray-950' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <span>{CATEGORY_ICONS[cat]}</span>
+              {cat}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Feature grid */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-14">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {visibleCards.map(f => (
+            <div key={f.title} className="bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-lg transition-shadow">
+              <div className={`w-11 h-11 rounded-xl ${f.color} flex items-center justify-center text-xl mb-4`}>{f.icon}</div>
+              <h3 className="font-bold text-gray-900 text-sm mb-1.5">{f.title}</h3>
+              <p className="text-gray-500 text-xs leading-relaxed mb-4">{f.desc}</p>
+              <Link href="/pricing" className="inline-flex items-center gap-1 text-amber-700 text-xs font-bold hover:gap-1.5 transition-all">
+                Learn more
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+              </Link>
+            </div>
+          ))}
+        </div>
+        <div className="flex justify-center mt-8">
+          <Link href="/pricing" className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-amber-300 text-amber-800 font-bold text-sm hover:bg-amber-50 transition-colors">
+            Explore All Modules
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+          </Link>
+        </div>
+      </div>
+
+      {/* Stats band */}
+      <div className="relative overflow-hidden" style={{ background: 'linear-gradient(150deg, #14161C 0%, #22252E 100%)' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-14 sm:py-16">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+            <div>
+              <span className="text-amber-400 text-xs font-bold uppercase tracking-widest">Built for Impact</span>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-white mt-3 mb-3 leading-tight" style={{ fontFamily: 'var(--font-playfair), serif' }}>
+                Trusted by Institutions<br />Making a Difference
+              </h2>
+              <p className="text-white/50 text-sm max-w-sm">MySchool empowers schools and colleges to operate efficiently and deliver a better learning experience every day.</p>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+              {[
+                ['🏛️', '500+', 'Institutions', 'trust MySchool'],
+                ['🎓', '120,000+', 'Students', 'managed'],
+                ['👥', '50,000+', 'Teachers', 'empowered'],
+                ['🛡️', '99.9%', 'Uptime', 'guaranteed'],
+              ].map(([icon, value, l1, l2]) => (
+                <div key={l1} className="text-center sm:text-left">
+                  <div className="text-xl mb-2">{icon}</div>
+                  <p className="text-xl sm:text-2xl font-extrabold text-white">{value}</p>
+                  <p className="text-xs text-white/40 mt-0.5">{l1} {l2}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* CTA band */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
+        <div className="bg-white border border-amber-100 rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-6 sm:gap-8">
+          <div className="w-16 h-16 rounded-2xl bg-amber-50 flex items-center justify-center text-3xl flex-shrink-0">🛡️</div>
+          <div className="flex-1 text-center sm:text-left">
+            <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900 mb-1" style={{ fontFamily: 'var(--font-playfair), serif' }}>Ready to Transform Your Institution?</h2>
+            <p className="text-gray-500 text-sm">Join thousands of institutions using MySchool to simplify operations, improve communication and focus on what matters most.</p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 flex-shrink-0">
+            <Link href="/signup" className="px-6 py-3 bg-gray-950 hover:bg-gray-800 text-white font-bold rounded-xl text-sm text-center transition-colors flex items-center justify-center gap-1.5">
+              Book a Demo
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
             </Link>
-            <Link href="/pricing" className="px-8 py-3.5 bg-white/15 text-white font-bold rounded-xl border border-white/30 hover:bg-white/20 transition-all">
+            <Link href="/pricing" className="px-6 py-3 border border-amber-300 text-amber-800 font-bold rounded-xl text-sm text-center hover:bg-amber-50 transition-colors">
               View Pricing
             </Link>
           </div>
@@ -347,18 +372,40 @@ export default function FeaturesPage() {
       </div>
 
       {/* Footer */}
-      <footer className="bg-gray-900 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <Link href="/" className="flex items-center gap-2">
-            <img src="/images/brand/logo.png" alt="MySchool" className="w-7 h-7 object-contain" />
-            <span className="text-white font-black">MySchool</span>
-          </Link>
-          <div className="flex gap-6 text-sm text-gray-500">
-            <Link href="/" className="hover:text-white">Home</Link>
-            <Link href="/pricing" className="hover:text-white">Pricing</Link>
-            <Link href="/security-center" className="hover:text-white">Security</Link>
-            <Link href="/privacy-policy" className="hover:text-white">Privacy</Link>
-            <Link href="/terms" className="hover:text-white">Terms</Link>
+      <footer className="bg-gray-950 pt-14 pb-8 px-4 sm:px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-5 gap-8 mb-10">
+            <div className="col-span-2 md:col-span-1">
+              <div className="flex items-center gap-2.5 mb-4">
+                <img src="/images/brand/logo.png" alt="MySchool" className="w-8 h-8 object-contain" />
+                <span className="font-black text-lg text-white">MySchool</span>
+              </div>
+              <p className="text-gray-500 text-sm leading-relaxed max-w-xs mb-4">Empowering educational institutions with intelligent technology for a better tomorrow.</p>
+              <div className="flex gap-3">
+                {['LinkedIn', 'Twitter', 'YouTube'].map(s => (
+                  <a key={s} href="#" className="text-xs text-gray-600 hover:text-white transition-colors font-medium">{s}</a>
+                ))}
+              </div>
+            </div>
+            {[
+              { title: 'Product', links: ['Features|/features', 'Pricing|/pricing', 'Security|/security-center'] },
+              { title: 'Company', links: ['About|/about', 'Contact|mailto:hello@myschool.pk'] },
+              { title: 'Legal', links: ['Privacy Policy|/privacy-policy', 'Terms of Service|/terms', 'Security|/security-center'] },
+            ].map(col => (
+              <div key={col.title}>
+                <p className="font-bold text-white mb-4 text-sm">{col.title}</p>
+                <ul className="space-y-2.5">
+                  {col.links.map(l => {
+                    const [label, href] = l.split('|');
+                    return <li key={label}><Link href={href} className="text-gray-500 hover:text-white text-sm transition-colors">{label}</Link></li>;
+                  })}
+                </ul>
+              </div>
+            ))}
+          </div>
+          <div className="border-t border-gray-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p className="text-gray-600 text-sm text-center sm:text-left">© 2026 MySchool Technologies. All rights reserved.</p>
+            <p className="text-gray-600 text-sm">Made with ❤️ for education</p>
           </div>
         </div>
       </footer>
