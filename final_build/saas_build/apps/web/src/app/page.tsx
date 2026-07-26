@@ -323,154 +323,19 @@ export default function MarketingPage() {
             </div>
           </div>
 
-          {/* Dashboard Preview + Phone mockup — animated, matches EduSmart-style reference */}
+          {/* Dashboard Preview + Phone mockup — real product screenshot */}
           <div className="relative mt-6 sm:mt-0 max-w-[380px] sm:max-w-none mx-auto sm:mx-0">
             <style>{`
               @keyframes msk-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-              @keyframes msk-float-2 { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
-              @keyframes msk-pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(1.4); } }
-              @keyframes msk-draw { to { stroke-dashoffset: 0; } }
-              @keyframes msk-fadein { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-              .msk-monitor { animation: msk-float 7s ease-in-out infinite; }
-              .msk-phone { animation: msk-float-2 7s ease-in-out infinite; animation-delay: -2.5s; }
-              .msk-dot { animation: msk-pulse 2s ease-in-out infinite; }
-              .msk-chart-line { stroke-dasharray: 340; stroke-dashoffset: 340; animation: msk-draw 1.8s ease forwards 0.4s; }
-              .msk-fade { opacity: 0; animation: msk-fadein .6s ease forwards; }
+              .msk-hero-shot { animation: msk-float 7s ease-in-out infinite; }
             `}</style>
-
-            {/* Monitor */}
-            <div className="msk-monitor rounded-2xl overflow-hidden border border-white/10 shadow-2xl" style={{ background: '#0F1424' }}>
-              <div className="flex items-center gap-1.5 px-4 py-3 bg-[#151B30] border-b border-white/5">
-                <div className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
-                <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/50" />
-                <div className="w-2.5 h-2.5 rounded-full bg-green-500/50" />
-                <div className="flex-1 mx-3 bg-[#0F1424] rounded-md px-3 py-1.5 text-[11px] text-purple-300/40 font-mono">app.myschool.pk/dashboard</div>
-              </div>
-              <div className="flex" style={{ minHeight: 340 }}>
-                {/* Sidebar */}
-                <div className="w-28 flex-shrink-0 border-r border-white/5 p-3" style={{ background: '#0D1120' }}>
-                  <div className="flex items-center gap-1.5 mb-5 px-1">
-                    <img src="/images/brand/logo.png" alt="MySchool" className="w-5 h-5 object-contain" />
-                    <span className="text-white text-[10px] font-black">MySchool</span>
-                  </div>
-                  <div className="space-y-1">
-                    {[['📊', 'Dashboard', true], ['👩‍🎓', 'Students', false], ['👨‍🏫', 'Teachers', false], ['🏫', 'Classes', false], ['📅', 'Attendance', false], ['💳', 'Fees', false]].map(([icon, label, active]) => (
-                      <div key={label as string} className={`flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[9px] font-semibold ${active ? 'bg-blue-600 text-white' : 'text-white/35'}`}>
-                        <span className="text-[10px]">{icon}</span>{label}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Main content */}
-                <div className="flex-1 p-4">
-                  {/* Topbar */}
-                  <div className="flex items-center justify-between mb-3.5">
-                    <div>
-                      <p className="text-white text-[12px] font-black leading-none">Good morning, Admin 👋</p>
-                      <p className="text-white/30 text-[9px] mt-1">Here&apos;s what&apos;s happening today</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="relative w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: '#151B30' }}>
-                        🔔<span className="msk-dot absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-rose-500" />
-                      </div>
-                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600" />
-                    </div>
-                  </div>
-
-                  {/* Stat cards */}
-                  <div className="grid grid-cols-4 gap-2 mb-3">
-                    {[
-                      { v: 1245, prefix: '', l: 'Students', c: '#3B82F6', up: '12.5%' },
-                      { v: 78, prefix: '', l: 'Teachers', c: '#10B981', up: '7.8%' },
-                      { v: 93, prefix: '', suffix: '%', l: 'Attendance', c: '#8B5CF6', up: '4.3%' },
-                      { v: 45320, prefix: 'Rs ', l: 'Fees Collected', c: '#F59E0B', up: '8.2%' },
-                    ].map((s, i) => (
-                      <StatCard key={s.l} v={s.v} prefix={s.prefix} suffix={s.suffix} l={s.l} c={s.c} up={s.up} delay={i * 0.1} />
-                    ))}
-                  </div>
-
-                  {/* Attendance chart */}
-                  <div className="msk-fade rounded-xl p-3 border border-white/5 mb-3" style={{ background: '#151B30', animationDelay: '0.6s' }}>
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-[9px] text-white/30 font-medium">Attendance Overview</p>
-                      <span className="text-[8px] text-blue-400 font-bold bg-blue-500/10 px-1.5 py-0.5 rounded">92% Live</span>
-                    </div>
-                    <svg viewBox="0 0 280 50" className="w-full h-12">
-                      <polyline
-                        className="msk-chart-line"
-                        points="0,38 40,20 80,30 120,12 160,24 200,8 240,16 280,4"
-                        fill="none"
-                        stroke="#3B82F6"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </div>
-
-                  {/* Recent activities */}
-                  <div className="msk-fade rounded-xl p-3 border border-white/5" style={{ background: '#151B30', animationDelay: '0.8s' }}>
-                    <p className="text-[9px] text-white/30 font-medium mb-2">Recent Activities</p>
-                    <div className="space-y-1.5">
-                      {[['🟢', 'New student admission', '2m ago'], ['🔵', 'Fee payment received', '1h ago'], ['🟣', 'Library book issued', 'Yesterday']].map(([dot, t, time], i) => (
-                        <div key={t as string} className="msk-fade flex items-center justify-between" style={{ animationDelay: `${1 + i * 0.15}s` }}>
-                          <span className="text-[8.5px] text-white/60 flex items-center gap-1.5"><span className="text-[8px]">{dot}</span>{t}</span>
-                          <span className="text-[7.5px] text-white/25">{time}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            {/* Monitor stand */}
-            <div className="msk-monitor mx-auto" style={{ animationDelay: '0s' }}>
-              <div className="w-20 h-3 mx-auto" style={{ background: 'linear-gradient(#1a2038,#0D1120)', clipPath: 'polygon(35% 0, 65% 0, 80% 100%, 20% 100%)' }} />
-              <div className="w-32 h-2 mx-auto rounded-full" style={{ background: '#0D1120' }} />
-            </div>
-
-            {/* Phone mockup */}
-            <div className="msk-phone mt-5 mx-auto sm:mt-0 sm:mx-0 sm:absolute sm:-bottom-6 sm:-right-8 w-32 aspect-[9/19] rounded-[1.6rem] overflow-hidden border-4 border-[#111827] shadow-2xl flex flex-col" style={{ background: '#0F1424' }}>
-              {/* Notch */}
-              <div className="flex justify-center pt-1">
-                <div className="w-10 h-2.5 rounded-full bg-black" />
-              </div>
-              <div className="flex items-center justify-between px-3 pt-1 text-white text-[7px] font-bold">
-                <span>9:41</span>
-                <span>🔋 📶</span>
-              </div>
-              <div className="p-2.5 flex-1 flex flex-col">
-                <p className="text-white text-[10px] font-bold mb-3 flex items-center gap-1">Hello, Admin <span>👋</span></p>
-                <div className="grid grid-cols-2 gap-1.5 mb-2">
-                  <div className="msk-fade rounded-lg p-2" style={{ background: '#1A2038', animationDelay: '1.1s' }}>
-                    <p className="text-[10px] font-black text-blue-400">1,245</p>
-                    <p className="text-[6.5px] text-white/30 mt-0.5">Students</p>
-                  </div>
-                  <div className="msk-fade rounded-lg p-2" style={{ background: '#1A2038', animationDelay: '1.2s' }}>
-                    <p className="text-[10px] font-black text-emerald-400">78</p>
-                    <p className="text-[6.5px] text-white/30 mt-0.5">Teachers</p>
-                  </div>
-                </div>
-                <div className="msk-fade rounded-lg p-2 mb-2" style={{ background: '#1A2038', animationDelay: '1.3s' }}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[6.5px] text-white/40">Attendance</span>
-                    <span className="text-[8px] font-black text-purple-400">92.6%</span>
-                  </div>
-                  <svg viewBox="0 0 100 20" className="w-full h-4">
-                    <polyline className="msk-chart-line" points="0,16 20,10 40,13 60,5 80,9 100,3" fill="none" stroke="#8B5CF6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
-                <div className="msk-fade rounded-lg p-2 flex-1" style={{ background: '#1A2038', animationDelay: '1.4s' }}>
-                  <p className="text-[6.5px] text-white/40 mb-1">Fees Collected</p>
-                  <p className="text-[10px] font-black text-amber-400">Rs 45,320</p>
-                </div>
-                <div className="flex items-center justify-center gap-1 mt-2 pb-1">
-                  <span className="msk-dot w-1 h-1 rounded-full bg-rose-500" />
-                  <span className="text-[6px] text-white/30">Live sync active</span>
-                </div>
-              </div>
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/hero/dashboard-mockup.png"
+              alt="MySchool admin dashboard and mobile app"
+              className="msk-hero-shot w-full h-auto drop-shadow-2xl"
+              loading="eager"
+            />
           </div>
         </div>
       </section>
