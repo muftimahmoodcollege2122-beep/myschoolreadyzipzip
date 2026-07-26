@@ -282,7 +282,7 @@ export default function TermsPage() {
           <div className="lg:col-span-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="https://images.unsplash.com/photo-1741636371995-875bf17ca657?fm=jpg&q=70&w=900&auto=format&fit=crop"
+              src="/images/hero/campus-building.png"
               alt="MySchool — institutional building"
               className="w-full h-56 sm:h-72 object-cover rounded-3xl shadow-lg"
             />
