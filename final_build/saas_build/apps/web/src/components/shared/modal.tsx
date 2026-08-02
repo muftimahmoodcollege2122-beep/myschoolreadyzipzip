@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect } from 'react';
 
-const S: Record<string,string> = { sm:'max-w-sm', md:'max-w-md', lg:'max-w-lg', xl:'max-w-2xl' };
+const S: Record<string,string> = { sm:'max-w-sm', md:'max-w-md', lg:'max-w-lg', xl:'max-w-2xl', xxl:'max-w-6xl' };
 
 interface ModalProps {
   title: string;

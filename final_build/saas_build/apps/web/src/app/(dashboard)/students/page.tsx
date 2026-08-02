@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/shared/page-header';
 import { Badge } from '@/components/shared/badge';
 import { Modal } from '@/components/shared/modal';
 import { BulkImportExport } from '@/components/shared/bulk-import-export';
+import { StudentProfileModal } from '@/components/students/student-profile-modal';
 
 const EMPTY = { firstName:'', lastName:'', email:'', phone:'', gender:'Male', admissionNo:'', rollNumber:'', dateOfBirth:'', admissionDate:'' };
 
@@ -17,6 +18,7 @@ export default function StudentsPage() {
   const [form, setForm]       = useState(EMPTY);
   const [showInactive, setShowInactive] = useState(false);
   const [removeError, setRemoveError] = useState('');
+  const [viewStudentId, setViewStudentId] = useState<string | null>(null);
   const qc = useQueryClient();
 
   const { data, isLoading }   = useStudents({ search, page, limit: 20, ...(showInactive ? {} : { isActive: true }) });
@@ -99,7 +101,10 @@ export default function StudentsPage() {
                         <td className="px-4 py-3 text-sm">{s.enrollments?.[0]?.section?.class?.name ?? '—'} {s.enrollments?.[0]?.section?.name ?? ''}</td>
                         <td className="px-4 py-3"><Badge variant={s.isActive ? 'green' : 'red'}>{s.isActive ? 'Active' : 'Inactive'}</Badge></td>
                         <td className="px-4 py-3">
-                          <button onClick={() => handleRemove(s.id)} className="px-3 py-1 text-xs bg-red-50 text-red-600 rounded-lg hover:bg-red-100 font-semibold">Remove</button>
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => setViewStudentId(s.id)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500" title="View profile">👁️</button>
+                            <button onClick={() => handleRemove(s.id)} className="px-3 py-1 text-xs bg-red-50 text-red-600 rounded-lg hover:bg-red-100 font-semibold">Remove</button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -113,10 +118,10 @@ export default function StudentsPage() {
               {students.map((s: any) => (
                 <div key={s.id} className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold flex-shrink-0">
+                    <button onClick={() => setViewStudentId(s.id)} className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold flex-shrink-0">
                       {s.user?.profile?.firstName?.[0] ?? 'S'}
-                    </div>
-                    <div className="flex-1 min-w-0">
+                    </button>
+                    <div className="flex-1 min-w-0" onClick={() => setViewStudentId(s.id)}>
                       <p className="font-bold text-gray-900">{s.user?.profile?.firstName} {s.user?.profile?.lastName}</p>
                       <p className="text-xs text-gray-400">{s.user?.email}</p>
                       <div className="flex flex-wrap gap-2 mt-2">
@@ -177,6 +182,10 @@ export default function StudentsPage() {
             </div>
           </div>
         </Modal>
+      )}
+
+      {viewStudentId && (
+        <StudentProfileModal studentId={viewStudentId} onClose={() => setViewStudentId(null)} />
       )}
     </>
   );
