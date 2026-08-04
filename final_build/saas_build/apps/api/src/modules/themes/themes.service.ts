@@ -166,6 +166,68 @@ export interface LabelOverrides {
   custom: Record<string, string>;
 }
 
+// ── Theme sanitization ──────────────────────────────────────────────────────
+// SECURITY: theme fields (colors, fonts especially) are rendered on the public
+// school website via `dangerouslySetInnerHTML` to build a <style> block
+// (apps/web/src/components/school-website/theme-provider.tsx). Any value that
+// reaches that component unsanitized is a stored-XSS vector: a malicious value
+// like `red; } </style><script>...` would break out of the <style> tag and
+// execute on every visitor to that school's public site. Everything below is
+// strictly whitelisted/regex-validated before it is ever persisted.
+const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
+const SAFE_FONT = /^[A-Za-z0-9 ]{1,60}$/;
+const SAFE_URL = /^https?:\/\/[^\s"'<>]{1,500}$/;
+const ENUMS: Record<string, string[]> = {
+  template: ['classic', 'modern', 'bold', 'elegant', 'vibrant'],
+  heroStyle: ['centered', 'split', 'full-bg', 'minimal', 'diagonal'],
+  logoShape: ['circle', 'rounded', 'square'],
+  borderRadius: ['none', 'small', 'medium', 'large'],
+  shadowStyle: ['none', 'soft', 'medium', 'strong'],
+  navStyle: ['solid', 'transparent', 'gradient', 'outline'],
+  buttonStyle: ['solid', 'outline', 'pill', 'sharp'],
+};
+function safeText(v: unknown, maxLen: number): string | undefined {
+  if (typeof v !== 'string') return undefined;
+  // Strip anything that could break out of an HTML attribute/tag or <style> block.
+  const cleaned = v.replace(/[<>"'`;{}]/g, '').trim();
+  return cleaned.slice(0, maxLen) || undefined;
+}
+function sanitizeTheme(input: Partial<SchoolTheme>): Partial<SchoolTheme> {
+  const out: any = {};
+  for (const key of ['primaryColor', 'secondaryColor', 'accentColor', 'textColor', 'bgColor'] as const) {
+    if (input[key] !== undefined && HEX_COLOR.test(input[key] as string)) out[key] = input[key];
+  }
+  for (const key of ['fontHeading', 'fontBody'] as const) {
+    if (input[key] !== undefined && SAFE_FONT.test((input[key] as string).trim())) out[key] = (input[key] as string).trim();
+  }
+  for (const key of ['logoUrl', 'coverImageUrl'] as const) {
+    if (input[key] !== undefined && SAFE_URL.test(input[key] as string)) out[key] = input[key];
+  }
+  for (const [key, allowed] of Object.entries(ENUMS)) {
+    const v = (input as any)[key];
+    if (v !== undefined && allowed.includes(v)) out[key] = v;
+  }
+  for (const key of ['schoolName', 'tagline', 'city', 'phone', 'email', 'address', 'established', 'principalName', 'heroTitle', 'heroSubtitle', 'heroCtaText', 'aboutText', 'statsStudents', 'statsTeachers', 'statsYears', 'statsPassRate'] as const) {
+    if (input[key] !== undefined) { const t = safeText(input[key], key === 'aboutText' ? 2000 : 200); if (t !== undefined) out[key] = t; }
+  }
+  if (input.socialLinks && typeof input.socialLinks === 'object') {
+    const links: any = {};
+    for (const k of ['facebook', 'twitter', 'youtube', 'instagram'] as const) {
+      const v = (input.socialLinks as any)[k];
+      if (v && SAFE_URL.test(v)) links[k] = v;
+    }
+    out.socialLinks = links;
+  }
+  if (input.sections && typeof input.sections === 'object') {
+    const sections: any = {};
+    for (const k of ['hero', 'about', 'stats', 'gallery', 'events', 'admissions', 'staff', 'testimonials', 'contact', 'news'] as const) {
+      if (typeof (input.sections as any)[k] === 'boolean') sections[k] = (input.sections as any)[k];
+    }
+    out.sections = sections;
+  }
+  return out;
+}
+
 export interface SchoolTheme {
   template:       'classic' | 'modern' | 'bold' | 'elegant' | 'vibrant';
   primaryColor:   string;
@@ -192,6 +254,19 @@ export interface SchoolTheme {
   principalName:  string;
   coverImageUrl:  string;
   socialLinks:    { facebook?: string; twitter?: string; youtube?: string; instagram?: string };
+  heroTitle?:      string;
+  heroSubtitle?:   string;
+  heroCtaText?:    string;
+  aboutText?:      string;
+  statsStudents?:  string;
+  statsTeachers?:  string;
+  statsYears?:     string;
+  statsPassRate?:  string;
+  sections?: {
+    hero: boolean; about: boolean; stats: boolean; gallery: boolean;
+    events: boolean; admissions: boolean; staff: boolean;
+    testimonials: boolean; contact: boolean; news: boolean;
+  };
 }
 
 export interface PortalSettings {
@@ -338,7 +413,8 @@ export class ThemesService {
   async updateTheme(tenantId: string, theme: Partial<SchoolTheme>): Promise<void> {
     const tenant = await this.prisma.tenant.findUniqueOrThrow({ where: { id: tenantId } });
     const currentSettings = (tenant.settings as any) || {};
-    await this.prisma.tenant.update({ where: { id: tenantId }, data: { settings: { ...currentSettings, theme: { ...(currentSettings.theme || {}), ...theme } } } });
+    const safeTheme = sanitizeTheme(theme);
+    await this.prisma.tenant.update({ where: { id: tenantId }, data: { settings: { ...currentSettings, theme: { ...(currentSettings.theme || {}), ...safeTheme } } } });
     await this.cache.del(`theme:${tenant.slug}`);
   }
 

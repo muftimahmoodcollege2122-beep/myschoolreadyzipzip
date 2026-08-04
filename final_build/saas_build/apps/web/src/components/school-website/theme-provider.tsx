@@ -16,14 +16,25 @@ function hexToRgb(hex: string | undefined) {
   return `${r} ${g} ${b}`;
 }
 
+// SECURITY: this component injects raw CSS via dangerouslySetInnerHTML. The API
+// already whitelists these fields on save, but we re-validate here too (defense
+// in depth) — a malformed/malicious value must never reach the CSS string below,
+// since that would allow breaking out of the <style> tag (stored XSS).
+function safeHex(v: string | undefined, fallback: string) {
+  return v && /^#[0-9a-fA-F]{6}$/.test(v) ? v : fallback;
+}
+function safeFont(v: string | undefined, fallback: string) {
+  return v && /^[A-Za-z0-9 ]{1,60}$/.test(v.trim()) ? v.trim() : fallback;
+}
+
 export function ThemeProvider({ theme, children }: { theme: SchoolTheme; children: React.ReactNode }) {
-  const primaryColor   = theme?.primaryColor   || '#059669';
-  const secondaryColor = theme?.secondaryColor || '#065F46';
-  const accentColor    = theme?.accentColor    || '#F59E0B';
-  const textColor      = theme?.textColor      || '#1A2B3C';
-  const bgColor         = theme?.bgColor        || '#FFFFFF';
-  const fontHeading     = theme?.fontHeading    || 'Plus Jakarta Sans';
-  const fontBody        = theme?.fontBody       || 'Inter';
+  const primaryColor   = safeHex(theme?.primaryColor, '#059669');
+  const secondaryColor = safeHex(theme?.secondaryColor, '#065F46');
+  const accentColor    = safeHex(theme?.accentColor, '#F59E0B');
+  const textColor      = safeHex(theme?.textColor, '#1A2B3C');
+  const bgColor         = safeHex(theme?.bgColor, '#FFFFFF');
+  const fontHeading     = safeFont(theme?.fontHeading, 'Plus Jakarta Sans');
+  const fontBody        = safeFont(theme?.fontBody, 'Inter');
   const borderRadiusKey = (theme?.borderRadius && radiusMap[theme.borderRadius]) ? theme.borderRadius : 'medium';
   const shadowStyleKey  = (theme?.shadowStyle  && shadowMap[theme.shadowStyle])  ? theme.shadowStyle  : 'soft';
   const buttonStyle     = theme?.buttonStyle || 'solid';
