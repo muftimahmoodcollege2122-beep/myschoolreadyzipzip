@@ -54,9 +54,9 @@ export default function StudentPortalPage() {
   const { data: studentsRaw }      = useStudents({ limit: 6 });
 
   const grades     = (gradesRaw as any[]) || [];
-  const attendance = (attendanceRaw as any[]) || [];
-  const fees       = (feesRaw as any[]) || [];
-  const timetable  = (timetableRaw as any[]) || [];
+  const attendance = (attendanceRaw as any)?.records ?? [];
+  const fees       = (feesRaw as any)?.invoices ?? [];
+  const timetableDays = (timetableRaw as any[]) || []; // shape: [{ day, dayName, slots }]
   const notices    = (announcementsRaw as any)?.data ?? ((Array.isArray(announcementsRaw) ? announcementsRaw : []) as any[]);
   const students   = (studentsRaw as any)?.data ?? [];
 
@@ -65,7 +65,7 @@ export default function StudentPortalPage() {
   const pendingFees   = fees.filter((f:any) => f.status === 'PENDING' || f.status === 'OVERDUE');
   const totalPending  = pendingFees.reduce((s:number, f:any) => s + Number(f.amount || 0), 0);
   const avgScore      = grades.length > 0
-    ? Math.round(grades.reduce((s:number, g:any) => s + (g.marksObtained / g.totalMarks) * 100, 0) / grades.length)
+    ? Math.round(grades.reduce((s:number, g:any) => s + (Number(g.score) / Number(g.maxScore)) * 100, 0) / grades.length)
     : 0;
 
   const firstName = (myStudent as any)?.user?.profile?.firstName || user?.email?.split('@')[0] || 'Student';
@@ -227,13 +227,13 @@ export default function StudentPortalPage() {
                       </thead>
                       <tbody className="divide-y divide-gray-50">
                         {grades.map((g:any) => {
-                          const pct = Math.round((g.marksObtained / g.totalMarks) * 100);
-                          const grade = g.grade || (pct>=90?'A+':pct>=80?'A':pct>=70?'B+':pct>=60?'B':'C');
+                          const pct = Math.round((Number(g.score) / Number(g.maxScore)) * 100);
+                          const grade = pct>=90?'A+':pct>=80?'A':pct>=70?'B+':pct>=60?'B':'C';
                           return (
                             <tr key={g.id} className="hover:bg-gray-50">
                               <td className="px-4 py-3 text-sm font-medium text-gray-800">{g.classSubject?.subject?.name || g.subject || 'Subject'}</td>
-                              <td className="px-4 py-3 text-sm text-gray-600">{g.marksObtained}</td>
-                              <td className="px-4 py-3 text-sm text-gray-600">{g.totalMarks}</td>
+                              <td className="px-4 py-3 text-sm text-gray-600">{g.score}</td>
+                              <td className="px-4 py-3 text-sm text-gray-600">{g.maxScore}</td>
                               <td className="px-4 py-3">
                                 <div className="flex items-center gap-2">
                                   <div className="w-16 h-1.5 bg-gray-100 rounded-full">
@@ -260,33 +260,29 @@ export default function StudentPortalPage() {
               ? <Empty icon="📅" title="No class assigned" desc="Timetable appears once you're enrolled in a class"/>
               : loadingTimetable
                 ? <Skeleton/>
-                : timetable.length === 0
+                : timetableDays.length === 0
                   ? <Empty icon="📅" title="No timetable yet" desc="Admin hasn't set up the timetable yet" cta={<Link href="/timetable" className="text-sm text-green-600 font-semibold">Set up timetable →</Link>}/>
                   : (
                     <div className="space-y-4">
-                      {[1,2,3,4,5,6].map(day => {
-                        const slots = timetable.filter((t:any) => t.dayOfWeek === day);
-                        if (!slots.length) return null;
-                        return (
-                          <div key={day}>
-                            <p className="text-xs font-bold text-gray-400 uppercase mb-2">{['Mon','Tue','Wed','Thu','Fri','Sat'][day-1]}</p>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                              {slots.map((s:any) => (
-                                <div key={s.id} className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-100 rounded-lg">
-                                  <div className="text-center min-w-12">
-                                    <p className="text-xs font-bold text-blue-700">{s.startTime}</p>
-                                    <p className="text-xs text-blue-400">{s.endTime}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-sm font-semibold text-gray-800">{s.classSubject?.subject?.name || 'Subject'}</p>
-                                    <p className="text-xs text-gray-500">{s.teacher?.user?.profile?.firstName || ''}{s.room ? ` · Room ${s.room}` : ''}</p>
-                                  </div>
+                      {timetableDays.map((d: any) => (
+                        <div key={d.day}>
+                          <p className="text-xs font-bold text-gray-400 uppercase mb-2">{d.dayName}</p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                            {(d.slots ?? []).map((s:any) => (
+                              <div key={s.id} className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                                <div className="text-center min-w-12">
+                                  <p className="text-xs font-bold text-blue-700">{s.startTime}</p>
+                                  <p className="text-xs text-blue-400">{s.endTime}</p>
                                 </div>
-                              ))}
-                            </div>
+                                <div>
+                                  <p className="text-sm font-semibold text-gray-800">{s.classSubject?.subject?.name || 'Subject'}</p>
+                                  <p className="text-xs text-gray-500">{s.teacher?.user?.profile?.firstName || ''}{s.room ? ` · Room ${s.room}` : ''}</p>
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                        );
-                      })}
+                        </div>
+                      ))}
                     </div>
                   )
             }
@@ -310,7 +306,7 @@ export default function StudentPortalPage() {
                       <tbody className="divide-y divide-gray-50">
                         {fees.map((f:any) => (
                           <tr key={f.id} className="hover:bg-gray-50">
-                            <td className="px-4 py-3 text-sm font-medium text-gray-800">{f.description || f.feeType || 'Fee'}</td>
+                            <td className="px-4 py-3 text-sm font-medium text-gray-800">{f.feeStructure?.name || f.notes || 'Fee'}</td>
                             <td className="px-4 py-3 text-sm font-bold text-gray-700">Rs. {Number(f.amount).toLocaleString()}</td>
                             <td className="px-4 py-3 text-sm text-gray-500">{f.dueDate ? new Date(f.dueDate).toLocaleDateString() : '—'}</td>
                             <td className="px-4 py-3"><Badge variant={f.status==='PAID'?'green':f.status==='OVERDUE'?'red':'yellow'}>{f.status}</Badge></td>

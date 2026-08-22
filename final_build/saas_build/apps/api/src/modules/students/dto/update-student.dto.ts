@@ -9,6 +9,11 @@ export class UpdateStudentDto {
   @IsOptional() @IsEnum(Gender) gender?: Gender;
   @IsOptional() @IsString() bloodGroup?: string;
   @IsOptional() @IsString() medicalNotes?: string;
+  @IsOptional() @Type(() => Number) @IsNumber() heightCm?: number;
+  @IsOptional() @Type(() => Number) @IsNumber() weightKg?: number;
+  @IsOptional() @IsString() nationality?: string;
+  @IsOptional() @IsString() religion?: string;
+  @IsOptional() @IsString() placeOfBirth?: string;
   @IsOptional() @IsUUID() transportId?: string;
   @IsOptional() @IsUUID() hostelId?: string;
 }

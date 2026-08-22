@@ -277,7 +277,7 @@ export class StudentsService {
     const existing = await this.findOne(id, tenantId);
 
     const updated = await this.prisma.$transaction!(async (tx) => {
-      if (dto.firstName || dto.lastName || dto.phone || dto.gender) {
+      if (dto.firstName || dto.lastName || dto.phone || dto.gender || dto.nationality || dto.religion || dto.placeOfBirth) {
         await tx.userProfile.update({
           where: { userId: existing.userId },
           data: {
@@ -285,6 +285,9 @@ export class StudentsService {
             ...(dto.lastName && { lastName: dto.lastName }),
             ...(dto.phone && { phone: dto.phone }),
             ...(dto.gender && { gender: dto.gender }),
+            ...(dto.nationality !== undefined && { nationality: dto.nationality }),
+            ...(dto.religion !== undefined && { religion: dto.religion }),
+            ...(dto.placeOfBirth !== undefined && { placeOfBirth: dto.placeOfBirth }),
           },
         });
       }
@@ -296,6 +299,8 @@ export class StudentsService {
           ...(dto.transportId !== undefined && { transportId: dto.transportId }),
           ...(dto.hostelId !== undefined && { hostelId: dto.hostelId }),
           ...(dto.medicalNotes && { medicalNotes: dto.medicalNotes }),
+          ...(dto.heightCm !== undefined && { heightCm: dto.heightCm }),
+          ...(dto.weightKg !== undefined && { weightKg: dto.weightKg }),
         },
       });
     });

@@ -15,6 +15,28 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
+// Address is stored as structured JSON ({ line1, city, state, country, ... }) or null —
+// never render it directly as a React child or it'll throw "Objects are not valid as a React child".
+function formatAddress(address: any): string {
+  if (!address) return '—';
+  if (typeof address === 'string') return address;
+  const parts = [address.line1, address.line2, address.city, address.state, address.country].filter(Boolean);
+  return parts.length > 0 ? parts.join(', ') : '—';
+}
+
+function ordinal(n: number): string {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return s[(v - 20) % 10] || s[v] || s[0];
+}
+
+function formatHeight(cm: number): string {
+  const totalInches = cm / 2.54;
+  const feet = Math.floor(totalInches / 12);
+  const inches = Math.round(totalInches % 12);
+  return `${feet}'${inches}" (${cm} cm)`;
+}
+
 function StatCard({ icon, label, value, sub, color }: { icon: string; label: string; value: string; sub: string; color: string }) {
   return (
     <div className="bg-white border border-gray-100 rounded-2xl p-4">
@@ -75,16 +97,20 @@ export function StudentProfileModal({ studentId, onClose }: { studentId: string;
                   <Row label="Blood Group" value={s.bloodGroup} />
                   <Row label="Email" value={s.user?.email} />
                   <Row label="Phone" value={profile.phone} />
-                  <Row label="Address" value={profile.address} />
+                  <Row label="Address" value={formatAddress(profile.address)} />
+                  <Row label="Nationality" value={profile.nationality} />
+                  <Row label="Religion" value={profile.religion} />
+                  <Row label="Place of Birth" value={profile.placeOfBirth} />
                 </div>
               </div>
 
               {/* Right: stats + tabs + performance */}
               <div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
                   <StatCard icon="📅" label="Attendance" value={attSummary ? `${attSummary.percentage}%` : '—'} sub={attSummary?.percentage >= 90 ? 'Excellent' : attSummary ? 'This term' : 'No data yet'} color="bg-blue-50" />
                   <StatCard icon="⭐" label="Overall Grade" value={rc?.subjects?.length ? (rc.subjects[0]?.letterGrade ?? '—') : '—'} sub={rc ? 'Current term' : 'No data yet'} color="bg-purple-50" />
                   <StatCard icon="📖" label="GPA" value={rc?.overallGpa != null ? Number(rc.overallGpa).toFixed(2) : '—'} sub="Out of 4.00" color="bg-indigo-50" />
+                  <StatCard icon="🏆" label="Position" value={rc?.rank != null ? `${rc.rank}${ordinal(rc.rank)}` : '—'} sub={rc?.classSize != null ? `Out of ${rc.classSize}` : 'No data yet'} color="bg-amber-50" />
                 </div>
 
                 {/* Tabs */}
@@ -111,8 +137,11 @@ export function StudentProfileModal({ studentId, onClose }: { studentId: string;
                     <div>
                       <Row label="Email" value={s.user?.email} />
                       <Row label="Phone" value={profile.phone} />
-                      <Row label="Address" value={profile.address} />
+                      <Row label="Address" value={formatAddress(profile.address)} />
                       <Row label="National ID" value={profile.nationalId} />
+                      <Row label="Nationality" value={profile.nationality} />
+                      <Row label="Religion" value={profile.religion} />
+                      <Row label="Place of Birth" value={profile.placeOfBirth} />
                     </div>
                   </div>
                 )}
@@ -147,6 +176,8 @@ export function StudentProfileModal({ studentId, onClose }: { studentId: string;
 
                 {tab === 3 && (
                   <div>
+                    <Row label="Height" value={s.heightCm != null ? `${formatHeight(s.heightCm)}` : '—'} />
+                    <Row label="Weight" value={s.weightKg != null ? `${s.weightKg} kg` : '—'} />
                     <Row label="Medical Notes" value={s.medicalNotes} />
                     <Row label="Documents" value={s.documents?.length ? `${s.documents.length} on file` : 'None uploaded'} />
                   </div>

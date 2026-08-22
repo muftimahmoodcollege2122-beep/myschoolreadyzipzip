@@ -4,6 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { Topbar } from '@/components/layout/topbar';
 import Link from 'next/link';
+import RevenueChart from '@/components/dashboard/RevenueChart';
+import EnrollmentChart from '@/components/dashboard/EnrollmentChart';
 
 const QUICK_LINKS = [
   { icon:'👩‍🎓', label:'Students',   href:'/students',   color:'bg-blue-600' },
@@ -64,6 +66,18 @@ export default function DashboardPage() {
                 <span className="text-xs sm:text-sm font-semibold text-gray-700">{q.label}</span>
               </Link>
             ))}
+          </div>
+        </div>
+
+        {/* Analytics */}
+        <div className="grid-responsive-2" style={{gap:'0.75rem'}}>
+          <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 shadow-sm">
+            <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-3">Fee Revenue</h2>
+            <RevenueChart data={ai.revenue ?? { daily:{total_invoices:0,total_revenue:0}, weekly:{total_invoices:0,total_revenue:0}, monthly:{total_invoices:0,total_revenue:0}, allTime:{total_invoices:0,total_revenue:0} }} />
+          </div>
+          <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 shadow-sm">
+            <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-3">New Enrollments</h2>
+            <EnrollmentChart data={ai.enrollment ?? { daily:0, weekly:0, monthly:0, allTime:0 }} />
           </div>
         </div>
 

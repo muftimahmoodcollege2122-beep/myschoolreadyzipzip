@@ -31,6 +31,8 @@ export interface ReportCardData {
   subjects: SubjectGradeSummary[];
   overallGpa: number;
   overallPercentage: number;
+  rank: number | null;
+  classSize: number | null;
 }
 
 const GRADING_SCALE = [
@@ -97,6 +99,7 @@ export class GradesService {
   ): Promise<ReportCardData> {
     const student = await this.prisma.student.findFirst({
       where: { id: studentId, tenantId },
+      include: { enrollments: { where: { academicYear, isActive: true }, take: 1 } },
     });
     if (!student) throw new NotFoundException('Student not found');
 
@@ -130,7 +133,48 @@ export class GradesService {
     const overallGpa = subjects.length > 0 ? subjects.reduce((s, sub) => s + sub.gpa, 0) / subjects.length : 0;
     const overallPercentage = subjects.length > 0 ? subjects.reduce((s, sub) => s + sub.weightedAverage, 0) / subjects.length : 0;
 
-    return { student: { id: student.id, rollNumber: student.rollNumber, admissionNo: student.admissionNo }, academicYear, term, subjects, overallGpa: Math.round(overallGpa * 100) / 100, overallPercentage: Math.round(overallPercentage * 100) / 100 };
+    // ── Class rank/position within the student's section for this term ──────
+    let rank: number | null = null;
+    let classSize: number | null = null;
+    const sectionId = student.enrollments[0]?.sectionId;
+    if (sectionId) {
+      const classmates = await this.prisma.studentEnrollment.findMany({
+        where: { sectionId, tenantId, academicYear, isActive: true },
+        select: { studentId: true },
+      });
+      const classmateIds = classmates.map(c => c.studentId);
+      if (classmateIds.length > 0) {
+        const allGrades = await this.prisma.grade.findMany({
+          where: { studentId: { in: classmateIds }, tenantId, academicYear, term },
+          select: { studentId: true, score: true, maxScore: true, weight: true },
+        });
+        const byStudent = new Map<string, { ws: number; tw: number }>();
+        for (const g of allGrades) {
+          const acc = byStudent.get(g.studentId) ?? { ws: 0, tw: 0 };
+          acc.ws += (Number(g.score) / Number(g.maxScore)) * 100 * Number(g.weight);
+          acc.tw += Number(g.weight);
+          byStudent.set(g.studentId, acc);
+        }
+        const averages = classmateIds
+          .map(id => {
+            const acc = byStudent.get(id);
+            return { studentId: id, avg: acc && acc.tw > 0 ? acc.ws / acc.tw : null };
+          })
+          .filter(a => a.avg !== null)
+          .sort((a, b) => (b.avg as number) - (a.avg as number));
+        classSize = averages.length;
+        const idx = averages.findIndex(a => a.studentId === studentId);
+        rank = idx >= 0 ? idx + 1 : null;
+      }
+    }
+
+    return {
+      student: { id: student.id, rollNumber: student.rollNumber, admissionNo: student.admissionNo },
+      academicYear, term, subjects,
+      overallGpa: Math.round(overallGpa * 100) / 100,
+      overallPercentage: Math.round(overallPercentage * 100) / 100,
+      rank, classSize,
+    } as ReportCardData;
   }
 
   async getSectionGradebook(sectionId: string, classSubjectId: string, tenantId: string, term: string, academicYear: string) {

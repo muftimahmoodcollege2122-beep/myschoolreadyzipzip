@@ -11,6 +11,8 @@ import {
   useExams,
   useAnnouncements,
   useStudents,
+  useAttendance,
+  useMarkAttendance,
 } from '@/hooks/use-api';
 import Link from 'next/link';
 
@@ -37,7 +39,10 @@ function Empty({ icon, title, desc, cta }: { icon:string; title:string; desc:str
 
 export default function TeacherPortalPage() {
   const { user } = useAuthStore();
-  const [tab, setTab] = useState<'home'|'schedule'|'students'|'exams'>('home');
+  const [tab, setTab] = useState<'home'|'schedule'|'students'|'attendance'|'exams'>('home');
+  const [attSectionId, setAttSectionId] = useState('');
+  const [attDate, setAttDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [marks, setMarks] = useState<Record<string, string>>({});
 
   const { data: myTeacher, isLoading: loadingMe } = useMyTeacher();
   const teacherId = (myTeacher as any)?.id;
@@ -67,11 +72,44 @@ export default function TeacherPortalPage() {
   const uniqueSubjects = Array.from(new Set(slots.map((s:any) => s.classSubject?.subject?.name).filter(Boolean)));
   const uniqueSections = Array.from(new Set(slots.map((s:any) => s.section ? `${s.section?.class?.name || ''}${s.section?.name || ''}` : null).filter(Boolean)));
 
+  // Sections this teacher actually teaches, deduped by id, for the attendance picker
+  const teacherSections = Array.from(
+    new Map(slots.filter((s:any) => s.section?.id).map((s:any) => [s.section.id, s.section])).values()
+  ) as any[];
+
+  const { data: sectionStudentsRaw, isLoading: loadingSectionStudents } = useStudents(
+    attSectionId ? { sectionId: attSectionId, limit: 200, isActive: true } : { limit: 0 }
+  );
+  const sectionStudents = (sectionStudentsRaw as any)?.data ?? [];
+  const { data: existingAtt } = useAttendance(attSectionId, attDate);
+  const markAttendance = useMarkAttendance();
+
+  React.useEffect(() => {
+    if (Array.isArray(existingAtt)) {
+      const m: Record<string, string> = {};
+      existingAtt.forEach((r: any) => { m[r.studentId] = r.status; });
+      setMarks(m);
+    } else {
+      setMarks({});
+    }
+  }, [existingAtt, attSectionId, attDate]);
+
+  const handleSaveAttendance = () => {
+    if (!attSectionId) return;
+    const records = sectionStudents.map((s: any) => ({
+      studentId: s.id,
+      status: marks[s.id] ?? 'PRESENT',
+      date: attDate,
+    }));
+    markAttendance.mutate({ sectionId: attSectionId, records });
+  };
+
   const TABS = [
-    { key:'home',     label:'🏠 Home' },
-    { key:'schedule', label:'📅 Schedule' },
-    { key:'students', label:'👩‍🎓 Students' },
-    { key:'exams',    label:'📝 Exams' },
+    { key:'home',       label:'🏠 Home' },
+    { key:'schedule',   label:'📅 Schedule' },
+    { key:'students',   label:'👩‍🎓 Students' },
+    { key:'attendance', label:'✅ Attendance' },
+    { key:'exams',      label:'📝 Exams' },
   ] as const;
 
   return (
@@ -293,6 +331,67 @@ export default function TeacherPortalPage() {
                 </table>
               )
             }
+          </div>
+        )}
+
+        {/* ── ATTENDANCE tab ── */}
+        {tab === 'attendance' && (
+          <div className="space-y-4">
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-wrap gap-3">
+              <select value={attSectionId} onChange={e => setAttSectionId(e.target.value)}
+                className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400">
+                <option value="">Select your class</option>
+                {teacherSections.map((s:any) => (
+                  <option key={s.id} value={s.id}>{s.class?.name || ''}{s.name || ''}</option>
+                ))}
+              </select>
+              <input type="date" value={attDate} onChange={e => setAttDate(e.target.value)}
+                className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-blue-400" />
+            </div>
+
+            {!attSectionId ? (
+              <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
+                <Empty icon="✅" title="Mark attendance" desc="Pick one of your classes above to mark today's attendance" />
+              </div>
+            ) : loadingSectionStudents ? (
+              <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6"><Skeleton/></div>
+            ) : sectionStudents.length === 0 ? (
+              <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
+                <Empty icon="👩‍🎓" title="No students" desc="This section has no enrolled students" />
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="divide-y divide-gray-100">
+                  {sectionStudents.map((s: any) => (
+                    <div key={s.id} className="flex items-center justify-between px-4 py-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 truncate">{s.firstName} {s.lastName}</p>
+                        <p className="text-xs text-gray-400">Roll #{s.rollNumber ?? '—'}</p>
+                      </div>
+                      <div className="flex gap-1.5 flex-shrink-0">
+                        {['PRESENT','ABSENT','LATE','EXCUSED'].map(st => (
+                          <button key={st} onClick={() => setMarks(prev => ({ ...prev, [s.id]: st }))}
+                            className={`w-9 h-9 rounded-lg text-xs font-bold border transition-all ${
+                              marks[s.id] === st
+                                ? st === 'PRESENT' ? 'bg-green-600 text-white' : st === 'ABSENT' ? 'bg-red-600 text-white' : st === 'LATE' ? 'bg-amber-500 text-white' : 'bg-gray-400 text-white'
+                                : 'bg-white border-gray-200 text-gray-400 hover:border-gray-300'
+                            }`}
+                            title={st}>
+                            {st[0]}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="px-4 py-3 border-t border-gray-100 bg-gray-50 flex justify-end">
+                  <button onClick={handleSaveAttendance} disabled={markAttendance.isPending}
+                    className="px-5 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 disabled:opacity-50">
+                    {markAttendance.isPending ? 'Saving...' : 'Save Attendance'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

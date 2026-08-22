@@ -83,11 +83,21 @@ export const useAttendance = (sectionId: string, date: string) =>
 
 export const useMarkAttendance = () => {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: (dto: any) => apiClient.post('/attendance', dto), onSuccess: () => qc.invalidateQueries({ queryKey: ['attendance'] }) });
+  return useMutation({
+    mutationFn: ({ sectionId, records }: { sectionId: string; records: any[] }) =>
+      apiClient.post(`/attendance/section/${sectionId}`, records),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['attendance'] }),
+  });
 };
 
 export const useAttendanceReport = (sectionId: string, from: string, to: string) =>
-  useQuery({ queryKey: ['attendance-report', sectionId, from, to], queryFn: () => apiClient.get(`/attendance/section/${sectionId}/report?from=${from}&to=${to}`), enabled: !!sectionId && !!from && !!to });
+  useQuery({ queryKey: ['attendance-report', sectionId, from, to], queryFn: () => apiClient.get(`/attendance/section/${sectionId}/report?startDate=${from}&endDate=${to}`), enabled: !!sectionId && !!from && !!to });
+
+export const useTodayAttendanceSummary = (schoolId?: string) =>
+  useQuery({ queryKey: ['attendance-today', schoolId], queryFn: () => apiClient.get(`/attendance/today/summary${schoolId ? `?schoolId=${schoolId}` : ''}`), staleTime: 30 * 1000 });
+
+export const useChronicAbsentees = (schoolId: string, threshold = 75) =>
+  useQuery({ queryKey: ['attendance-chronic', schoolId, threshold], queryFn: () => apiClient.get(`/attendance/chronic-absentees?schoolId=${schoolId}&threshold=${threshold}`), enabled: !!schoolId });
 
 // ── Fees ─────────────────────────────────────────────────────────────────────
 export const useOutstandingFees = (schoolId: string) =>
@@ -189,7 +199,7 @@ export const useDeleteEvent = () => {
 };
 
 export const useAnnouncements = (page = 1) =>
-  useQuery({ queryKey: ['announcements', page], queryFn: () => apiClient.get(`/school/announcements?page=${page}&limit=20`) });
+  useQuery({ queryKey: ['announcements', page], queryFn: () => apiClient.get(`/communication/announcements`) });
 
 export const useCreateAnnouncement = () => {
   const qc = useQueryClient();

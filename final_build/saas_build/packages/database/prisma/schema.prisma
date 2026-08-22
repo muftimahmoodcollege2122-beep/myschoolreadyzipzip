@@ -285,6 +285,9 @@ model UserProfile {
   address     Json?    // PII
   photoUrl    String?
   nationalId  String?  // PII - encrypted
+  nationality String?
+  religion    String?
+  placeOfBirth String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -388,6 +391,8 @@ model Student {
   admissionDate  DateTime
   bloodGroup     String?
   medicalNotes   String?  // encrypted
+  heightCm       Decimal? @db.Decimal(5, 1)
+  weightKg       Decimal? @db.Decimal(5, 1)
   biometricId    String?  // for attendance integration
   transportId    String?  @db.Uuid
   hostelId       String?  @db.Uuid

@@ -19,6 +19,8 @@ const sections: NavSection[] = [
       { href: '/students/promotions',       icon: '⬆️', label: 'Promotions & Transfers', roles: ['SCHOOL_ADMIN'] },
     ]},
     { href: '/teachers',          icon: '👨‍🏫', label: 'Teachers',           roles: ['SCHOOL_ADMIN'] },
+    { href: '/attendance',        icon: '✅', label: 'Attendance',         roles: ['SCHOOL_ADMIN','TEACHER'] },
+    { href: '/fees',              icon: '💰', label: 'Fees',               roles: ['SCHOOL_ADMIN','ACCOUNTANT'] },
   ]},
   { title: 'Portals', items: [
     { href: '/teacher-portal',    icon: '👨‍🏫', label: 'Teacher Portal',    roles: ['TEACHER','SCHOOL_ADMIN'] },
