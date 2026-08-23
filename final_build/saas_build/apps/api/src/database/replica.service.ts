@@ -119,7 +119,7 @@ export class ReplicaService implements OnModuleInit, OnModuleDestroy {
 
   get $queryRaw() {
     const raw = this.client;
-    if (!raw) return undefined;
+    if (!raw) throw new Error('ReplicaService: no database connection ($queryRaw called before $connect / no DATABASE_URL configured)');
     return (strings: any, ...values: any[]) => {
       const ctx = tenantContextStorage.getStore();
       if (!ctx?.tenantId || ctx.isPlatformAdmin) return raw.$queryRaw(strings, ...values);
@@ -130,7 +130,7 @@ export class ReplicaService implements OnModuleInit, OnModuleDestroy {
     };
   }
   get $transaction() {
-    if (!this.client) return undefined;
+    if (!this.client) throw new Error('ReplicaService: no database connection ($transaction called before $connect / no DATABASE_URL configured)');
     const raw = this.client.$transaction.bind(this.client);
     return (arg: any, options?: any) => {
       if (typeof arg !== 'function') return raw(arg, options);

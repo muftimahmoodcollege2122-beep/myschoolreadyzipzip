@@ -19,6 +19,8 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { PiiScrubberInterceptor } from './common/interceptors/pii-scrubber.interceptor';
 import { setupTracing } from './config/tracing';
 import { UPLOADS_DIR } from './config/uploads.config';
+import { metricsMiddleware } from './common/metrics/metrics';
+import { startMetricsServer } from './common/metrics/metrics-server';
 
 async function bootstrap() {
   // Initialize OpenTelemetry tracing BEFORE anything else
@@ -40,6 +42,9 @@ async function bootstrap() {
     contentSecurityPolicy: nodeEnv === 'production',
     crossOriginEmbedderPolicy: false,
   }));
+
+  // Prometheus request metrics (counter + latency histogram, all routes)
+  app.use(metricsMiddleware);
 
   // Compression
   app.use(compression());
@@ -131,6 +136,8 @@ async function bootstrap() {
 
   await app.listen(port, '0.0.0.0');
   logger.log(`Application running on port ${port} [${nodeEnv}]`);
+
+  startMetricsServer();
 }
 
 bootstrap().catch((err) => {

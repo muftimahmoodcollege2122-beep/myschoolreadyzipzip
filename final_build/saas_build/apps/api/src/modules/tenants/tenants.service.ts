@@ -110,6 +110,12 @@ export class TenantsService {
   };
 
   async saveLogoFile(tenantId: string, file: { buffer: Buffer; mimetype: string; size: number }): Promise<{ logoUrl: string }> {
+    // Defense-in-depth: tenantId should always be a DB-verified UUID by the
+    // time it gets here (via @TenantId()), but it flows straight into a
+    // filesystem path below — never trust it implicitly this close to fs writes.
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tenantId)) {
+      throw new ConflictException('Invalid tenant id');
+    }
     const ext = this.ALLOWED_LOGO_TYPES[file.mimetype];
     if (!ext) throw new ConflictException('Logo must be a PNG, JPEG, or WebP image');
     if (file.size > 2 * 1024 * 1024) throw new ConflictException('Logo must be under 2MB');

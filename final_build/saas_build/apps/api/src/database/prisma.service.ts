@@ -276,7 +276,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   // ── Raw query helpers ────────────────────────────────────────────────────────
   get $queryRaw() {
     const raw = this._client;
-    if (!raw) return undefined;
+    if (!raw) throw new Error('PrismaService: no database connection ($queryRaw called before $connect / DATABASE_URL not set)');
     // Raw queries hit FORCE-RLS tables too. Binding straight to the raw
     // client (the old behavior) never sets app.current_tenant_id, so the
     // fail-closed policy silently returns zero rows for any RLS table —
@@ -308,7 +308,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
    * rejected — treat that as a signal to convert it to the callback form.
    */
   get $transaction() {
-    if (!this._client) return undefined;
+    if (!this._client) throw new Error('PrismaService: no database connection ($transaction called before $connect / DATABASE_URL not set)');
     const raw = this._client.$transaction.bind(this._client);
     return (arg: any, options?: any) => {
       if (typeof arg !== 'function') return raw(arg, options);

@@ -210,6 +210,20 @@ export class ReportsService {
     }
   }
 
+  /** Escapes free-text before interpolating into the report-card HTML, which is
+   * rendered by a real headless browser (Puppeteer) — unescaped admin/student
+   * input here is a genuine stored-HTML-injection risk (subject names, school
+   * name/address, student names are all editable free text). */
+  private escapeHtml(value: unknown): string {
+    if (value === null || value === undefined) return '';
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   private buildReportCardHtml(
     reportData: any,
     student: any,
@@ -221,9 +235,9 @@ export class ReportsService {
 
     const subjectRows = reportData.subjects.map((sub: any) => `
       <tr>
-        <td>${sub.subjectName}</td>
+        <td>${this.escapeHtml(sub.subjectName)}</td>
         <td>${sub.weightedAverage.toFixed(1)}%</td>
-        <td class="grade-${sub.letterGrade.replace('+', 'plus').replace('-', 'minus')}">${sub.letterGrade}</td>
+        <td class="grade-${sub.letterGrade.replace('+', 'plus').replace('-', 'minus')}">${this.escapeHtml(sub.letterGrade)}</td>
         <td>${sub.gpa.toFixed(2)}</td>
       </tr>
     `).join('');
@@ -265,32 +279,32 @@ export class ReportsService {
 <body>
   <div class="header">
     <div>
-      <h1>${school?.name || 'School'}</h1>
-      <p>${school?.address ? JSON.stringify(school.address) : ''} ${school?.phone || ''}</p>
+      <h1>${this.escapeHtml(school?.name) || 'School'}</h1>
+      <p>${school?.address ? this.escapeHtml(JSON.stringify(school.address)) : ''} ${this.escapeHtml(school?.phone)}</p>
     </div>
   </div>
 
   <div class="content">
     <h2 style="font-size:16px;margin-bottom:16px;color:#1e3a5f;">
-      Academic Report Card — ${reportData.academicYear} | ${reportData.term}
+      Academic Report Card — ${this.escapeHtml(reportData.academicYear)} | ${this.escapeHtml(reportData.term)}
     </h2>
 
     <div class="info-grid">
       <div class="info-block">
         <label>Student Name</label>
-        <p>${profile?.firstName || ''} ${profile?.lastName || ''}</p>
+        <p>${this.escapeHtml(profile?.firstName)} ${this.escapeHtml(profile?.lastName)}</p>
       </div>
       <div class="info-block">
         <label>Roll Number</label>
-        <p>${student.rollNumber}</p>
+        <p>${this.escapeHtml(student.rollNumber)}</p>
       </div>
       <div class="info-block">
         <label>Admission Number</label>
-        <p>${student.admissionNo}</p>
+        <p>${this.escapeHtml(student.admissionNo)}</p>
       </div>
       <div class="info-block">
         <label>Class / Section</label>
-        <p>${enrollment?.section?.class?.name || '—'} / ${enrollment?.section?.name || '—'}</p>
+        <p>${this.escapeHtml(enrollment?.section?.class?.name) || '—'} / ${this.escapeHtml(enrollment?.section?.name) || '—'}</p>
       </div>
     </div>
 
@@ -333,7 +347,7 @@ export class ReportsService {
     <div class="footer">
       <span>Generated: ${new Date().toLocaleDateString()}</span>
       <span>This is a computer-generated document</span>
-      <span>${school?.name || ''}</span>
+      <span>${this.escapeHtml(school?.name)}</span>
     </div>
   </div>
 </body>

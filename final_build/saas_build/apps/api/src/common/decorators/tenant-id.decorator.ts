@@ -13,7 +13,14 @@ export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
 
 export const TenantId = createParamDecorator((_: unknown, ctx: ExecutionContext): string => {
   const request = ctx.switchToHttp().getRequest();
-  const tenantId = request.tenantContext?.tenantId ?? request.headers['x-tenant-id'];
+  // Only trust req.tenantContext.tenantId — it's DB-verified by
+  // TenantContextMiddleware (runs on every request; see that file).
+  // Previously fell back to the raw `x-tenant-id` header directly, which is
+  // fully attacker-controlled and was never validated as a real UUID before
+  // flowing into things like the logo-upload file path (tenants.service.ts
+  // saveLogoFile) — a path-traversal / arbitrary-write risk on any route
+  // that ever bypassed the middleware. Fail closed instead.
+  const tenantId = request.tenantContext?.tenantId;
   if (!tenantId) throw new Error('TenantId not found — is TenantContextMiddleware applied?');
   return tenantId;
 });
