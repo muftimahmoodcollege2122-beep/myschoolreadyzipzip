@@ -1,0 +1,46 @@
+# Self-hosted stack: Postgres + app (API + Web + Redis in one container)
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: myschool
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env}
+      POSTGRES_DB: myschool
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U myschool"]
+      interval: 10s
+      retries: 5
+    mem_limit: 1g
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:3000:3000"   # local only; Cloudflare Tunnel exposes it publicly
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      DATABASE_URL: postgresql://myschool:${POSTGRES_PASSWORD}@db:5432/myschool
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set in .env}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set in .env}
+      SUPER_ADMIN_EMAIL: ${SUPER_ADMIN_EMAIL:?set in .env}
+      SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD:?set in .env}
+      FRONTEND_URL: ${PUBLIC_URL:-http://localhost:3000}
+      CORS_ORIGINS: ${PUBLIC_URL:-http://localhost:3000}
+      UPLOADS_DIR: /data/uploads
+      ALLOW_DATA_LOSS: "false"
+      SEED_DEMO: ${SEED_DEMO:-false}
+      OTEL_DISABLED: "true"
+    volumes:
+      - uploads:/data/uploads
+    mem_limit: 3g
+
+volumes:
+  pgdata:
+  uploads:

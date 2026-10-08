@@ -41,13 +41,19 @@ echo "==> Redis ready"
 if [ -n "$DATABASE_URL" ]; then
   echo "==> Syncing schema..."
   cd "$API_DIR"
+  # Self-hosted: set ALLOW_DATA_LOSS=false so schema changes can never silently drop data.
+  DP_FLAGS="--skip-generate"
+  [ "${ALLOW_DATA_LOSS:-true}" = "true" ] && DP_FLAGS="$DP_FLAGS --accept-data-loss"
   ./node_modules/.bin/prisma db push \
-    --schema=prisma/schema.prisma \
-    --skip-generate --accept-data-loss 2>&1 | grep -E "✔|Error|already|sync" | head -5 || true
+    --schema=prisma/schema.prisma $DP_FLAGS 2>&1 | grep -E "✔|Error|already|sync" | head -5 || true
   echo "==> Schema synced"
 
   echo "==> Seeding..."
-  node "$API_DIR/seed-demo.js" 2>&1 | tail -3 || true
+  if [ "${SEED_DEMO:-true}" = "true" ]; then
+    node "$API_DIR/seed-demo.js" 2>&1 | tail -3 || true
+  else
+    echo "(demo seed skipped)"
+  fi
   echo "==> Seed done"
 
   echo "==> Ensuring platform super admin exists..."
